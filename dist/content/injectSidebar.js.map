@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["../../src/content/injectSidebar.ts"],
+  "sourcesContent": ["// contentScript.js\r\nconst sidebarHTML = `\r\n  <div id=\"ai-sidebar\" style=\"position: fixed; top: 0; right: 0; width: 320px; height: 100vh; background: white; box-shadow: -2px 0 10px rgba(0, 0, 0, 0.1); z-index: 9999;\">\r\n    <div style=\"padding: 10px; border-bottom: 1px solid #ccc;\">\r\n      <strong>AI Workspace</strong>\r\n    </div>\r\n    <div id=\"ai-projects-list\" style=\"padding: 10px; overflow-y: auto;\"></div>\r\n    <button id=\"ai-add-project\" style=\"margin: 10px;\">Add Project</button>\r\n  </div>\r\n`;\r\n\r\n// Inject the sidebar into the body of the page\r\ndocument.body.insertAdjacentHTML('beforeend', sidebarHTML);"],
+  "mappings": ";;;;;;;;AAAA;AAAA;AACA,UAAM,cAAc;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAAA;AAWpB,eAAS,KAAK,mBAAmB,aAAa,WAAW;AAAA;AAAA;",
+  "names": []
+}

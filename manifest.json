@@ -1,0 +1,20 @@
+{
+  "manifest_version": 3,
+  "name": "AI Workspace (v0)",
+  "version": "0.0.1",
+  "description": "Local workspace sidebar for ChatGPT (personal build).",
+  "permissions": ["storage", "contextMenus"],
+  "host_permissions": ["https://chatgpt.com/*"],
+  "background": {
+    "service_worker": "dist/background/serviceWorker.js"
+  },
+  "content_scripts": [
+    {
+      "matches": ["https://chatgpt.com/*"],
+      "js": ["dist/content/injectSidebar.js"]
+    }
+  ],
+  "icons": {
+    "128": "icons/icon.png"
+  }
+}
