@@ -1,16 +1,31 @@
 // contentScript.ts
-const link = document.createElement("link");
-link.rel = "stylesheet";
-link.href = chrome.runtime.getURL("dist/ui/sidebar.css");
+const styleLink = document.getElementById("aiw-sidebar-style");
+if (!styleLink) {
+  const parent = document.head ?? document.documentElement; // ?? falls back to right side only if null or undefined; does not check falsy.
 
-document.head.append(link);
+  const link = document.createElement("link");
+  link.id = "aiw-sidebar-style";
+  link.rel = "stylesheet";
+  link.href = chrome.runtime.getURL("dist/ui/sidebar.css");
 
-fetch(chrome.runtime.getURL("dist/ui/sidebar.html"))
-  .then((response) => response.text())
-  .then((sidebarHTML) => {
-    // Inject the HTML into the page
-    document.body.insertAdjacentHTML("beforeend", sidebarHTML);
-  })
-  .catch((error) => {
-    console.error("Failed to inject sidebar HTML:", error);
-  });
+  parent.append(link);
+}
+
+const sidebar = document.getElementById("aiw-sidebar-root");
+if (!sidebar) {
+  fetch(chrome.runtime.getURL("dist/ui/sidebar.html"))
+    .then((response) => {
+      if (!response.ok)
+        throw new Error(`Failed to load sidebar.html (${response.status})`);
+      return response.text();
+    })
+    .then((sidebarHTML) => {
+      if (document.getElementById("aiw-sidebar-root")) return; // recheck if sidebar exists to avoid race condition
+      const parent = document.body ?? document.documentElement;
+      // Inject the HTML into the page
+      parent.insertAdjacentHTML("beforeend", sidebarHTML);
+    })
+    .catch((error) => {
+      console.error("Failed to inject sidebar HTML:", error);
+    });
+}

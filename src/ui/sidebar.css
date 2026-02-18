@@ -1,5 +1,5 @@
 /* src/ui/sidebar.css */
-#sidebar {
+#aiw-sidebar-root {
   position: fixed;
   top: 0;
   right: 0;
@@ -10,15 +10,15 @@
   z-index: 9999;
 }
 
-#projects-list {
+#aiw-projects-list {
   padding: 10px;
   overflow-y: auto;
 }
 
-#add-project {
+#aiw-add-project-button {
   margin: 10px;
 }
 
-bottom-buttons {
+#aiw-bottom-buttons {
   display: flex;
 }
