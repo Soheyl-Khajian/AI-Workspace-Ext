@@ -1,4 +1,4 @@
-// contentScript.ts
+// src/content/contentScript.ts
 const styleLink = document.getElementById("aiw-sidebar-style");
 if (!styleLink) {
   const parent = document.head ?? document.documentElement; // ?? falls back to right side only if null or undefined; does not check falsy.
