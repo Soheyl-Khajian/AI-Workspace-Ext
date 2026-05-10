@@ -1,13 +1,49 @@
 <!-- src/ui/sidebar.html -->
-<div id="aiw-sidebar-root">
-  <div style="padding: 10px; border-bottom: 1px solid #ccc">
-    <strong>AI Workspace</strong>
-  </div>
-  <div id="aiw-projects-list"></div>
-  <button id="aiw-add-project-button">New Project</button>
-  <div style="padding: 10px; border-bottom: 1px solid #ccc"></div>
-  <div id="aiw-bottom-buttons">
-    <button id="aiw-Build Context-button">Build Context</button>
-    <button id="aiw-Export-button">Export</button>
-  </div>
+<div id="aiw-sidebar-root" class="aiw">
+  <header class="aiw-header">
+    <div class="aiw-header__title">AI Workspace</div>
+    <div class="aiw-header__meta">Local</div>
+  </header>
+
+  <main class="aiw-main">
+    <section class="aiw-section">
+      <div class="aiw-section__head">
+        <div class="aiw-section__title">Projects</div>
+        <button
+          id="aiw-add-project-button"
+          class="aiw-btn aiw-btn--primary"
+          type="button"
+        >
+          New
+        </button>
+      </div>
+
+      <!-- Optional (later): project search -->
+      <!-- <input class="aiw-input" id="aiw-project-search" placeholder="Search projects" /> -->
+
+      <div
+        id="aiw-projects-list"
+        class="aiw-list"
+        aria-label="Projects list"
+      ></div>
+    </section>
+
+    <!-- Placeholder for next phase (items) -->
+    <section class="aiw-section aiw-section--muted">
+      <div class="aiw-section__head">
+        <div class="aiw-section__title">Items</div>
+        <div class="aiw-section__hint">Select a project</div>
+      </div>
+      <div class="aiw-empty">
+        Items will appear here once you add project selection + items UI.
+      </div>
+    </section>
+  </main>
+
+  <footer class="aiw-footer">
+    <button id="aiw-build-context-button" class="aiw-btn" type="button">
+      Build Context
+    </button>
+    <button id="aiw-export-button" class="aiw-btn" type="button">Export</button>
+  </footer>
 </div>

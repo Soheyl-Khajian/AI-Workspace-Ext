@@ -1,20 +1,21 @@
 {
   "compilerOptions": {
-    "target": "ES2022",              // Modern JavaScript that works in Chrome
-    "module": "ESNext",              // Use ES Modules (import/export) which Chrome supports
-    "strict": true,                  // Enable strict type checking for better code safety
-    "skipLibCheck": true,            // Skip type checking for third-party declaration files (faster)
-    "esModuleInterop": true,         // Ensures compatibility with CommonJS modules
-    "outDir": "./dist",              // Compiled JavaScript will be output here
-    "rootDir": "./src",              // The source TypeScript files are located here
-    "lib": ["DOM", "ESNext"],        // Make sure DOM APIs and modern JavaScript are available
-    "moduleResolution": "Node",      // Use Node-style module resolution
-    "resolveJsonModule": true        // Allow importing JSON files (if needed)
+    "target": "ES2022", // Modern JavaScript that works in Chrome
+    "module": "ESNext", // Use ES Modules (import/export) which Chrome supports
+    "strict": true, // Enable strict type checking for better code safety
+    "skipLibCheck": true, // Skip type checking for third-party declaration files (faster)
+    "esModuleInterop": true, // Ensures compatibility with CommonJS modules
+    "outDir": "./dist", // Compiled JavaScript will be output here
+    "rootDir": "./src", // The source TypeScript files are located here
+    "lib": ["DOM", "ESNext"], // Make sure DOM APIs and modern JavaScript are available
+    "moduleResolution": "bundler", // Use Node-style module resolution
+    "resolveJsonModule": true, // Allow importing JSON files (if needed)
+    "types": ["chrome"]
   },
   "include": [
-    "src/**/*.ts"                    // Include all TypeScript files in the `src/` folder
+    "src/**/*.ts" // Include all TypeScript files in the `src/` folder
   ],
   "exclude": [
-    "node_modules"                   // Exclude third-party libraries
+    "node_modules" // Exclude third-party libraries
   ]
 }
