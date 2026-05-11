@@ -216,14 +216,26 @@
           root,
           "#aiw-add-project-button"
         );
+        let currentProjectId = null;
         async function renderProjects() {
+          console.log("render started");
           projectsListEl.textContent = "";
           const projects = await listProjects();
+          console.log("projects fetched");
           for (const project of projects) {
             const row = document.createElement("div");
-            row.textContent = `${project.name}`;
+            row.className = "aiw-projects-row";
+            row.textContent = project.name;
+            row.addEventListener("click", () => {
+              currentProjectId = project.id;
+              void renderProjects();
+            });
+            if (project.id === currentProjectId) {
+              row.classList.add("aiw-projects-row--active");
+            }
             projectsListEl.append(row);
           }
+          console.log("end of the render");
         }
         async function handleNewProjectClick() {
           const input = window.prompt("Enter project name:");

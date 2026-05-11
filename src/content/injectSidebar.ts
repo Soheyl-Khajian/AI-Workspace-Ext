@@ -96,6 +96,7 @@ async function initSidebar(): Promise<void> {
     root,
     "#aiw-add-project-button",
   );
+  let currentProjectId: string | null = null;
 
   /**
    * Render all projects from persistence into the list container.
@@ -105,18 +106,32 @@ async function initSidebar(): Promise<void> {
    * - Newest-first ordering comes from the repo layer.
    */
   async function renderProjects(): Promise<void> {
+    console.log("render started");
     projectsListEl.textContent = "";
 
     const projects = await listProjects();
+    console.log("projects fetched");
 
     for (const project of projects) {
       const row = document.createElement("div");
+      row.className = "aiw-projects-row";
 
       // Keep v0 display simple. You can format createdAt later.
-      row.textContent = `${project.name}`;
+      row.textContent = project.name;
+
+      row.addEventListener("click", () => {
+        currentProjectId = project.id;
+        void renderProjects();
+      });
+
+      if (project.id === currentProjectId) {
+        row.classList.add("aiw-projects-row--active");
+      }
 
       projectsListEl.append(row);
     }
+
+    console.log("end of the render");
   }
 
   /**

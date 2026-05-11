@@ -183,6 +183,19 @@ Constraints:
 - Items list for active project (optional in early v0, but planned)
 - “Save selection” action (button or context menu later)
 
+UI State (v0)
+
+Define explicitly:
+
+selectedProjectId: string | null (ephemeral UI state)
+projects: Project[] (loaded from IndexedDB at startup)
+
+Rule:
+
+UI state is ephemeral
+DB is persistent
+render is derived from UI state + cached DB snapshot (not live queries inside render)
+
 ### Behavior rules
 
 - Sidebar injection must be idempotent (never insert twice).

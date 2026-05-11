@@ -139,7 +139,7 @@
 }
 
 /* Your JS currently appends <div> rows. This styles them automatically. */
-.aiw-list > div {
+.aiw-projects-row {
   padding: 10px 10px;
   border-radius: var(--aiw-r-md);
   border: 1px solid transparent;
@@ -155,17 +155,17 @@
     transform 80ms ease;
 }
 
-.aiw-list > div:hover {
+.aiw-projects-row:hover {
   background: var(--aiw-surface-2);
   border-color: var(--aiw-border-2);
 }
 
-.aiw-list > div:active {
+.aiw-projects-row:active {
   transform: translateY(0.5px);
 }
 
 /* Optional active row (add this class from JS when you implement selection) */
-.aiw-row--active {
+.aiw-projects-row--active {
   background: rgba(16, 163, 127, 0.1);
   border-color: rgba(16, 163, 127, 0.25);
 }
