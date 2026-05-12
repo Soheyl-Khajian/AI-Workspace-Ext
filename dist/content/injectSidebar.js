@@ -184,26 +184,24 @@
           link.href = chrome.runtime.getURL("dist/ui/sidebar.css");
           parent.append(link);
         }
-        if (document.getElementById("aiw-sidebar-root")) return;
-        const response = await fetch(chrome.runtime.getURL("dist/ui/sidebar.html"));
-        if (!response.ok) {
-          throw new Error(`Failed to fetch sidebar.html (HTTP ${response.status})`);
-        }
-        const sidebarHtml = await response.text();
         if (!document.getElementById("aiw-sidebar-root")) {
+          const response = await fetch(chrome.runtime.getURL("dist/ui/sidebar.html"));
+          if (!response.ok) {
+            throw new Error(`Failed to fetch sidebar.html (${response.status})`);
+          }
+          const html = await response.text();
           const parent = document.body ?? document.documentElement;
-          parent.insertAdjacentHTML("beforeend", sidebarHtml);
+          parent.insertAdjacentHTML("beforeend", html);
         }
         if (!document.getElementById("aiw-sidebar-root")) {
-          throw new Error(
-            "Sidebar injection failed: #aiw-sidebar-root not found after insert"
-          );
+          throw new Error("Sidebar injection failed: root element not found");
         }
       }
       function mustQuery(root, selector) {
         const el = root.querySelector(selector);
-        if (!el)
-          throw new Error(`Sidebar UI is missing required element: ${selector}`);
+        if (!el) {
+          throw new Error(`Missing required sidebar element: ${selector}`);
+        }
         return el;
       }
       async function initSidebar() {
@@ -217,25 +215,31 @@
           "#aiw-add-project-button"
         );
         let currentProjectId = null;
-        async function renderProjects() {
+        let projectsCache = [];
+        async function refreshProjectsCache() {
+          projectsCache = await listProjects();
+        }
+        async function updateUI() {
+          await refreshProjectsCache();
+          renderProjects();
+        }
+        function renderProjects() {
           console.log("render started");
           projectsListEl.textContent = "";
-          const projects = await listProjects();
-          console.log("projects fetched");
-          for (const project of projects) {
+          for (const project of projectsCache) {
             const row = document.createElement("div");
             row.className = "aiw-projects-row";
             row.textContent = project.name;
             row.addEventListener("click", () => {
               currentProjectId = project.id;
-              void renderProjects();
+              void updateUI();
             });
             if (project.id === currentProjectId) {
               row.classList.add("aiw-projects-row--active");
             }
             projectsListEl.append(row);
           }
-          console.log("end of the render");
+          console.log("render finished");
         }
         async function handleNewProjectClick() {
           const input = window.prompt("Enter project name:");
@@ -244,14 +248,14 @@
           if (!name) return;
           try {
             await createProject(name);
-            await renderProjects();
+            await updateUI();
           } catch (err) {
             console.error("[AIW] Failed to create project:", err);
             window.alert("Failed to create project. See console for details.");
           }
         }
         addProjectBtn.addEventListener("click", handleNewProjectClick);
-        await renderProjects();
+        await updateUI();
       }
       ensureSidebarInjected().then(() => initSidebar()).catch((err) => {
         console.error("[AIW] Sidebar bootstrap failed:", err);
