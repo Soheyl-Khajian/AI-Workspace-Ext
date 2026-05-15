@@ -13,5 +13,6 @@ export type Item = {
   title: string;
   content: string;
   createdAt: number;
-  meta: ItemMeta;
+  updatedAt?: number;
+  meta?: ItemMeta;
 };

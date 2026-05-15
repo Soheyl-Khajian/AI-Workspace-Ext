@@ -9,7 +9,7 @@
   };
 
   // src/storage/idb/schema.ts
-  var DB_NAME, DB_VERSION, STORE_PROJECTS, STORE_ITEMS, KEY_PROJECTS, KEY_ITEMS, IDX_ITEMS_BY_PROJECT;
+  var DB_NAME, DB_VERSION, STORE_PROJECTS, STORE_ITEMS, KEY_PROJECTS, KEY_ITEMS, IDX_ITEMS_BY_PROJECT, IDB_SCHEMA;
   var init_schema = __esm({
     "src/storage/idb/schema.ts"() {
       "use strict";
@@ -20,6 +20,29 @@
       KEY_PROJECTS = "id";
       KEY_ITEMS = "id";
       IDX_ITEMS_BY_PROJECT = "by_projectId";
+      IDB_SCHEMA = {
+        stores: [
+          {
+            // Projects are stored as records keyed by Project.id
+            name: STORE_PROJECTS,
+            keyPath: KEY_PROJECTS,
+            indexes: []
+          },
+          {
+            // Items are stored as records keyed by Item.id
+            name: STORE_ITEMS,
+            keyPath: KEY_ITEMS,
+            indexes: [
+              {
+                // Required query in v0: list items by projectId
+                name: IDX_ITEMS_BY_PROJECT,
+                keyPath: "projectId",
+                options: { unique: false }
+              }
+            ]
+          }
+        ]
+      };
     }
   });
 
@@ -31,14 +54,22 @@
       );
     }
     if (oldVersion < 1) {
-      if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
-        db.createObjectStore(STORE_PROJECTS, { keyPath: KEY_PROJECTS });
-      }
-      const itemsStore = db.objectStoreNames.contains(STORE_ITEMS) ? tx.objectStore(STORE_ITEMS) : db.createObjectStore(STORE_ITEMS, { keyPath: KEY_ITEMS });
-      if (!itemsStore.indexNames.contains(IDX_ITEMS_BY_PROJECT)) {
-        itemsStore.createIndex(IDX_ITEMS_BY_PROJECT, "projectId", {
-          unique: false
-        });
+      const stores = IDB_SCHEMA.stores;
+      for (const storeDef of stores) {
+        const storeName = storeDef.name;
+        let store;
+        if (!db.objectStoreNames.contains(storeName)) {
+          store = db.createObjectStore(storeName, {
+            keyPath: storeDef.keyPath
+          });
+        } else {
+          store = tx.objectStore(storeName);
+        }
+        for (const indexDef of storeDef.indexes) {
+          if (!store.indexNames.contains(indexDef.name)) {
+            store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options);
+          }
+        }
       }
     }
   }
@@ -146,118 +177,321 @@
     }
   });
 
+  // src/storage/repo/itemsRepo.ts
+  async function getItemsByProjectId(projectId) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_ITEMS, "readonly");
+      const store = tx.objectStore(STORE_ITEMS);
+      const index = store.index(IDX_ITEMS_BY_PROJECT);
+      const req = index.getAll(projectId);
+      const rows = await requestToPromise(req);
+      await txToPromise(tx);
+      rows.sort((a, b) => b.createdAt - a.createdAt);
+      return rows;
+    } finally {
+      db.close();
+    }
+  }
+  var init_itemsRepo = __esm({
+    "src/storage/repo/itemsRepo.ts"() {
+      "use strict";
+      init_openDb();
+      init_promisify();
+      init_schema();
+    }
+  });
+
   // src/storage/index.ts
   async function createProject(name, description) {
+    if (name == null) {
+      throw new Error("Project name is required (received null/undefined)");
+    }
     const trimmedName = name.trim();
-    if (!trimmedName) throw new Error("Project name is required");
+    if (trimmedName.length === 0) {
+      throw new Error("Project name cannot be empty");
+    }
     const project = {
       id: crypto.randomUUID(),
       name: trimmedName,
       createdAt: Date.now()
     };
-    const descTrimmed = description?.trim();
-    if (descTrimmed) project.description = descTrimmed;
+    const trimmedDescription = description?.trim();
+    if (trimmedDescription && trimmedDescription.length > 0) {
+      project.description = trimmedDescription;
+    }
     await insertProject(project);
     return project;
   }
   async function listProjects() {
     return getAllProjects();
   }
+  async function listItemsByProject(projectId) {
+    if (projectId == null) {
+      throw new Error("projectId is required (null/undefined)");
+    }
+    const trimmedProjectId = projectId.trim();
+    if (trimmedProjectId.length === 0) {
+      throw new Error("projectId cannot be empty");
+    }
+    return getItemsByProjectId(trimmedProjectId);
+  }
   var init_storage = __esm({
     "src/storage/index.ts"() {
       "use strict";
       init_projectsRepo();
+      init_itemsRepo();
+    }
+  });
+
+  // src/ui/renderProjects.ts
+  function renderProjects(container, projects, selectedProjectId, onSelectProject) {
+    container.textContent = "";
+    if (projects.length === 0) {
+      const emptyStateEl = document.createElement("div");
+      emptyStateEl.className = "aiw-empty";
+      emptyStateEl.textContent = "No projects yet";
+      container.append(emptyStateEl);
+      return;
+    }
+    for (const project of projects) {
+      const projectRowEl = createProjectRow(
+        project,
+        selectedProjectId,
+        onSelectProject
+      );
+      container.append(projectRowEl);
+    }
+  }
+  function createProjectRow(project, selectedProjectId, onSelectProject) {
+    const projectRowEl = document.createElement("div");
+    projectRowEl.className = "aiw-projects-row";
+    projectRowEl.textContent = project.name;
+    projectRowEl.dataset.projectId = project.id;
+    if (project.id === selectedProjectId) {
+      projectRowEl.classList.add("aiw-projects-row--active");
+    }
+    projectRowEl.addEventListener("click", () => {
+      onSelectProject(project.id);
+    });
+    return projectRowEl;
+  }
+  var init_renderProjects = __esm({
+    "src/ui/renderProjects.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/renderItems.ts
+  function renderItems(container, items, onItemClick) {
+    container.textContent = "";
+    if (items.length === 0) {
+      const emptyStateEl = document.createElement("div");
+      emptyStateEl.textContent = "No items yet";
+      emptyStateEl.className = "aiw-empty";
+      container.append(emptyStateEl);
+      return;
+    }
+    for (const item of items) {
+      const itemRowEl = document.createElement("div");
+      itemRowEl.className = "aiw-items-row";
+      const displayLabel = deriveItemLabel(item);
+      itemRowEl.textContent = displayLabel;
+      itemRowEl.classList.add(`aiw-item--${item.type}`);
+      itemRowEl.dataset.itemId = item.id;
+      if (onItemClick) {
+        itemRowEl.addEventListener("click", () => {
+          onItemClick(item.id);
+        });
+      }
+      container.append(itemRowEl);
+    }
+  }
+  function deriveItemLabel(item) {
+    const title = item.title.trim();
+    if (title) {
+      return title;
+    }
+    const normalizedContent = item.content.trim().replace(/\s+/g, " ");
+    if (!normalizedContent) {
+      return "Untitled item";
+    }
+    if (normalizedContent.length > MAX_PREVIEW_LENGTH) {
+      return normalizedContent.slice(0, MAX_PREVIEW_LENGTH) + "...";
+    }
+    return normalizedContent;
+  }
+  var MAX_PREVIEW_LENGTH;
+  var init_renderItems = __esm({
+    "src/ui/renderItems.ts"() {
+      "use strict";
+      MAX_PREVIEW_LENGTH = 45;
+    }
+  });
+
+  // src/ui/state.ts
+  function getSelectedProjectId() {
+    return state.selectedProjectId;
+  }
+  function setSelectedProjectId(projectId) {
+    state.selectedProjectId = projectId;
+  }
+  function getProjects() {
+    return [...state.projectsCache];
+  }
+  function setProjects(projects) {
+    state.projectsCache = [...projects];
+  }
+  var state;
+  var init_state = __esm({
+    "src/ui/state.ts"() {
+      "use strict";
+      state = {
+        selectedProjectId: null,
+        projectsCache: []
+      };
+    }
+  });
+
+  // src/ui/dom.ts
+  function mustQuery(root, selector) {
+    const el = root.querySelector(selector);
+    if (!el) {
+      throw new Error(`Missing required sidebar element: ${selector}`);
+    }
+    return el;
+  }
+  function createSidebarDom(root) {
+    return {
+      root,
+      projectsListEl: mustQuery(root, "#aiw-projects-list"),
+      itemsListEl: mustQuery(root, "#aiw-items-list"),
+      addProjectBtn: mustQuery(
+        root,
+        "#aiw-add-project-button"
+      )
+    };
+  }
+  var init_dom = __esm({
+    "src/ui/dom.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/sidebarController.ts
+  async function initSidebarController(root) {
+    const dom = createSidebarDom(root);
+    async function refreshProjectsState() {
+      const projects = await listProjects();
+      setProjects(projects);
+      const selectedProjectId = getSelectedProjectId();
+      const stillExists = projects.some((p) => p.id === selectedProjectId);
+      if (!stillExists) {
+        setSelectedProjectId(null);
+      }
+    }
+    function renderProjectsView() {
+      const projects = getProjects();
+      const selectedProjectId = getSelectedProjectId();
+      renderProjects(
+        dom.projectsListEl,
+        projects,
+        selectedProjectId,
+        async (clickedProjectId) => {
+          setSelectedProjectId(clickedProjectId);
+          await renderAllViews();
+        }
+      );
+    }
+    async function renderItemsView() {
+      const selectedProjectId = getSelectedProjectId();
+      if (!selectedProjectId) {
+        renderItems(dom.itemsListEl, []);
+        return;
+      }
+      const items = await listItemsByProject(selectedProjectId);
+      renderItems(dom.itemsListEl, items);
+    }
+    async function renderAllViews() {
+      renderProjectsView();
+      await renderItemsView();
+    }
+    dom.addProjectBtn.addEventListener("click", async () => {
+      const name = window.prompt("Enter project name:");
+      if (name === null) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      const project = await createProject(trimmed);
+      await refreshProjectsState();
+      setSelectedProjectId(project.id);
+      await renderAllViews();
+    });
+    await refreshProjectsState();
+    await renderAllViews();
+  }
+  var init_sidebarController = __esm({
+    "src/ui/sidebarController.ts"() {
+      "use strict";
+      init_storage();
+      init_renderProjects();
+      init_renderItems();
+      init_state();
+      init_dom();
     }
   });
 
   // src/content/injectSidebar.ts
   var require_injectSidebar = __commonJS({
     "src/content/injectSidebar.ts"() {
+      init_sidebarController();
       init_storage();
-      async function ensureSidebarInjected() {
-        const styleLink = document.getElementById("aiw-sidebar-style");
-        if (!styleLink) {
-          const parent = document.head ?? document.documentElement;
+      async function injectSidebarAssets() {
+        const styleExists = document.getElementById("aiw-sidebar-style");
+        if (!styleExists) {
           const link = document.createElement("link");
           link.id = "aiw-sidebar-style";
           link.rel = "stylesheet";
           link.href = chrome.runtime.getURL("dist/ui/sidebar.css");
-          parent.append(link);
+          (document.head ?? document.documentElement).append(link);
         }
-        if (!document.getElementById("aiw-sidebar-root")) {
+        const rootExists = document.getElementById("aiw-sidebar-root");
+        if (!rootExists) {
           const response = await fetch(chrome.runtime.getURL("dist/ui/sidebar.html"));
           if (!response.ok) {
-            throw new Error(`Failed to fetch sidebar.html (${response.status})`);
+            throw new Error(`Failed to load sidebar HTML (${response.status})`);
           }
           const html = await response.text();
-          const parent = document.body ?? document.documentElement;
-          parent.insertAdjacentHTML("beforeend", html);
+          (document.body ?? document.documentElement).insertAdjacentHTML(
+            "beforeend",
+            html
+          );
         }
-        if (!document.getElementById("aiw-sidebar-root")) {
-          throw new Error("Sidebar injection failed: root element not found");
-        }
-      }
-      function mustQuery(root, selector) {
-        const el = root.querySelector(selector);
-        if (!el) {
-          throw new Error(`Missing required sidebar element: ${selector}`);
-        }
-        return el;
-      }
-      async function initSidebar() {
         const root = document.getElementById("aiw-sidebar-root");
         if (!root) {
-          throw new Error("initSidebar called before sidebar root exists");
+          throw new Error("Sidebar root not found after injection");
         }
-        const projectsListEl = mustQuery(root, "#aiw-projects-list");
-        const addProjectBtn = mustQuery(
-          root,
-          "#aiw-add-project-button"
-        );
-        let currentProjectId = null;
-        let projectsCache = [];
-        async function refreshProjectsCache() {
-          projectsCache = await listProjects();
-        }
-        async function updateUI() {
-          await refreshProjectsCache();
-          renderProjects();
-        }
-        function renderProjects() {
-          console.log("render started");
-          projectsListEl.textContent = "";
-          for (const project of projectsCache) {
-            const row = document.createElement("div");
-            row.className = "aiw-projects-row";
-            row.textContent = project.name;
-            row.addEventListener("click", () => {
-              currentProjectId = project.id;
-              void updateUI();
-            });
-            if (project.id === currentProjectId) {
-              row.classList.add("aiw-projects-row--active");
-            }
-            projectsListEl.append(row);
-          }
-          console.log("render finished");
-        }
-        async function handleNewProjectClick() {
-          const input = window.prompt("Enter project name:");
-          if (input === null) return;
-          const name = input.trim();
-          if (!name) return;
-          try {
-            await createProject(name);
-            await updateUI();
-          } catch (err) {
-            console.error("[AIW] Failed to create project:", err);
-            window.alert("Failed to create project. See console for details.");
-          }
-        }
-        addProjectBtn.addEventListener("click", handleNewProjectClick);
-        await updateUI();
       }
-      ensureSidebarInjected().then(() => initSidebar()).catch((err) => {
+      async function seedDevDataOnce() {
+        const flag = await chrome.storage.local.get("aiw_devSeeded");
+        if (flag.aiw_devSeeded === true) return;
+        await chrome.storage.local.set({ aiw_devSeeded: true });
+        try {
+          await createProject("Test Project");
+        } catch (err) {
+          await chrome.storage.local.set({ aiw_devSeeded: false });
+          throw err;
+        }
+      }
+      async function bootstrap() {
+        await injectSidebarAssets();
+        const root = document.getElementById("aiw-sidebar-root");
+        if (!root) {
+          throw new Error("Sidebar root missing after injection");
+        }
+        await initSidebarController(root);
+        await seedDevDataOnce();
+      }
+      bootstrap().catch((err) => {
         console.error("[AIW] Sidebar bootstrap failed:", err);
       });
     }

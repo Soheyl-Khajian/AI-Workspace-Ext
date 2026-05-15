@@ -6,13 +6,7 @@
 // - Only do schema work here (create stores/indexes). No runtime CRUD.
 // - Must be safe if the user skips versions (oldVersion may jump).
 
-import {
-  IDX_ITEMS_BY_PROJECT,
-  KEY_ITEMS,
-  KEY_PROJECTS,
-  STORE_ITEMS,
-  STORE_PROJECTS,
-} from "./schema";
+import { IDB_SCHEMA } from "./schema";
 
 /**
  * Apply schema migrations for IndexedDB.
@@ -37,21 +31,29 @@ export function applyMigrations(
   // v1: initial install
   // Create the object stores and required indexes.
   if (oldVersion < 1) {
-    // Projects store: primary key = "id"
-    if (!db.objectStoreNames.contains(STORE_PROJECTS)) {
-      db.createObjectStore(STORE_PROJECTS, { keyPath: KEY_PROJECTS });
-    }
+    const stores = IDB_SCHEMA.stores;
 
-    // Items store: primary key = "id"
-    // Required query in v0: list items by projectId -> index on "projectId"
-    const itemsStore: IDBObjectStore = db.objectStoreNames.contains(STORE_ITEMS)
-      ? tx.objectStore(STORE_ITEMS)
-      : db.createObjectStore(STORE_ITEMS, { keyPath: KEY_ITEMS });
+    for (const storeDef of stores) {
+      const storeName = storeDef.name;
 
-    if (!itemsStore.indexNames.contains(IDX_ITEMS_BY_PROJECT)) {
-      itemsStore.createIndex(IDX_ITEMS_BY_PROJECT, "projectId", {
-        unique: false,
-      });
+      let store: IDBObjectStore;
+
+      // 1. Create store ONLY if missing
+      if (!db.objectStoreNames.contains(storeName)) {
+        store = db.createObjectStore(storeName, {
+          keyPath: storeDef.keyPath,
+        });
+      } else {
+        // Safe fallback: store already exists in this upgrade context
+        store = tx.objectStore(storeName);
+      }
+
+      // 2. Create indexes (always safe after store exists)
+      for (const indexDef of storeDef.indexes) {
+        if (!store.indexNames.contains(indexDef.name)) {
+          store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options);
+        }
+      }
     }
   }
 }
