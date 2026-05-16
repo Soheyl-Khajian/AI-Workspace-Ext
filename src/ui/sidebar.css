@@ -164,8 +164,38 @@
   transform: translateY(0.5px);
 }
 
+.aiw-items-row {
+  padding: 10px 10px;
+  border-radius: var(--aiw-r-md);
+  border: 1px solid transparent;
+
+  font-size: 13px;
+  line-height: 1.25;
+  cursor: pointer;
+  user-select: none;
+
+  transition:
+    background 120ms ease,
+    border-color 120ms ease,
+    transform 80ms ease;
+}
+
+.aiw-items-row:hover {
+  background: var(--aiw-surface-2);
+  border-color: var(--aiw-border-2);
+}
+
+.aiw-items-row:active {
+  transform: translateY(0.5px);
+}
+
 /* Optional active row (add this class from JS when you implement selection) */
 .aiw-projects-row--active {
+  background: rgba(16, 163, 127, 0.1);
+  border-color: rgba(16, 163, 127, 0.25);
+}
+
+.aiw-items-row--active {
   background: rgba(16, 163, 127, 0.1);
   border-color: rgba(16, 163, 127, 0.25);
 }

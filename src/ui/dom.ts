@@ -18,6 +18,7 @@ export type SidebarDom = {
   projectsListEl: HTMLDivElement;
   itemsListEl: HTMLDivElement;
   addProjectBtn: HTMLButtonElement;
+  addItemBtn: HTMLButtonElement;
 };
 
 // Factory: binds DOM structure to a given sidebar root
@@ -30,5 +31,6 @@ export function createSidebarDom(root: HTMLElement): SidebarDom {
       root,
       "#aiw-add-project-button",
     ),
+    addItemBtn: mustQuery<HTMLButtonElement>(root, "#aiw-add-item-button"),
   };
 }

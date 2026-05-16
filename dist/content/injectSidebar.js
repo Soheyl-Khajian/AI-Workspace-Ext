@@ -178,6 +178,18 @@
   });
 
   // src/storage/repo/itemsRepo.ts
+  async function insertItem(item) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_ITEMS, "readwrite");
+      const store = tx.objectStore(STORE_ITEMS);
+      const req = store.put(item);
+      await requestToPromise(req);
+      await txToPromise(tx);
+    } finally {
+      db.close();
+    }
+  }
   async function getItemsByProjectId(projectId) {
     const db = await openDb();
     try {
@@ -225,6 +237,46 @@
   }
   async function listProjects() {
     return getAllProjects();
+  }
+  async function createItem(projectId, type, title, content, meta) {
+    if (projectId == null) {
+      throw new Error("projectId is required (null/undefined)");
+    }
+    const trimmedProjectId = projectId.trim();
+    if (trimmedProjectId.length === 0) {
+      throw new Error("projectId cannot be empty");
+    }
+    if (!type) {
+      throw new Error("Item type is required");
+    }
+    if (title == null) {
+      throw new Error("Item title is required (null/undefined)");
+    }
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.length === 0) {
+      throw new Error("Item title cannot be empty");
+    }
+    if (content == null) {
+      throw new Error("Item content is required (null/undefined)");
+    }
+    const trimmedContent = content.trim();
+    if (trimmedContent.length === 0) {
+      throw new Error("Item content cannot be empty");
+    }
+    if (!meta) {
+      throw new Error("Item meta is required");
+    }
+    const item = {
+      id: crypto.randomUUID(),
+      projectId: trimmedProjectId,
+      type,
+      title: trimmedTitle,
+      content: trimmedContent,
+      createdAt: Date.now(),
+      meta
+    };
+    await insertItem(item);
+    return item;
   }
   async function listItemsByProject(projectId) {
     if (projectId == null) {
@@ -369,7 +421,8 @@
       addProjectBtn: mustQuery(
         root,
         "#aiw-add-project-button"
-      )
+      ),
+      addItemBtn: mustQuery(root, "#aiw-add-item-button")
     };
   }
   var init_dom = __esm({
@@ -425,6 +478,24 @@
       await refreshProjectsState();
       setSelectedProjectId(project.id);
       await renderAllViews();
+    });
+    dom.addItemBtn.addEventListener("click", async () => {
+      const title = window.prompt("Enter item title:");
+      if (title === null) return;
+      const trimmedTitle = title.trim();
+      if (!trimmedTitle) return;
+      const content = window.prompt("Enter item content:");
+      if (content === null) return;
+      const trimmedContent = content.trim();
+      if (!trimmedContent) return;
+      const selectedProjectId = getSelectedProjectId();
+      if (selectedProjectId === null) {
+        return;
+      }
+      await createItem(selectedProjectId, "note", trimmedTitle, trimmedContent, {
+        createdFrom: "manual"
+      });
+      await renderItemsView();
     });
     await refreshProjectsState();
     await renderAllViews();

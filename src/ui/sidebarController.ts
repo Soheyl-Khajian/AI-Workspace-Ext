@@ -8,6 +8,7 @@ import {
   createProject,
   listProjects,
   listItemsByProject,
+  createItem,
 } from "../storage/index";
 
 import { renderProjects } from "./renderProjects";
@@ -88,7 +89,7 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
   }
 
   // ------------------------------------------------------------
-  // Event: create project
+  // Event: create project + create item
   // ------------------------------------------------------------
   dom.addProjectBtn.addEventListener("click", async () => {
     const name = window.prompt("Enter project name:");
@@ -105,6 +106,33 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
     setSelectedProjectId(project.id);
 
     await renderAllViews();
+  });
+
+  dom.addItemBtn.addEventListener("click", async () => {
+    const title = window.prompt("Enter item title:");
+
+    if (title === null) return;
+
+    const trimmedTitle = title.trim();
+    if (!trimmedTitle) return;
+
+    const content = window.prompt("Enter item content:");
+
+    if (content === null) return;
+
+    const trimmedContent = content.trim();
+    if (!trimmedContent) return;
+
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId === null) {
+      return;
+    }
+
+    await createItem(selectedProjectId, "note", trimmedTitle, trimmedContent, {
+      createdFrom: "manual",
+    });
+
+    await renderItemsView();
   });
 
   // ------------------------------------------------------------
