@@ -1,90 +1,190 @@
 // src/ui/renderItems.ts
 // ------------------------------------------------------------
-// Responsibility:
-// Render a list of Item domain objects into a DOM container.
+// ITEMS RENDERER
 //
-// Rules:
-// - Pure rendering (no state, no DB access)
-// - Derives display text only (does not mutate data)
-// - Delegates interaction via callback
+// Responsibility:
+// - Render Item domain objects into DOM
+// - Derive lightweight display labels
+// - Apply selection styling
+// - Delegate interaction through callbacks
+//
+// IMPORTANT RULES:
+// - NO IndexedDB access
+// - NO global state access
+// - NO business logic
+// - NO mutation of domain objects
+//
+// This module should remain PURE:
+// input state → rendered DOM
 // ------------------------------------------------------------
 
-import { Item } from "../models/item";
+import type { Item } from "../models/item";
 
 /**
- * Maximum length for preview text when no title exists.
- * Note: ellipsis is added on overflow, so actual visible length may exceed slightly.
+ * Maximum preview length when deriving fallback text
+ * from item content.
+ *
+ * NOTE:
+ * Ellipsis is appended manually on overflow.
  */
 const MAX_PREVIEW_LENGTH = 45;
 
 /**
- * Renders item list into a container element.
+ * Shared no-op callback used for empty render states.
+ *
+ * Prevents unnecessary inline function allocation.
+ */
+const NOOP = (): void => {};
+
+/**
+ * Render item list into a container element.
+ *
+ * FLOW:
+ * 1. Clear existing DOM
+ * 2. Render empty state OR item rows
+ * 3. Bind interaction callbacks
  */
 export function renderItems(
   container: HTMLElement,
   items: Item[],
-  onItemClick?: (id: string) => void,
-) {
-  // Reset UI before re-render
+  selectedItemId: string | null,
+  onItemClick: (id: string) => void = NOOP,
+): void {
+  // ----------------------------------------------------------
+  // Clear previous render tree
+  // ----------------------------------------------------------
+
   container.textContent = "";
 
-  // Empty state rendering
+  // ----------------------------------------------------------
+  // Empty state
+  // ----------------------------------------------------------
+
   if (items.length === 0) {
     const emptyStateEl = document.createElement("div");
-    emptyStateEl.textContent = "No items yet";
+
     emptyStateEl.className = "aiw-empty";
+    emptyStateEl.textContent = "No items yet";
 
     container.append(emptyStateEl);
+
     return;
   }
 
+  // ----------------------------------------------------------
   // Main render loop
+  // ----------------------------------------------------------
+
   for (const item of items) {
-    const itemRowEl = document.createElement("div");
-    itemRowEl.className = "aiw-items-row";
-
-    // Compute display label (UI concern only)
-    const displayLabel = deriveItemLabel(item);
-
-    itemRowEl.textContent = displayLabel;
-
-    // Type-based styling hook (future: icons, colors, filters)
-    itemRowEl.classList.add(`aiw-item--${item.type}`);
-
-    // Useful for debugging / future event delegation
-    itemRowEl.dataset.itemId = item.id;
-
-    // Interaction binding
-    if (onItemClick) {
-      itemRowEl.addEventListener("click", () => {
-        onItemClick(item.id);
-      });
-    }
+    const itemRowEl = createItemRow(item, selectedItemId, onItemClick);
 
     container.append(itemRowEl);
   }
 }
 
 /**
+ * Create a single item row element.
+ */
+function createItemRow(
+  item: Item,
+  selectedItemId: string | null,
+  onItemClick: (id: string) => void,
+): HTMLDivElement {
+  const itemRowEl = document.createElement("div");
+
+  // ----------------------------------------------------------
+  // Base styling
+  // ----------------------------------------------------------
+
+  itemRowEl.className = "aiw-items-row";
+
+  // ----------------------------------------------------------
+  // Display label
+  // ----------------------------------------------------------
+
+  const displayLabel = deriveItemLabel(item);
+
+  itemRowEl.textContent = displayLabel;
+
+  // ----------------------------------------------------------
+  // Metadata hooks
+  // ----------------------------------------------------------
+
+  /**
+   * Useful for:
+   * - debugging
+   * - future event delegation
+   * - testing
+   */
+  itemRowEl.dataset.itemId = item.id;
+
+  /**
+   * Future styling hook:
+   * aiw-item--note
+   * aiw-item--prompt
+   * aiw-item--chat
+   */
+  itemRowEl.classList.add(`aiw-item--${item.type}`);
+
+  // ----------------------------------------------------------
+  // Selected-state styling
+  // ----------------------------------------------------------
+
+  if (item.id === selectedItemId) {
+    itemRowEl.classList.add("aiw-items-row--active");
+  }
+
+  // ----------------------------------------------------------
+  // Interaction
+  // ----------------------------------------------------------
+
+  itemRowEl.addEventListener("click", () => {
+    onItemClick(item.id);
+  });
+
+  return itemRowEl;
+}
+
+/**
  * Derives a user-facing label for an item.
  *
- * Priority:
+ * PRIORITY:
  * 1. Non-empty title
- * 2. Cleaned preview from content
- * 3. Fallback placeholder
+ * 2. Content preview
+ * 3. Placeholder fallback
  */
 function deriveItemLabel(item: Item): string {
+  // ----------------------------------------------------------
+  // Prefer explicit title
+  // ----------------------------------------------------------
+
   const title = item.title.trim();
 
   if (title) {
     return title;
   }
 
+  // ----------------------------------------------------------
+  // Normalize content preview
+  // ----------------------------------------------------------
+
+  /**
+   * Collapses repeated whitespace/newlines
+   * into a single readable space.
+   */
   const normalizedContent = item.content.trim().replace(/\s+/g, " ");
+
+  // ----------------------------------------------------------
+  // Empty fallback
+  // ----------------------------------------------------------
 
   if (!normalizedContent) {
     return "Untitled item";
   }
+
+  // ----------------------------------------------------------
+  // Truncate long previews
+  // ----------------------------------------------------------
 
   if (normalizedContent.length > MAX_PREVIEW_LENGTH) {
     return normalizedContent.slice(0, MAX_PREVIEW_LENGTH) + "...";

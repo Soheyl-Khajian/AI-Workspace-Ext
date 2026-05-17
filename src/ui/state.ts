@@ -1,37 +1,62 @@
 // src/ui/state.ts
 // ------------------------------------------------------------
-// UI STATE MODULE (v0)
+// UI STATE MODULE
 //
 // Responsibility:
-// - Holds in-memory UI state for the sidebar
-// - Acts as a controlled cache layer between UI and storage
+// - Holds transient in-memory UI state
+// - Acts as the runtime state layer between storage and UI
+// - Provides controlled access through getters/setters
 //
 // IMPORTANT RULES:
-// - NO IndexedDB access here
+// - NO IndexedDB access
+// - NO rendering
+// - NO DOM access
 // - NO business logic
-// - NO validation
-// - ONLY in-memory state + safe accessors
+// - ONLY state storage + safe accessors
 // ------------------------------------------------------------
 
 import type { Project } from "../models/project";
+import type { Item } from "../models/item";
 
-/**
- * Internal UI state (single source of truth for runtime UI memory)
- *
- * This object must NEVER be exposed directly.
- * All access goes through getter/setter functions.
- */
+// ------------------------------------------------------------
+// INTERNAL STATE SHAPE
+// ------------------------------------------------------------
+
 type UiState = {
+  // ----------------------------------------------------------
+  // Selection state
+  // ----------------------------------------------------------
+
   selectedProjectId: string | null;
+  selectedItemId: string | null;
+
+  // ----------------------------------------------------------
+  // Runtime caches
+  // ----------------------------------------------------------
+
   projectsCache: Project[];
+  itemsCache: Item[];
 };
 
+// ------------------------------------------------------------
+// PRIVATE MODULE STATE
+// ------------------------------------------------------------
+
 /**
- * Private module-scoped state
+ * Single in-memory UI state tree.
+ *
+ * IMPORTANT:
+ * - Never export this object directly
+ * - External modules must use getters/setters only
  */
 const state: UiState = {
+  // Selection
   selectedProjectId: null,
+  selectedItemId: null,
+
+  // Caches
   projectsCache: [],
+  itemsCache: [],
 };
 
 // ------------------------------------------------------------
@@ -47,54 +72,87 @@ export function setSelectedProjectId(projectId: string | null): void {
 }
 
 // ------------------------------------------------------------
+// SELECTED ITEM
+// ------------------------------------------------------------
+
+export function getSelectedItemId(): string | null {
+  return state.selectedItemId;
+}
+
+export function setSelectedItemId(itemId: string | null): void {
+  state.selectedItemId = itemId;
+}
+
+// ------------------------------------------------------------
 // PROJECTS CACHE
 // ------------------------------------------------------------
 
 /**
- * Returns a shallow copy of the cached projects array.
+ * Returns a shallow copy of cached projects.
  *
- * WHY COPY MATTERS:
- * - Prevents external code from mutating internal array structure
- * - Protects against accidental push/splice/sort mutations
+ * WHY:
+ * - Prevents accidental external array mutation
+ * - Protects internal state ownership
  *
  * NOTE:
- * - This is a SHALLOW copy only.
- * - Project objects inside are still shared references.
+ * - This is a shallow copy only
+ * - Nested object references remain shared
  */
 export function getProjects(): Project[] {
   return [...state.projectsCache];
 }
 
 /**
- * Replaces internal project cache with a new array.
+ * Replaces the projects cache.
  *
- * WHY COPY MATTERS:
- * - Prevents external array reference from mutating internal state
- *
- * NOTE:
- * - Still shallow (Project objects are not cloned)
+ * WHY COPY:
+ * - Prevents external references from mutating state later
  */
 export function setProjects(projects: Project[]): void {
   state.projectsCache = [...projects];
 }
 
 // ------------------------------------------------------------
-// RESET (DEV + SAFETY TOOLING)
+// ITEMS CACHE
 // ------------------------------------------------------------
 
 /**
- * Resets UI state to initial defaults.
+ * Returns a shallow copy of cached items.
+ */
+export function getItems(): Item[] {
+  return [...state.itemsCache];
+}
+
+/**
+ * Replaces the items cache.
+ */
+export function setItems(items: Item[]): void {
+  state.itemsCache = [...items];
+}
+
+// ------------------------------------------------------------
+// RESET STATE
+// ------------------------------------------------------------
+
+/**
+ * Resets all transient UI state.
  *
  * USE CASES:
- * - SPA reinitialization (ChatGPT navigation)
- * - debugging stale state issues
- * - dev seeding cycles
+ * - Extension reinjection
+ * - Hot reload cycles
+ * - SPA navigation recovery
+ * - Debugging stale UI state
  *
- * WARNING:
+ * IMPORTANT:
  * - Does NOT touch IndexedDB
- * - Does NOT reload data automatically
+ * - Does NOT automatically reload storage data
  */
 export function resetState(): void {
+  // Selection
   state.selectedProjectId = null;
+  state.selectedItemId = null;
+
+  // Caches
   state.projectsCache = [];
+  state.itemsCache = [];
 }
