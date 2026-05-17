@@ -388,6 +388,50 @@
     }
   });
 
+  // src/ui/renderItemDetails.ts
+  function renderItemDetails(container, item) {
+    container.textContent = "";
+    if (item === null) {
+      const emptyStateEl = document.createElement("div");
+      emptyStateEl.className = "aiw-empty";
+      emptyStateEl.textContent = "No item selected yet";
+      container.append(emptyStateEl);
+      return;
+    }
+    const wrapperEl = document.createElement("div");
+    wrapperEl.className = "aiw-item-details__wrapper";
+    container.append(wrapperEl);
+    const titleEl = document.createElement("div");
+    const hasTitle = Boolean(item.title && item.title.trim());
+    if (!hasTitle) {
+      titleEl.className = "aiw-empty";
+      titleEl.textContent = "Untitled item";
+    } else {
+      titleEl.className = "aiw-item-details__title";
+      titleEl.textContent = item.title;
+    }
+    wrapperEl.append(titleEl);
+    const typeEl = document.createElement("div");
+    typeEl.className = "aiw-item-details__type";
+    typeEl.textContent = item.type;
+    wrapperEl.append(typeEl);
+    const contentEl = document.createElement("div");
+    const hasContent = Boolean(item.content && item.content.trim());
+    if (!hasContent) {
+      contentEl.className = "aiw-empty";
+      contentEl.textContent = "No content";
+    } else {
+      contentEl.className = "aiw-item-details__content";
+      contentEl.textContent = item.content;
+    }
+    wrapperEl.append(contentEl);
+  }
+  var init_renderItemDetails = __esm({
+    "src/ui/renderItemDetails.ts"() {
+      "use strict";
+    }
+  });
+
   // src/ui/state.ts
   function getSelectedProjectId() {
     return state.selectedProjectId;
@@ -441,6 +485,7 @@
       root,
       projectsListEl: mustQuery(root, "#aiw-projects-list"),
       itemsListEl: mustQuery(root, "#aiw-items-list"),
+      itemDetailsEl: mustQuery(root, "#aiw-item-details"),
       addProjectBtn: mustQuery(
         root,
         "#aiw-add-project-button"
@@ -490,9 +535,6 @@
         dom.projectsListEl,
         projects,
         selectedProjectId,
-        // ------------------------------------------------------
-        // Project click handler
-        // ------------------------------------------------------
         async (clickedProjectId) => {
           setSelectedProjectId(clickedProjectId);
           setSelectedItemId(null);
@@ -504,38 +546,35 @@
     function renderItemsView() {
       const selectedProjectId = getSelectedProjectId();
       if (selectedProjectId === null) {
-        renderItems(dom.itemsListEl, [], null);
+        renderItems(dom.itemsListEl, [], null, () => {
+        });
         return;
       }
       const items = getItems();
       const selectedItemId = getSelectedItemId();
-      renderItems(
-        dom.itemsListEl,
-        items,
-        selectedItemId,
-        // ------------------------------------------------------
-        // Item click handler
-        // ------------------------------------------------------
-        (clickedItemId) => {
-          setSelectedItemId(clickedItemId);
-          renderItemsView();
-        }
-      );
+      renderItems(dom.itemsListEl, items, selectedItemId, (clickedItemId) => {
+        setSelectedItemId(clickedItemId);
+        renderItemDetailsView();
+        renderItemsView();
+      });
+    }
+    function renderItemDetailsView() {
+      const selectedItemId = getSelectedItemId();
+      const items = getItems();
+      const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
+      renderItemDetails(dom.itemDetailsEl, selectedItem);
     }
     function renderAllViews() {
       renderProjectsView();
       renderItemsView();
+      renderItemDetailsView();
     }
     dom.addProjectBtn.addEventListener("click", async () => {
       const name = window.prompt("Enter project name:");
-      if (name === null) {
-        return;
-      }
-      const trimmedName = name.trim();
-      if (!trimmedName) {
-        return;
-      }
-      const project = await createProject(trimmedName);
+      if (!name) return;
+      const trimmed = name.trim();
+      if (!trimmed) return;
+      const project = await createProject(trimmed);
       await refreshProjectsState();
       setSelectedProjectId(project.id);
       setSelectedItemId(null);
@@ -544,36 +583,23 @@
     });
     dom.addItemBtn.addEventListener("click", async () => {
       const title = window.prompt("Enter item title:");
-      if (title === null) {
-        return;
-      }
-      const trimmedTitle = title.trim();
-      if (!trimmedTitle) {
-        return;
-      }
+      if (!title) return;
       const content = window.prompt("Enter item content:");
-      if (content === null) {
-        return;
-      }
+      if (!content) return;
+      const trimmedTitle = title.trim();
       const trimmedContent = content.trim();
-      if (!trimmedContent) {
-        return;
-      }
+      if (!trimmedTitle || !trimmedContent) return;
       const selectedProjectId = getSelectedProjectId();
-      if (selectedProjectId === null) {
-        return;
-      }
+      if (!selectedProjectId) return;
       const item = await createItem(
         selectedProjectId,
         "note",
         trimmedTitle,
         trimmedContent,
-        {
-          createdFrom: "manual"
-        }
+        { createdFrom: "manual" }
       );
-      setSelectedItemId(item.id);
       await refreshItemsState();
+      setSelectedItemId(item.id);
       renderAllViews();
     });
     await refreshProjectsState();
@@ -586,6 +612,7 @@
       init_storage();
       init_renderProjects();
       init_renderItems();
+      init_renderItemDetails();
       init_state();
       init_dom();
     }

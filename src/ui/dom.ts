@@ -17,6 +17,7 @@ export type SidebarDom = {
   root: HTMLElement;
   projectsListEl: HTMLDivElement;
   itemsListEl: HTMLDivElement;
+  itemDetailsEl: HTMLDivElement;
   addProjectBtn: HTMLButtonElement;
   addItemBtn: HTMLButtonElement;
 };
@@ -27,6 +28,7 @@ export function createSidebarDom(root: HTMLElement): SidebarDom {
     root,
     projectsListEl: mustQuery<HTMLDivElement>(root, "#aiw-projects-list"),
     itemsListEl: mustQuery<HTMLDivElement>(root, "#aiw-items-list"),
+    itemDetailsEl: mustQuery(root, "#aiw-item-details"),
     addProjectBtn: mustQuery<HTMLButtonElement>(
       root,
       "#aiw-add-project-button",

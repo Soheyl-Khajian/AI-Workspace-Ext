@@ -1,17 +1,18 @@
 // src/ui/sidebarController.ts
 // ------------------------------------------------------------
-// SIDEBAR CONTROLLER
+// SIDEBAR CONTROLLER (MVP STABLE VERSION)
 //
 // Responsibility:
 // - Orchestrates storage ↔ state ↔ rendering flow
-// - Wires UI events to application behavior
-// - Coordinates refresh + rerender cycles
+// - Ensures UI state consistency
+// - Handles user interaction events
 //
-// IMPORTANT RULES:
-// - NO direct DOM querying here
-// - NO HTML generation here
-// - Rendering delegated to renderers
-// - Persistent storage delegated to storage layer
+// Core rules:
+// - No DOM querying here
+// - No HTML generation here
+// - Storage access ONLY via storage layer
+// - Rendering delegated to render functions
+// - ALWAYS keep async state in sync before rendering
 // ------------------------------------------------------------
 
 import {
@@ -23,6 +24,7 @@ import {
 
 import { renderProjects } from "./renderProjects";
 import { renderItems } from "./renderItems";
+import { renderItemDetails } from "./renderItemDetails";
 
 import {
   getSelectedProjectId,
@@ -45,19 +47,11 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
   const dom = createSidebarDom(root);
 
   // ----------------------------------------------------------
-  // STORAGE → STATE SYNC
+  // STATE SYNC: PROJECTS
   // ----------------------------------------------------------
 
-  /**
-   * Refresh projects cache from IndexedDB.
-   *
-   * ALSO:
-   * - validates selected project still exists
-   * - clears invalid selection automatically
-   */
   async function refreshProjectsState(): Promise<void> {
     const projects = await listProjects();
-
     setProjects(projects);
 
     const selectedProjectId = getSelectedProjectId();
@@ -71,37 +65,21 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
     }
   }
 
-  /**
-   * Refresh items cache for selected project.
-   *
-   * IMPORTANT:
-   * Items are scoped to selected project.
-   */
+  // ----------------------------------------------------------
+  // STATE SYNC: ITEMS
+  // ----------------------------------------------------------
+
   async function refreshItemsState(): Promise<void> {
     const selectedProjectId = getSelectedProjectId();
-
-    // --------------------------------------------------------
-    // No selected project
-    // --------------------------------------------------------
 
     if (selectedProjectId === null) {
       setItems([]);
       setSelectedItemId(null);
-
       return;
     }
 
-    // --------------------------------------------------------
-    // Load project items
-    // --------------------------------------------------------
-
     const items = await listItemsByProject(selectedProjectId);
-
     setItems(items);
-
-    // --------------------------------------------------------
-    // Validate selected item still exists
-    // --------------------------------------------------------
 
     const selectedItemId = getSelectedItemId();
 
@@ -118,29 +96,21 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
 
   function renderProjectsView(): void {
     const projects = getProjects();
-
     const selectedProjectId = getSelectedProjectId();
 
     renderProjects(
       dom.projectsListEl,
       projects,
       selectedProjectId,
-
-      // ------------------------------------------------------
-      // Project click handler
-      // ------------------------------------------------------
-
       async (clickedProjectId) => {
-        // Switch selected project
+        // 1. update selection state
         setSelectedProjectId(clickedProjectId);
-
-        // Item selection belongs to project scope
         setSelectedItemId(null);
 
-        // Refresh dependent item cache
+        // 2. sync dependent state BEFORE rendering
         await refreshItemsState();
 
-        // Rerender all affected views
+        // 3. render only after state is consistent
         renderAllViews();
       },
     );
@@ -153,56 +123,46 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
   function renderItemsView(): void {
     const selectedProjectId = getSelectedProjectId();
 
-    // --------------------------------------------------------
-    // No project selected
-    // --------------------------------------------------------
-
     if (selectedProjectId === null) {
-      renderItems(dom.itemsListEl, [], null);
-
+      renderItems(dom.itemsListEl, [], null, () => {});
       return;
     }
 
-    // --------------------------------------------------------
-    // Render selected project items
-    // --------------------------------------------------------
-
     const items = getItems();
-
     const selectedItemId = getSelectedItemId();
 
-    renderItems(
-      dom.itemsListEl,
-      items,
-      selectedItemId,
+    renderItems(dom.itemsListEl, items, selectedItemId, (clickedItemId) => {
+      // 1. update state
+      setSelectedItemId(clickedItemId);
 
-      // ------------------------------------------------------
-      // Item click handler
-      // ------------------------------------------------------
-
-      (clickedItemId) => {
-        // Pure UI state change
-        setSelectedItemId(clickedItemId);
-
-        // Only item UI affected
-        renderItemsView();
-      },
-    );
+      // 2. render dependent UI only (NO async refresh needed here)
+      renderItemDetailsView();
+      renderItemsView();
+    });
   }
 
   // ----------------------------------------------------------
-  // FULL UI RERENDER
+  // RENDER: ITEM DETAILS
   // ----------------------------------------------------------
 
-  /**
-   * Centralized render pipeline.
-   *
-   * Keeps render order predictable and makes
-   * future expansion easier.
-   */
+  function renderItemDetailsView(): void {
+    const selectedItemId = getSelectedItemId();
+    const items = getItems();
+
+    const selectedItem =
+      items.find((item) => item.id === selectedItemId) ?? null;
+
+    renderItemDetails(dom.itemDetailsEl, selectedItem);
+  }
+
+  // ----------------------------------------------------------
+  // FULL RENDER PIPELINE
+  // ----------------------------------------------------------
+
   function renderAllViews(): void {
     renderProjectsView();
     renderItemsView();
+    renderItemDetailsView();
   }
 
   // ----------------------------------------------------------
@@ -211,41 +171,19 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
 
   dom.addProjectBtn.addEventListener("click", async () => {
     const name = window.prompt("Enter project name:");
+    if (!name) return;
 
-    if (name === null) {
-      return;
-    }
+    const trimmed = name.trim();
+    if (!trimmed) return;
 
-    const trimmedName = name.trim();
-
-    if (!trimmedName) {
-      return;
-    }
-
-    // ------------------------------------------------------
-    // Persist project
-    // ------------------------------------------------------
-
-    const project = await createProject(trimmedName);
-
-    // ------------------------------------------------------
-    // Refresh state
-    // ------------------------------------------------------
+    const project = await createProject(trimmed);
 
     await refreshProjectsState();
 
-    // Auto-select created project
     setSelectedProjectId(project.id);
-
-    // Reset item selection for new scope
     setSelectedItemId(null);
 
-    // Refresh items cache for selected project
     await refreshItemsState();
-
-    // ------------------------------------------------------
-    // Rerender UI
-    // ------------------------------------------------------
 
     renderAllViews();
   });
@@ -256,85 +194,39 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
 
   dom.addItemBtn.addEventListener("click", async () => {
     const title = window.prompt("Enter item title:");
-
-    if (title === null) {
-      return;
-    }
-
-    const trimmedTitle = title.trim();
-
-    if (!trimmedTitle) {
-      return;
-    }
+    if (!title) return;
 
     const content = window.prompt("Enter item content:");
+    if (!content) return;
 
-    if (content === null) {
-      return;
-    }
-
+    const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
 
-    if (!trimmedContent) {
-      return;
-    }
+    if (!trimmedTitle || !trimmedContent) return;
 
     const selectedProjectId = getSelectedProjectId();
-
-    // ------------------------------------------------------
-    // Safety guard
-    // ------------------------------------------------------
-
-    if (selectedProjectId === null) {
-      return;
-    }
-
-    // ------------------------------------------------------
-    // Persist item
-    // ------------------------------------------------------
+    if (!selectedProjectId) return;
 
     const item = await createItem(
       selectedProjectId,
       "note",
       trimmedTitle,
       trimmedContent,
-      {
-        createdFrom: "manual",
-      },
+      { createdFrom: "manual" },
     );
-
-    // ------------------------------------------------------
-    // Update UI selection state
-    // ------------------------------------------------------
-
-    setSelectedItemId(item.id);
-
-    // ------------------------------------------------------
-    // Refresh cache
-    // ------------------------------------------------------
 
     await refreshItemsState();
 
-    // ------------------------------------------------------
-    // Rerender UI
-    // ------------------------------------------------------
+    setSelectedItemId(item.id);
 
     renderAllViews();
   });
 
   // ----------------------------------------------------------
-  // BOOT SEQUENCE
+  // BOOTSTRAP
   // ----------------------------------------------------------
 
-  /**
-   * Initial application hydration.
-   *
-   * ORDER MATTERS:
-   * storage → state → render
-   */
   await refreshProjectsState();
-
   await refreshItemsState();
-
   renderAllViews();
 }
