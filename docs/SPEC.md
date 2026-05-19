@@ -1,249 +1,919 @@
-# AI Workspace (v0) — SPEC
+# AI Workspace (v0) — Technical Specification
 
-## Purpose
+Version: `0.1`
+Target Platform: Chrome Extension (Manifest V3)
+Primary Host: `chatgpt.com`
+Architecture Style: Local-first, vertical-slice development
 
-AI Workspace is a local-first browser extension that adds a persistent project workspace alongside ChatGPT. It helps the user organize work into Projects and Items (notes/snippets/tasks/links) and generate structured “context packs” to paste into ChatGPT.
+---
 
-v0 is designed for a single user (the developer) and runs on `chatgpt.com` only.
+# 1. Purpose
 
-## Non-goals (v0)
+AI Workspace is a local-first browser extension that injects a persistent workspace sidebar into ChatGPT.
 
-- No cloud sync
-- No collaboration / multi-user
-- No AI features inside the extension
-- No full chat scraping or automatic ingestion of conversations
-- No advanced editor (plain input/textarea is sufficient)
-- No global search across all items (optional later)
+The extension allows users to:
 
-## Core Concepts
+- organize work into Projects
+- store structured Items under Projects
+- capture selected text from pages
+- build reusable context packs for AI workflows
+- export/import local workspace data
 
-### Project
+The system is intentionally minimal in v0.
 
-A Project is the top-level container for work. All captured text and user-created content is stored as Items under a Project.
+The goal is reliability, persistence, and workflow utility — not feature breadth.
 
-### Item
+---
 
-An Item is a single unit of stored content. Items belong to exactly one Project.
+# 2. Scope (v0)
 
-Supported Item types (v0):
+## Included
+
+### Projects
+
+- create
+- list
+- rename
+- delete
+
+### Items
+
+- create
+- list by project
+- update
+- delete
+
+### Capture
+
+- manual item creation
+- save current text selection into active project
+
+### Utility
+
+- context pack generation
+- clipboard copy
+- JSON export/import
+
+### Persistence
+
+- IndexedDB
+- local-only storage
+
+---
+
+# 3. Non-Goals (v0)
+
+The following are explicitly out of scope:
+
+- cloud sync
+- authentication
+- collaboration
+- AI API integration
+- automatic conversation ingestion
+- semantic search
+- markdown editor
+- rich text editor
+- multi-device sync
+- encryption
+- chat history scraping
+- background sync
+- browser support outside Chrome MV3
+
+---
+
+# 4. Architectural Principles
+
+## 4.1 Local-first
+
+All user data is stored locally inside IndexedDB.
+
+No remote server exists in v0.
+
+---
+
+## 4.2 Vertical Slice Development
+
+Features are implemented end-to-end in isolated slices.
+
+Example:
+
+- model
+- storage
+- state
+- rendering
+- interaction
+
+...for a single feature before moving to the next.
+
+---
+
+## 4.3 Separation of Responsibilities
+
+### Storage Layer
+
+Responsible for:
+
+- IndexedDB access
+- persistence
+- schema upgrades
+
+Not responsible for:
+
+- DOM
+- rendering
+- UI state
+
+---
+
+### State Layer
+
+Responsible for:
+
+- in-memory UI state
+- selected entities
+- cached data snapshots
+
+Not responsible for:
+
+- rendering
+- IndexedDB logic
+
+---
+
+### Render Layer
+
+Responsible for:
+
+- DOM rendering
+- HTML generation
+- visual updates
+
+Not responsible for:
+
+- persistence
+- business logic
+
+---
+
+### Controller Layer
+
+Responsible for:
+
+- orchestration
+- event wiring
+- coordinating state + storage + rendering
+
+Not responsible for:
+
+- direct DOM querying
+- HTML generation
+- IndexedDB implementation details
+
+---
+
+# 5. Data Model
+
+---
+
+# 5.1 General Conventions
+
+## IDs
+
+- all IDs are strings
+- IDs must be globally unique
+
+Recommended format:
+
+- `crypto.randomUUID()`
+
+---
+
+## Timestamps
+
+All timestamps use:
+
+```ts
+number; // epoch milliseconds
+```
+
+````
+
+Example:
+
+```ts
+Date.now();
+```
+
+---
+
+## Serialization
+
+All stored objects must be JSON-serializable.
+
+No functions, classes, Maps, Sets, or binary data.
+
+---
+
+# 5.2 Project Model
+
+```ts
+type Project = {
+  id: string;
+  name: string;
+
+  createdAt: number;
+
+  updatedAt?: number;
+  description?: string;
+};
+```
+
+---
+
+## Project Constraints
+
+### Required
+
+- `id`
+- `name`
+- `createdAt`
+
+### Optional
+
+- `updatedAt`
+- `description`
+
+---
+
+## Validation Rules
+
+### `name`
+
+- trimmed before persistence
+- cannot be empty after trimming
+
+---
+
+## Uniqueness
+
+Project name uniqueness is NOT enforced in v0.
+
+Duplicate names are allowed.
+
+---
+
+# 5.3 Item Model
+
+```ts
+type ItemType = "note" | "snippet" | "task" | "link";
+
+type Item = {
+  id: string;
+
+  projectId: string;
+
+  type: ItemType;
+
+  title: string;
+  content: string;
+
+  createdAt: number;
+
+  updatedAt?: number;
+
+  meta?: ItemMeta;
+};
+```
+
+---
+
+# 5.4 Item Metadata
+
+```ts
+type ItemMeta = {
+  sourceUrl?: string;
+
+  createdFrom?: "manual" | "selection";
+
+  language?: string;
+
+  selectionContext?: string;
+};
+```
+
+---
+
+# 5.5 Item Constraints
+
+## Required
+
+- `id`
+- `projectId`
+- `type`
+- `title`
+- `content`
+- `createdAt`
+
+---
+
+## Relationships
+
+Each Item belongs to exactly one Project.
+
+`projectId` must reference an existing Project.
+
+---
+
+## Content Rules
+
+### `content`
+
+- must always be a string
+- binary data unsupported in v0
+
+---
+
+## Type Rules
+
+Supported types:
 
 - `note`
 - `snippet`
 - `task`
 - `link`
 
-## Data Model
+Type behavior:
 
-### Field conventions
+| Type    | Meaning           |
+| ------- | ----------------- |
+| note    | freeform text     |
+| snippet | code/text snippet |
+| task    | single task text  |
+| link    | URL content       |
 
-- All IDs are strings.
-- Timestamps are stored as epoch milliseconds (`number`).
-- Strings are UTF-8.
-- All objects should be JSON-serializable.
+---
 
-### Project shape
+# 6. Persistence
 
-Required:
+---
 
-- `id: string` — globally unique ID
-- `name: string` — human-readable project name
-- `createdAt: number` — epoch ms
+# 6.1 Storage Engine
 
-Optional:
+Persistence uses:
 
-- `updatedAt: number` — epoch ms
-- `description: string` — short free-text description
+- IndexedDB
+- directly inside the content script
 
-Constraints:
+Service worker persistence is intentionally avoided in v0.
 
-- `name` must be non-empty after trimming whitespace.
-- `name` uniqueness is not enforced in v0 (two projects may share a name), but the UI should discourage duplicates.
+Reason:
 
-### Item shape
+- simpler architecture
+- avoids MV3 service worker lifecycle complexity
 
-Required:
+---
 
-- `id: string` — globally unique ID
-- `projectId: string` — must match an existing Project `id`
-- `type: "note" | "snippet" | "task" | "link"`
-- `title: string` — short label; can be empty in v0 but UI should generate a default
-- `content: string` — main payload; meaning depends on `type`
-- `createdAt: number` — epoch ms
+# 6.2 Database Definition
 
-Optional:
+```ts
+dbName = "aiw_db";
+dbVersion = 1;
+```
 
-- `updatedAt: number` — epoch ms
-- `meta: object` — optional metadata (see below)
+---
 
-Constraints:
+# 6.3 Object Stores
 
-- Every Item must belong to exactly one Project.
-- `type` is immutable after creation in v0 (optional; if you want it mutable, decide now and keep it consistent).
-- `content` must be a string. No binary in v0.
+## projects
 
-### Item `meta` shape (optional)
+### Key Path
 
-All fields optional:
+```ts
+id;
+```
 
-- `sourceUrl: string` — page URL where capture occurred (e.g., current chat URL)
-- `createdFrom: "manual" | "selection"` — how the item was created
-- `language: string` — only meaningful for `snippet` (e.g., "js", "ts", "bash")
-- `selectionContext: string` — optional small context around selection (future)
+### Stored Values
 
-Constraints:
+```ts
+Project;
+```
 
-- No secrets (tokens/keys) are ever stored in metadata.
-- Metadata should be safe to export.
+---
 
-### Type-specific semantics
+## items
 
-- `note`: `content` is free text.
-- `snippet`: `content` is code text; `meta.language` may be set.
-- `task`: `content` is task text (single task per item in v0). Completion state is not stored in v0 unless explicitly added as a field (see “Future Extensions”).
-- `link`: `content` is a URL string; `title` is the label.
+### Key Path
 
-## Storage (IndexedDB)
+```ts
+id;
+```
 
-### Storage goals
+### Stored Values
 
-- Local-first persistence
-- Efficient retrieval of items by project
-- Minimal schema for v0 to reduce migration complexity
+```ts
+Item;
+```
 
-### Database
+### Indexes
 
-- `dbName`: `aiw_db`
-- `dbVersion`: `1`
+#### byProjectId
 
-### Object stores
+```ts
+projectId;
+```
 
-1. `projects`
+Non-unique.
 
-- Key path: `id`
-- Value: Project objects
+Used for:
 
-2. `items`
+- filtering items by project
 
-- Key path: `id`
-- Value: Item objects
-- Indexes:
-  - `byProjectId` on `projectId` (non-unique)
-  - `byType` on `type` (non-unique) (optional in v0; include only if you know you’ll filter by type early)
+---
 
-### Upgrade policy
+# 6.4 Schema Upgrade Policy
 
-- Schema changes require incrementing `dbVersion` and implementing an upgrade path.
-- v0 avoids schema churn; fields may be added in a backward-compatible way, but stores and key paths should remain stable.
+Schema changes require:
 
-## Operations (v0)
+- incrementing database version
+- implementing upgrade migration logic
 
-### Projects
+Migrations must ONLY:
 
-- Create Project
-  - Input: `name` (required), `description` (optional)
-  - Output: stored Project record
+- create/remove stores
+- create/remove indexes
+- transform schema data
 
-- List Projects
-  - Output: projects sorted by `createdAt` ascending or descending (pick one and keep consistent)
+Migrations must NOT:
 
-- Rename Project
-  - Updates `name` and `updatedAt`
+- contain UI logic
+- contain rendering logic
 
-- Delete Project
-  - v0 behavior: **cascade delete** all Items with matching `projectId`
-  - Rationale: simpler UX and avoids orphaned items
+---
 
-### Items
+# 7. Storage API Contract
 
-- Create Item
-  - Input: `projectId`, `type`, `title`, `content`, optional `meta`
+---
 
-- List Items by Project
-  - Query uses `items.byProjectId`
+# 7.1 createProject
 
-- Update Item
-  - Updates `title` and/or `content` and `updatedAt`
+## Inputs
 
-- Delete Item
-  - Removes from `items`
+```ts
+name: string
+description?: string
+```
 
-## UI Mapping (v0)
+---
 
-### Sidebar
+## Behavior
 
-- Visible only on `chatgpt.com`
-- Injected as an overlay anchored to the right side
-- UI structure loaded from `sidebar.html`
-- CSS loaded from `sidebar.css` via extension URL injection into page `<head>`
+- trims name
+- validates non-empty
+- generates ID
+- creates timestamps
+- persists project
 
-### Minimum UI elements
+---
 
-- Project list
-- “New Project” button
-- Items list for active project (optional in early v0, but planned)
-- “Save selection” action (button or context menu later)
+## Returns
 
-UI State (v0)
+```ts
+Promise<Project>;
+```
 
-Define explicitly:
+---
 
-selectedProjectId: string | null (ephemeral UI state)
-projects: Project[] (loaded from IndexedDB at startup)
+## Errors
 
-Rule:
+Throws if:
 
-UI state is ephemeral
-DB is persistent
-render is derived from UI state + cached DB snapshot (not live queries inside render)
+- IndexedDB write fails
+- validation fails
 
-### Behavior rules
+---
 
-- Sidebar injection must be idempotent (never insert twice).
-- CSS injection must be idempotent (never insert duplicate `<link>`).
-- No scraping of chat history; only intentional user capture.
+# 7.2 listProjects
 
-## Capture Workflow (v0)
+## Inputs
 
-### Manual creation
+None.
 
-User can create a note/snippet/task/link item via sidebar UI under the active project.
+---
 
-### Selection capture
+## Behavior
 
-User selects text on the page and saves it as a new Item:
+Returns all stored projects.
 
-- `content` = selected text
-- `meta.sourceUrl` = current URL
-- `meta.createdFrom` = `"selection"`
+Sorting policy:
 
-Context menus are optional after basic capture works.
+```txt
+newest first
+```
 
-## Export / Import (planned, not required in the earliest v0)
+Sorted by:
+
+```txt
+createdAt DESC
+```
+
+---
+
+## Returns
+
+```ts
+Promise<Project[]>;
+```
+
+---
+
+## Errors
+
+Throws if IndexedDB read fails.
+
+---
+
+# 7.3 deleteProject
+
+## Inputs
+
+```ts
+projectId: string;
+```
+
+---
+
+## Behavior
+
+- deletes matching project
+- cascade deletes all items with matching `projectId`
+
+If project does not exist:
+
+```txt
+no-op
+```
+
+---
+
+## Returns
+
+```ts
+Promise<void>;
+```
+
+---
+
+# 7.4 createItem
+
+## Inputs
+
+```ts
+projectId
+type
+title
+content
+meta?
+```
+
+---
+
+## Behavior
+
+- validates project existence
+- creates Item
+- persists Item
+
+---
+
+## Returns
+
+```ts
+Promise<Item>;
+```
+
+---
+
+# 7.5 listItemsByProject
+
+## Inputs
+
+```ts
+projectId: string;
+```
+
+---
+
+## Behavior
+
+Uses IndexedDB index:
+
+```txt
+byProjectId
+```
+
+Sorting policy:
+
+```txt
+newest first
+```
+
+Sorted by:
+
+```txt
+createdAt DESC
+```
+
+---
+
+## Returns
+
+```ts
+Promise<Item[]>;
+```
+
+---
+
+# 7.6 updateItem
+
+## Inputs
+
+```ts
+itemId: string;
+partialUpdate: Partial<Item>;
+```
+
+---
+
+## Behavior
+
+- loads existing item
+- merges mutable fields
+- updates `updatedAt`
+
+Immutable fields:
+
+- `id`
+- `projectId`
+- `createdAt`
+
+---
+
+## Returns
+
+```ts
+Promise<Item>;
+```
+
+---
+
+## Errors
+
+Throws if:
+
+- item does not exist
+- IndexedDB operation fails
+
+---
+
+# 7.7 deleteItem
+
+## Inputs
+
+```ts
+itemId: string;
+```
+
+---
+
+## Behavior
+
+Permanently deletes item.
+
+Missing item:
+
+```txt
+no-op
+```
+
+---
+
+## Returns
+
+```ts
+Promise<void>;
+```
+
+---
+
+# 8. UI Architecture
+
+---
+
+# 8.1 Sidebar Injection
+
+The extension injects a fixed-position sidebar into ChatGPT pages.
+
+Requirements:
+
+- idempotent injection
+- no duplicate sidebars
+- no duplicate CSS injection
+
+---
+
+# 8.2 Sidebar Layout
+
+Minimum v0 layout:
+
+```txt
+Header
+Projects Section
+Items Section
+Item Details Section
+Footer Actions
+```
+
+---
+
+# 8.3 UI State
+
+```ts
+selectedProjectId: string | null
+selectedItemId: string | null
+
+projects: Project[]
+items: Item[]
+```
+
+---
+
+# 8.4 State Rules
+
+UI state is ephemeral.
+
+IndexedDB is persistent.
+
+Rendering must derive from:
+
+```txt
+state + cached storage snapshot
+```
+
+NOT from:
+
+```txt
+live IndexedDB queries inside render functions
+```
+
+---
+
+# 9. Rendering Rules
+
+Renderers must:
+
+- be pure
+- accept explicit inputs
+- avoid global state access
+- avoid persistence calls
+
+Renderers must NOT:
+
+- query IndexedDB
+- mutate application state
+- attach global listeners repeatedly
+
+---
+
+# 10. Capture Workflow
+
+---
+
+# 10.1 Manual Creation
+
+User creates Item manually through sidebar controls.
+
+---
+
+# 10.2 Selection Capture
+
+Workflow:
+
+1. user selects page text
+2. user clicks "Save Selection"
+3. extension creates Item
+
+Stored values:
+
+```ts
+content = selected text
+meta.sourceUrl = current URL
+meta.createdFrom = "selection"
+```
+
+---
+
+# 11. Context Pack Generator
+
+User selects multiple Items.
+
+The system generates deterministic grouped output.
+
+Output groups Items by type.
+
+Generated text is copied to clipboard.
+
+---
+
+# 12. Export / Import
+
+---
+
+# 12.1 Export
 
 Export format:
 
-- JSON file containing:
-  - `schemaVersion: number`
-  - `exportedAt: number`
-  - `projects: Project[]`
-  - `items: Item[]`
+```ts
+{
+  schemaVersion: number;
+  exportedAt: number;
 
-Import behavior (future):
+  projects: Project[];
+  items: Item[];
+}
+```
 
-- Either “merge” or “replace” mode (choose later)
+---
 
-## Security & Privacy
+# 12.2 Import
 
-- All data stored locally in IndexedDB.
-- No network calls for user data.
-- Web-accessible resources are restricted to only required UI assets and only for `chatgpt.com/*`.
-- Never store API keys or credentials anywhere in the extension.
+v0 policy:
 
-## Future Extensions (out of scope for v0)
+```txt
+replace-all
+```
 
-- Item completion field for `task` (`done: boolean`)
-- Tags and global search
-- Multi-site capture
-- Context pack generator
-- Version history and backup automation
-- Encrypted sync
+Behavior:
+
+- validates schemaVersion
+- clears current DB
+- imports provided data
+
+Unknown schema versions must be rejected.
+
+---
+
+# 13. Security & Privacy
+
+## Guarantees
+
+- no cloud storage
+- no telemetry
+- no user tracking
+- no AI data transmission
+
+---
+
+## Restrictions
+
+The extension must never store:
+
+- API keys
+- auth tokens
+- cookies
+- credentials
+
+---
+
+# 14. MVP Completion Criteria
+
+The MVP is complete only when all are true:
+
+- Projects persist correctly
+- Items persist correctly
+- Item update/delete works
+- Selection capture works
+- Context pack generation works
+- Export/import works
+- Sidebar injection is stable
+- No duplicate injection bugs remain
+
+---
+
+# 15. Future Extensions (Out of Scope)
+
+Potential future features:
+
+- task completion state
+- tags
+- full-text search
+- encrypted sync
+- multi-device sync
+- drag/drop ordering
+- markdown editor
+- chat ingestion
+- embeddings/vector search
+- AI summarization
+- workspace templates
+
+```
+````

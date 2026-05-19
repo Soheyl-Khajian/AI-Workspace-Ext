@@ -1,43 +1,35 @@
 // src/ui/sidebarController.ts
 // ------------------------------------------------------------
-// SIDEBAR CONTROLLER (MVP STABLE VERSION)
+// SIDEBAR CONTROLLER
 //
 // Responsibility:
-// - Orchestrates storage ↔ state ↔ rendering flow
-// - Ensures UI state consistency
-// - Handles user interaction events
+// - Orchestrate UI flow
+// - Coordinate actions, state sync, and rendering
+// - Handle user-driven events
 //
-// Core rules:
-// - No DOM querying here
-// - No HTML generation here
-// - Storage access ONLY via storage layer
-// - Rendering delegated to render functions
-// - ALWAYS keep async state in sync before rendering
+// Rules:
+// - No HTML generation
+// - No direct DOM querying
+// - Rendering delegated to renderer
+// - State synchronization delegated to sync layer
+// - State transitions delegated to actions layer
 // ------------------------------------------------------------
 
-import {
-  createProject,
-  listProjects,
-  listItemsByProject,
-  createItem,
-} from "../storage/index";
-
-import { renderProjects } from "./renderProjects";
-import { renderItems } from "./renderItems";
-import { renderItemDetails } from "./renderItemDetails";
+import { createProject, createItem } from "../storage/index";
 
 import {
   getSelectedProjectId,
   setSelectedProjectId,
-  getSelectedItemId,
   setSelectedItemId,
-  getProjects,
-  setProjects,
-  getItems,
-  setItems,
 } from "./state";
 
 import { createSidebarDom } from "./dom";
+
+import { refreshProjectsState, refreshItemsState } from "./sidebarStateSync";
+
+import { selectProject, selectItem } from "./sidebarActions";
+
+import { renderUi } from "./sidebarRenderer";
 
 // ------------------------------------------------------------
 // MAIN INITIALIZER
@@ -47,136 +39,65 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
   const dom = createSidebarDom(root);
 
   // ----------------------------------------------------------
-  // STATE SYNC: PROJECTS
+  // ACTION DEPENDENCIES
   // ----------------------------------------------------------
 
-  async function refreshProjectsState(): Promise<void> {
-    const projects = await listProjects();
-    setProjects(projects);
+  const projectSelectionDeps = {
+    setSelectedProjectId,
+    setSelectedItemId,
+    refreshItemsState,
+  };
 
-    const selectedProjectId = getSelectedProjectId();
-
-    const stillExists = projects.some(
-      (project) => project.id === selectedProjectId,
-    );
-
-    if (!stillExists) {
-      setSelectedProjectId(null);
-    }
-  }
+  const itemSelectionDeps = {
+    setSelectedItemId,
+  };
 
   // ----------------------------------------------------------
-  // STATE SYNC: ITEMS
+  // RENDER PIPELINE
   // ----------------------------------------------------------
 
-  async function refreshItemsState(): Promise<void> {
-    const selectedProjectId = getSelectedProjectId();
-
-    if (selectedProjectId === null) {
-      setItems([]);
-      setSelectedItemId(null);
-      return;
-    }
-
-    const items = await listItemsByProject(selectedProjectId);
-    setItems(items);
-
-    const selectedItemId = getSelectedItemId();
-
-    const stillExists = items.some((item) => item.id === selectedItemId);
-
-    if (!stillExists) {
-      setSelectedItemId(null);
-    }
-  }
-
-  // ----------------------------------------------------------
-  // RENDER: PROJECTS
-  // ----------------------------------------------------------
-
-  function renderProjectsView(): void {
-    const projects = getProjects();
-    const selectedProjectId = getSelectedProjectId();
-
-    renderProjects(
-      dom.projectsListEl,
-      projects,
-      selectedProjectId,
-      async (clickedProjectId) => {
-        // 1. update selection state
-        setSelectedProjectId(clickedProjectId);
-        setSelectedItemId(null);
-
-        // 2. sync dependent state BEFORE rendering
-        await refreshItemsState();
-
-        // 3. render only after state is consistent
-        renderAllViews();
-      },
-    );
-  }
-
-  // ----------------------------------------------------------
-  // RENDER: ITEMS
-  // ----------------------------------------------------------
-
-  function renderItemsView(): void {
-    const selectedProjectId = getSelectedProjectId();
-
-    if (selectedProjectId === null) {
-      renderItems(dom.itemsListEl, [], null, () => {});
-      return;
-    }
-
-    const items = getItems();
-    const selectedItemId = getSelectedItemId();
-
-    renderItems(dom.itemsListEl, items, selectedItemId, (clickedItemId) => {
-      // 1. update state
-      setSelectedItemId(clickedItemId);
-
-      // 2. render dependent UI only (NO async refresh needed here)
-      renderItemDetailsView();
-      renderItemsView();
+  function rerender(): void {
+    renderUi({
+      dom,
+      onProjectSelect: handleProjectSelect,
+      onItemSelect: handleItemSelect,
     });
   }
 
   // ----------------------------------------------------------
-  // RENDER: ITEM DETAILS
+  // INTERACTION HANDLERS
   // ----------------------------------------------------------
 
-  function renderItemDetailsView(): void {
-    const selectedItemId = getSelectedItemId();
-    const items = getItems();
+  async function handleProjectSelect(projectId: string): Promise<void> {
+    await selectProject(projectId, projectSelectionDeps);
 
-    const selectedItem =
-      items.find((item) => item.id === selectedItemId) ?? null;
+    rerender();
+  }
 
-    renderItemDetails(dom.itemDetailsEl, selectedItem);
+  function handleItemSelect(itemId: string): void {
+    selectItem(itemId, itemSelectionDeps);
+
+    rerender();
   }
 
   // ----------------------------------------------------------
-  // FULL RENDER PIPELINE
-  // ----------------------------------------------------------
-
-  function renderAllViews(): void {
-    renderProjectsView();
-    renderItemsView();
-    renderItemDetailsView();
-  }
-
-  // ----------------------------------------------------------
-  // EVENT: CREATE PROJECT
+  // CREATE PROJECT EVENT
   // ----------------------------------------------------------
 
   dom.addProjectBtn.addEventListener("click", async () => {
     const name = window.prompt("Enter project name:");
-    if (!name) return;
 
-    const trimmed = name.trim();
-    if (!trimmed) return;
+    if (!name) {
+      return;
+    }
 
-    const project = await createProject(trimmed);
+    const trimmedName = name.trim();
+
+    if (!trimmedName) {
+      return;
+    }
+
+    const project = await createProject(trimmedName);
 
     await refreshProjectsState();
 
@@ -185,48 +106,62 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
 
     await refreshItemsState();
 
-    renderAllViews();
+    rerender();
   });
 
   // ----------------------------------------------------------
-  // EVENT: CREATE ITEM
+  // CREATE ITEM EVENT
   // ----------------------------------------------------------
 
   dom.addItemBtn.addEventListener("click", async () => {
     const title = window.prompt("Enter item title:");
-    if (!title) return;
+
+    if (!title) {
+      return;
+    }
 
     const content = window.prompt("Enter item content:");
-    if (!content) return;
+
+    if (!content) {
+      return;
+    }
 
     const trimmedTitle = title.trim();
     const trimmedContent = content.trim();
 
-    if (!trimmedTitle || !trimmedContent) return;
+    if (!trimmedTitle || !trimmedContent) {
+      return;
+    }
 
     const selectedProjectId = getSelectedProjectId();
-    if (!selectedProjectId) return;
+
+    if (!selectedProjectId) {
+      return;
+    }
 
     const item = await createItem(
       selectedProjectId,
       "note",
       trimmedTitle,
       trimmedContent,
-      { createdFrom: "manual" },
+      {
+        createdFrom: "manual",
+      },
     );
 
     await refreshItemsState();
 
     setSelectedItemId(item.id);
 
-    renderAllViews();
+    rerender();
   });
 
   // ----------------------------------------------------------
-  // BOOTSTRAP
+  // INITIAL BOOTSTRAP
   // ----------------------------------------------------------
 
   await refreshProjectsState();
   await refreshItemsState();
-  renderAllViews();
+
+  rerender();
 }

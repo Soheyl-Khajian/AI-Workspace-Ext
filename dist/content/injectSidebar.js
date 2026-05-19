@@ -296,6 +296,125 @@
     }
   });
 
+  // src/ui/state.ts
+  function getSelectedProjectId() {
+    return state.selectedProjectId;
+  }
+  function setSelectedProjectId(projectId) {
+    state.selectedProjectId = projectId;
+  }
+  function getSelectedItemId() {
+    return state.selectedItemId;
+  }
+  function setSelectedItemId(itemId) {
+    state.selectedItemId = itemId;
+  }
+  function getProjects() {
+    return [...state.projectsCache];
+  }
+  function setProjects(projects) {
+    state.projectsCache = [...projects];
+  }
+  function getItems() {
+    return [...state.itemsCache];
+  }
+  function setItems(items) {
+    state.itemsCache = [...items];
+  }
+  var state;
+  var init_state = __esm({
+    "src/ui/state.ts"() {
+      "use strict";
+      state = {
+        // Selection
+        selectedProjectId: null,
+        selectedItemId: null,
+        // Caches
+        projectsCache: [],
+        itemsCache: []
+      };
+    }
+  });
+
+  // src/ui/dom.ts
+  function mustQuery(root, selector) {
+    const el = root.querySelector(selector);
+    if (!el) {
+      throw new Error(`Missing required sidebar element: ${selector}`);
+    }
+    return el;
+  }
+  function createSidebarDom(root) {
+    return {
+      root,
+      projectsListEl: mustQuery(root, "#aiw-projects-list"),
+      itemsListEl: mustQuery(root, "#aiw-items-list"),
+      itemDetailsEl: mustQuery(root, "#aiw-item-details"),
+      addProjectBtn: mustQuery(
+        root,
+        "#aiw-add-project-button"
+      ),
+      addItemBtn: mustQuery(root, "#aiw-add-item-button")
+    };
+  }
+  var init_dom = __esm({
+    "src/ui/dom.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/sidebarStateSync.ts
+  async function refreshProjectsState() {
+    const projects = await listProjects();
+    setProjects(projects);
+    const selectedProjectId = getSelectedProjectId();
+    const selectedProjectStillExists = projects.some(
+      (project) => project.id === selectedProjectId
+    );
+    if (!selectedProjectStillExists) {
+      setSelectedProjectId(null);
+    }
+  }
+  async function refreshItemsState() {
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId === null) {
+      setItems([]);
+      setSelectedItemId(null);
+      return;
+    }
+    const items = await listItemsByProject(selectedProjectId);
+    setItems(items);
+    const selectedItemId = getSelectedItemId();
+    const selectedItemStillExists = items.some(
+      (item) => item.id === selectedItemId
+    );
+    if (!selectedItemStillExists) {
+      setSelectedItemId(null);
+    }
+  }
+  var init_sidebarStateSync = __esm({
+    "src/ui/sidebarStateSync.ts"() {
+      "use strict";
+      init_storage();
+      init_state();
+    }
+  });
+
+  // src/ui/sidebarActions.ts
+  async function selectProject(projectId, deps) {
+    deps.setSelectedProjectId(projectId);
+    deps.setSelectedItemId(null);
+    await deps.refreshItemsState();
+  }
+  function selectItem(itemId, deps) {
+    deps.setSelectedItemId(itemId);
+  }
+  var init_sidebarActions = __esm({
+    "src/ui/sidebarActions.ts"() {
+      "use strict";
+    }
+  });
+
   // src/ui/renderProjects.ts
   function renderProjects(container, projects, selectedProjectId, onSelectProject) {
     container.textContent = "";
@@ -432,102 +551,15 @@
     }
   });
 
-  // src/ui/state.ts
-  function getSelectedProjectId() {
-    return state.selectedProjectId;
-  }
-  function setSelectedProjectId(projectId) {
-    state.selectedProjectId = projectId;
-  }
-  function getSelectedItemId() {
-    return state.selectedItemId;
-  }
-  function setSelectedItemId(itemId) {
-    state.selectedItemId = itemId;
-  }
-  function getProjects() {
-    return [...state.projectsCache];
-  }
-  function setProjects(projects) {
-    state.projectsCache = [...projects];
-  }
-  function getItems() {
-    return [...state.itemsCache];
-  }
-  function setItems(items) {
-    state.itemsCache = [...items];
-  }
-  var state;
-  var init_state = __esm({
-    "src/ui/state.ts"() {
-      "use strict";
-      state = {
-        // Selection
-        selectedProjectId: null,
-        selectedItemId: null,
-        // Caches
-        projectsCache: [],
-        itemsCache: []
-      };
-    }
-  });
-
-  // src/ui/dom.ts
-  function mustQuery(root, selector) {
-    const el = root.querySelector(selector);
-    if (!el) {
-      throw new Error(`Missing required sidebar element: ${selector}`);
-    }
-    return el;
-  }
-  function createSidebarDom(root) {
-    return {
-      root,
-      projectsListEl: mustQuery(root, "#aiw-projects-list"),
-      itemsListEl: mustQuery(root, "#aiw-items-list"),
-      itemDetailsEl: mustQuery(root, "#aiw-item-details"),
-      addProjectBtn: mustQuery(
-        root,
-        "#aiw-add-project-button"
-      ),
-      addItemBtn: mustQuery(root, "#aiw-add-item-button")
-    };
-  }
-  var init_dom = __esm({
-    "src/ui/dom.ts"() {
-      "use strict";
-    }
-  });
-
-  // src/ui/sidebarController.ts
-  async function initSidebarController(root) {
-    const dom = createSidebarDom(root);
-    async function refreshProjectsState() {
-      const projects = await listProjects();
-      setProjects(projects);
-      const selectedProjectId = getSelectedProjectId();
-      const stillExists = projects.some(
-        (project) => project.id === selectedProjectId
-      );
-      if (!stillExists) {
-        setSelectedProjectId(null);
-      }
-    }
-    async function refreshItemsState() {
-      const selectedProjectId = getSelectedProjectId();
-      if (selectedProjectId === null) {
-        setItems([]);
-        setSelectedItemId(null);
-        return;
-      }
-      const items = await listItemsByProject(selectedProjectId);
-      setItems(items);
-      const selectedItemId = getSelectedItemId();
-      const stillExists = items.some((item) => item.id === selectedItemId);
-      if (!stillExists) {
-        setSelectedItemId(null);
-      }
-    }
+  // src/ui/sidebarRenderer.ts
+  function renderUi({
+    dom,
+    onProjectSelect,
+    onItemSelect
+  }) {
+    renderProjectsView();
+    renderItemsView();
+    renderItemDetailsView();
     function renderProjectsView() {
       const projects = getProjects();
       const selectedProjectId = getSelectedProjectId();
@@ -535,12 +567,7 @@
         dom.projectsListEl,
         projects,
         selectedProjectId,
-        async (clickedProjectId) => {
-          setSelectedProjectId(clickedProjectId);
-          setSelectedItemId(null);
-          await refreshItemsState();
-          renderAllViews();
-        }
+        onProjectSelect
       );
     }
     function renderItemsView() {
@@ -552,69 +579,111 @@
       }
       const items = getItems();
       const selectedItemId = getSelectedItemId();
-      renderItems(dom.itemsListEl, items, selectedItemId, (clickedItemId) => {
-        setSelectedItemId(clickedItemId);
-        renderItemDetailsView();
-        renderItemsView();
-      });
+      renderItems(dom.itemsListEl, items, selectedItemId, onItemSelect);
     }
     function renderItemDetailsView() {
-      const selectedItemId = getSelectedItemId();
       const items = getItems();
+      const selectedItemId = getSelectedItemId();
       const selectedItem = items.find((item) => item.id === selectedItemId) ?? null;
       renderItemDetails(dom.itemDetailsEl, selectedItem);
     }
-    function renderAllViews() {
-      renderProjectsView();
-      renderItemsView();
-      renderItemDetailsView();
+  }
+  var init_sidebarRenderer = __esm({
+    "src/ui/sidebarRenderer.ts"() {
+      "use strict";
+      init_state();
+      init_renderProjects();
+      init_renderItems();
+      init_renderItemDetails();
+    }
+  });
+
+  // src/ui/sidebarController.ts
+  async function initSidebarController(root) {
+    const dom = createSidebarDom(root);
+    const projectSelectionDeps = {
+      setSelectedProjectId,
+      setSelectedItemId,
+      refreshItemsState
+    };
+    const itemSelectionDeps = {
+      setSelectedItemId
+    };
+    function rerender() {
+      renderUi({
+        dom,
+        onProjectSelect: handleProjectSelect,
+        onItemSelect: handleItemSelect
+      });
+    }
+    async function handleProjectSelect(projectId) {
+      await selectProject(projectId, projectSelectionDeps);
+      rerender();
+    }
+    function handleItemSelect(itemId) {
+      selectItem(itemId, itemSelectionDeps);
+      rerender();
     }
     dom.addProjectBtn.addEventListener("click", async () => {
       const name = window.prompt("Enter project name:");
-      if (!name) return;
-      const trimmed = name.trim();
-      if (!trimmed) return;
-      const project = await createProject(trimmed);
+      if (!name) {
+        return;
+      }
+      const trimmedName = name.trim();
+      if (!trimmedName) {
+        return;
+      }
+      const project = await createProject(trimmedName);
       await refreshProjectsState();
       setSelectedProjectId(project.id);
       setSelectedItemId(null);
       await refreshItemsState();
-      renderAllViews();
+      rerender();
     });
     dom.addItemBtn.addEventListener("click", async () => {
       const title = window.prompt("Enter item title:");
-      if (!title) return;
+      if (!title) {
+        return;
+      }
       const content = window.prompt("Enter item content:");
-      if (!content) return;
+      if (!content) {
+        return;
+      }
       const trimmedTitle = title.trim();
       const trimmedContent = content.trim();
-      if (!trimmedTitle || !trimmedContent) return;
+      if (!trimmedTitle || !trimmedContent) {
+        return;
+      }
       const selectedProjectId = getSelectedProjectId();
-      if (!selectedProjectId) return;
+      if (!selectedProjectId) {
+        return;
+      }
       const item = await createItem(
         selectedProjectId,
         "note",
         trimmedTitle,
         trimmedContent,
-        { createdFrom: "manual" }
+        {
+          createdFrom: "manual"
+        }
       );
       await refreshItemsState();
       setSelectedItemId(item.id);
-      renderAllViews();
+      rerender();
     });
     await refreshProjectsState();
     await refreshItemsState();
-    renderAllViews();
+    rerender();
   }
   var init_sidebarController = __esm({
     "src/ui/sidebarController.ts"() {
       "use strict";
       init_storage();
-      init_renderProjects();
-      init_renderItems();
-      init_renderItemDetails();
       init_state();
       init_dom();
+      init_sidebarStateSync();
+      init_sidebarActions();
+      init_sidebarRenderer();
     }
   });
 
