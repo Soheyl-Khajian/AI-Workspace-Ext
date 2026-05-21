@@ -36,6 +36,18 @@ type UiState = {
 
   projectsCache: Project[];
   itemsCache: Item[];
+
+  // ----------------------------------------------------------
+  // Form state
+  // ----------------------------------------------------------
+
+  isProjectFormOpen: boolean;
+  isItemFormOpen: boolean;
+
+  projectDraftName: string;
+
+  itemDraftTitle: string;
+  itemDraftContent: string;
 };
 
 // ------------------------------------------------------------
@@ -57,6 +69,14 @@ const state: UiState = {
   // Caches
   projectsCache: [],
   itemsCache: [],
+
+  // Form
+  isProjectFormOpen: false,
+  isItemFormOpen: false,
+
+  projectDraftName: "",
+  itemDraftTitle: "",
+  itemDraftContent: "",
 };
 
 // ------------------------------------------------------------
@@ -131,6 +151,65 @@ export function setItems(items: Item[]): void {
 }
 
 // ------------------------------------------------------------
+// PROJECT FORM
+// ------------------------------------------------------------
+
+export function openProjectForm(): void {
+  state.isProjectFormOpen = true;
+}
+
+export function closeProjectForm(): void {
+  state.isProjectFormOpen = false;
+
+  resetProjectDraft();
+}
+
+export function isProjectFormOpen(): boolean {
+  return state.isProjectFormOpen;
+}
+
+export function getProjectDraftName(): string {
+  return state.projectDraftName;
+}
+
+export function setProjectDraftName(name: string): void {
+  state.projectDraftName = name;
+}
+
+// ------------------------------------------------------------
+// ITEM FORM
+// ------------------------------------------------------------
+
+export function openItemForm(): void {
+  state.isItemFormOpen = true;
+}
+
+export function closeItemForm(): void {
+  state.isItemFormOpen = false;
+
+  resetItemDraft();
+}
+
+export function isItemFormOpen(): boolean {
+  return state.isItemFormOpen;
+}
+
+export function getItemDraftTitle(): string {
+  return state.itemDraftTitle;
+}
+
+export function getItemDraftContent(): string {
+  return state.itemDraftContent;
+}
+
+export function setItemDraftTitle(title: string): void {
+  state.itemDraftTitle = title;
+}
+
+export function setItemDraftContent(content: string): void {
+  state.itemDraftContent = content;
+}
+// ------------------------------------------------------------
 // RESET STATE
 // ------------------------------------------------------------
 
@@ -147,12 +226,40 @@ export function setItems(items: Item[]): void {
  * - Does NOT touch IndexedDB
  * - Does NOT automatically reload storage data
  */
-export function resetState(): void {
-  // Selection
+
+export function resetSelectionState(): void {
   state.selectedProjectId = null;
   state.selectedItemId = null;
+}
 
-  // Caches
+export function resetCacheState(): void {
   state.projectsCache = [];
   state.itemsCache = [];
+}
+
+export function resetFormState(): void {
+  state.isProjectFormOpen = false;
+  state.isItemFormOpen = false;
+
+  resetProjectDraft();
+  resetItemDraft();
+}
+
+export function resetProjectDraft(): void {
+  state.projectDraftName = "";
+}
+
+export function resetItemDraft(): void {
+  state.itemDraftTitle = "";
+  state.itemDraftContent = "";
+}
+export function resetState(): void {
+  // Selection
+  resetSelectionState();
+
+  // Caches
+  resetCacheState();
+
+  // Forms
+  resetFormState();
 }

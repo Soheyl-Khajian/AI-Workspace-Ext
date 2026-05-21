@@ -321,6 +321,51 @@
   function setItems(items) {
     state.itemsCache = [...items];
   }
+  function openProjectForm() {
+    state.isProjectFormOpen = true;
+  }
+  function closeProjectForm() {
+    state.isProjectFormOpen = false;
+    resetProjectDraft();
+  }
+  function isProjectFormOpen() {
+    return state.isProjectFormOpen;
+  }
+  function getProjectDraftName() {
+    return state.projectDraftName;
+  }
+  function setProjectDraftName(name) {
+    state.projectDraftName = name;
+  }
+  function openItemForm() {
+    state.isItemFormOpen = true;
+  }
+  function closeItemForm() {
+    state.isItemFormOpen = false;
+    resetItemDraft();
+  }
+  function isItemFormOpen() {
+    return state.isItemFormOpen;
+  }
+  function getItemDraftTitle() {
+    return state.itemDraftTitle;
+  }
+  function getItemDraftContent() {
+    return state.itemDraftContent;
+  }
+  function setItemDraftTitle(title) {
+    state.itemDraftTitle = title;
+  }
+  function setItemDraftContent(content) {
+    state.itemDraftContent = content;
+  }
+  function resetProjectDraft() {
+    state.projectDraftName = "";
+  }
+  function resetItemDraft() {
+    state.itemDraftTitle = "";
+    state.itemDraftContent = "";
+  }
   var state;
   var init_state = __esm({
     "src/ui/state.ts"() {
@@ -331,7 +376,13 @@
         selectedItemId: null,
         // Caches
         projectsCache: [],
-        itemsCache: []
+        itemsCache: [],
+        // Form
+        isProjectFormOpen: false,
+        isItemFormOpen: false,
+        projectDraftName: "",
+        itemDraftTitle: "",
+        itemDraftContent: ""
       };
     }
   });
@@ -344,17 +395,22 @@
     }
     return el;
   }
-  function createSidebarDom(root) {
+  function createSidebarDom(rootEl) {
     return {
-      root,
-      projectsListEl: mustQuery(root, "#aiw-projects-list"),
-      itemsListEl: mustQuery(root, "#aiw-items-list"),
-      itemDetailsEl: mustQuery(root, "#aiw-item-details"),
-      addProjectBtn: mustQuery(
-        root,
+      rootEl,
+      projectsListEl: mustQuery(rootEl, "#aiw-projects-list"),
+      itemsListEl: mustQuery(rootEl, "#aiw-items-list"),
+      itemDetailsEl: mustQuery(rootEl, "#aiw-item-details"),
+      projectFormEl: mustQuery(rootEl, "#aiw-project-form"),
+      itemFormEl: mustQuery(rootEl, "#aiw-item-form"),
+      addProjectButtonEl: mustQuery(
+        rootEl,
         "#aiw-add-project-button"
       ),
-      addItemBtn: mustQuery(root, "#aiw-add-item-button")
+      addItemButtonEl: mustQuery(
+        rootEl,
+        "#aiw-add-item-button"
+      )
     };
   }
   var init_dom = __esm({
@@ -415,7 +471,7 @@
     }
   });
 
-  // src/ui/renderProjects.ts
+  // src/ui/renderers/renderProjects.ts
   function renderProjects(container, projects, selectedProjectId, onSelectProject) {
     container.textContent = "";
     if (projects.length === 0) {
@@ -448,12 +504,48 @@
     return projectRowEl;
   }
   var init_renderProjects = __esm({
-    "src/ui/renderProjects.ts"() {
+    "src/ui/renderers/renderProjects.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/renderItems.ts
+  // src/ui/renderers/renderProjectForm.ts
+  function renderProjectForm(containerEl, isOpen, draftName, onInput, onSubmit, onCancel) {
+    containerEl.textContent = "";
+    if (!isOpen) {
+      return;
+    }
+    const formEl = document.createElement("form");
+    const inputEl = document.createElement("input");
+    inputEl.type = "text";
+    inputEl.placeholder = "Project name";
+    inputEl.value = draftName;
+    inputEl.addEventListener("input", () => {
+      onInput(inputEl.value);
+    });
+    const submitButtonEl = document.createElement("button");
+    submitButtonEl.type = "submit";
+    submitButtonEl.textContent = "Create";
+    const cancelButtonEl = document.createElement("button");
+    cancelButtonEl.type = "button";
+    cancelButtonEl.textContent = "Cancel";
+    cancelButtonEl.addEventListener("click", () => {
+      onCancel();
+    });
+    formEl.addEventListener("submit", (event) => {
+      event.preventDefault();
+      onSubmit();
+    });
+    formEl.append(inputEl, submitButtonEl, cancelButtonEl);
+    containerEl.append(formEl);
+  }
+  var init_renderProjectForm = __esm({
+    "src/ui/renderers/renderProjectForm.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/renderers/renderItems.ts
   function renderItems(container, items, selectedItemId, onItemClick = NOOP) {
     container.textContent = "";
     if (items.length === 0) {
@@ -499,7 +591,7 @@
   }
   var MAX_PREVIEW_LENGTH, NOOP;
   var init_renderItems = __esm({
-    "src/ui/renderItems.ts"() {
+    "src/ui/renderers/renderItems.ts"() {
       "use strict";
       MAX_PREVIEW_LENGTH = 45;
       NOOP = () => {
@@ -507,7 +599,55 @@
     }
   });
 
-  // src/ui/renderItemDetails.ts
+  // src/ui/renderers/renderItemForm.ts
+  function renderItemForm(containerEl, isOpen, draftTitle, draftContent, onTitleInput, onContentInput, onSubmit, onCancel) {
+    containerEl.textContent = "";
+    if (!isOpen) {
+      return;
+    }
+    const formEl = document.createElement("form");
+    const titleInputEl = document.createElement("input");
+    titleInputEl.type = "text";
+    titleInputEl.placeholder = "Item title";
+    titleInputEl.value = draftTitle;
+    titleInputEl.addEventListener("input", () => {
+      onTitleInput(titleInputEl.value);
+    });
+    const contentTextareaEl = document.createElement("textarea");
+    contentTextareaEl.placeholder = "Item content";
+    contentTextareaEl.rows = 3;
+    contentTextareaEl.value = draftContent;
+    contentTextareaEl.addEventListener("input", () => {
+      onContentInput(contentTextareaEl.value);
+    });
+    const submitButtonEl = document.createElement("button");
+    submitButtonEl.type = "submit";
+    submitButtonEl.textContent = "Create";
+    const cancelButtonEl = document.createElement("button");
+    cancelButtonEl.type = "button";
+    cancelButtonEl.textContent = "Cancel";
+    cancelButtonEl.addEventListener("click", () => {
+      onCancel();
+    });
+    formEl.addEventListener("submit", (event) => {
+      event.preventDefault();
+      onSubmit();
+    });
+    formEl.append(
+      titleInputEl,
+      contentTextareaEl,
+      submitButtonEl,
+      cancelButtonEl
+    );
+    containerEl.append(formEl);
+  }
+  var init_renderItemForm = __esm({
+    "src/ui/renderers/renderItemForm.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/renderers/renderItemDetails.ts
   function renderItemDetails(container, item) {
     container.textContent = "";
     if (item === null) {
@@ -546,19 +686,28 @@
     wrapperEl.append(contentEl);
   }
   var init_renderItemDetails = __esm({
-    "src/ui/renderItemDetails.ts"() {
+    "src/ui/renderers/renderItemDetails.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/sidebarRenderer.ts
+  // src/ui/renderers/renderSidebar.ts
   function renderUi({
     dom,
     onProjectSelect,
-    onItemSelect
+    onProjectDraftInput,
+    onProjectSubmit,
+    onProjectCancel,
+    onItemSelect,
+    onItemTitleInput,
+    onItemContentInput,
+    onItemSubmit,
+    onItemCancel
   }) {
     renderProjectsView();
+    renderProjectFormView();
     renderItemsView();
+    renderItemFormView();
     renderItemDetailsView();
     function renderProjectsView() {
       const projects = getProjects();
@@ -570,16 +719,42 @@
         onProjectSelect
       );
     }
+    function renderProjectFormView() {
+      const projectFormOpen = isProjectFormOpen();
+      const projectDraftName = getProjectDraftName();
+      renderProjectForm(
+        dom.projectFormEl,
+        projectFormOpen,
+        projectDraftName,
+        onProjectDraftInput,
+        onProjectSubmit,
+        onProjectCancel
+      );
+    }
     function renderItemsView() {
       const selectedProjectId = getSelectedProjectId();
       if (selectedProjectId === null) {
-        renderItems(dom.itemsListEl, [], null, () => {
-        });
+        renderItems(dom.itemsListEl, [], null, noopItemSelect);
         return;
       }
       const items = getItems();
       const selectedItemId = getSelectedItemId();
       renderItems(dom.itemsListEl, items, selectedItemId, onItemSelect);
+    }
+    function renderItemFormView() {
+      const itemFormOpen = isItemFormOpen();
+      const itemDraftTitle = getItemDraftTitle();
+      const itemDraftContent = getItemDraftContent();
+      renderItemForm(
+        dom.itemFormEl,
+        itemFormOpen,
+        itemDraftTitle,
+        itemDraftContent,
+        onItemTitleInput,
+        onItemContentInput,
+        onItemSubmit,
+        onItemCancel
+      );
     }
     function renderItemDetailsView() {
       const items = getItems();
@@ -588,12 +763,16 @@
       renderItemDetails(dom.itemDetailsEl, selectedItem);
     }
   }
-  var init_sidebarRenderer = __esm({
-    "src/ui/sidebarRenderer.ts"() {
+  function noopItemSelect() {
+  }
+  var init_renderSidebar = __esm({
+    "src/ui/renderers/renderSidebar.ts"() {
       "use strict";
       init_state();
       init_renderProjects();
+      init_renderProjectForm();
       init_renderItems();
+      init_renderItemForm();
       init_renderItemDetails();
     }
   });
@@ -613,62 +792,94 @@
       renderUi({
         dom,
         onProjectSelect: handleProjectSelect,
-        onItemSelect: handleItemSelect
+        onProjectDraftInput: handleProjectDraftInput,
+        onProjectSubmit: handleProjectSubmit,
+        onProjectCancel: handleProjectCancel,
+        onItemSelect: handleItemSelect,
+        onItemTitleInput: handleItemTitleInput,
+        onItemContentInput: handleItemContentInput,
+        onItemSubmit: handleItemSubmit,
+        onItemCancel: handleItemCancel
       });
     }
     async function handleProjectSelect(projectId) {
       await selectProject(projectId, projectSelectionDeps);
       rerender();
     }
+    function handleProjectDraftInput(name) {
+      setProjectDraftName(name);
+    }
+    async function handleProjectSubmit() {
+      const draftName = getProjectDraftName().trim();
+      if (!draftName) {
+        return;
+      }
+      const newProject = await createProject(draftName);
+      await refreshProjectsState();
+      setSelectedProjectId(newProject.id);
+      setSelectedItemId(null);
+      await refreshItemsState();
+      closeProjectForm();
+      resetProjectDraft();
+      rerender();
+    }
+    function handleProjectCancel() {
+      closeProjectForm();
+      resetProjectDraft();
+      rerender();
+    }
     function handleItemSelect(itemId) {
       selectItem(itemId, itemSelectionDeps);
       rerender();
     }
-    dom.addProjectBtn.addEventListener("click", async () => {
-      const name = window.prompt("Enter project name:");
-      if (!name) {
-        return;
-      }
-      const trimmedName = name.trim();
-      if (!trimmedName) {
-        return;
-      }
-      const project = await createProject(trimmedName);
-      await refreshProjectsState();
-      setSelectedProjectId(project.id);
-      setSelectedItemId(null);
-      await refreshItemsState();
-      rerender();
-    });
-    dom.addItemBtn.addEventListener("click", async () => {
-      const title = window.prompt("Enter item title:");
-      if (!title) {
-        return;
-      }
-      const content = window.prompt("Enter item content:");
-      if (!content) {
-        return;
-      }
-      const trimmedTitle = title.trim();
-      const trimmedContent = content.trim();
-      if (!trimmedTitle || !trimmedContent) {
-        return;
-      }
+    function handleItemTitleInput(title) {
+      setItemDraftTitle(title);
+    }
+    function handleItemContentInput(content) {
+      setItemDraftContent(content);
+    }
+    async function handleItemSubmit() {
       const selectedProjectId = getSelectedProjectId();
       if (!selectedProjectId) {
         return;
       }
-      const item = await createItem(
+      const title = getItemDraftTitle().trim();
+      const content = getItemDraftContent().trim();
+      if (!title || !content) {
+        return;
+      }
+      const newItem = await createItem(
         selectedProjectId,
         "note",
-        trimmedTitle,
-        trimmedContent,
+        title,
+        content,
         {
           createdFrom: "manual"
         }
       );
       await refreshItemsState();
-      setSelectedItemId(item.id);
+      setSelectedItemId(newItem.id);
+      closeItemForm();
+      resetItemDraft();
+      rerender();
+    }
+    function handleItemCancel() {
+      closeItemForm();
+      resetItemDraft();
+      rerender();
+    }
+    dom.addProjectButtonEl.addEventListener("click", () => {
+      openProjectForm();
+      resetProjectDraft();
+      rerender();
+    });
+    dom.addItemButtonEl.addEventListener("click", () => {
+      const selectedProjectId = getSelectedProjectId();
+      if (!selectedProjectId) {
+        return;
+      }
+      openItemForm();
+      resetItemDraft();
       rerender();
     });
     await refreshProjectsState();
@@ -683,7 +894,7 @@
       init_dom();
       init_sidebarStateSync();
       init_sidebarActions();
-      init_sidebarRenderer();
+      init_renderSidebar();
     }
   });
 

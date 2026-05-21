@@ -21,6 +21,18 @@ import {
   getSelectedProjectId,
   setSelectedProjectId,
   setSelectedItemId,
+  openProjectForm,
+  closeProjectForm,
+  openItemForm,
+  closeItemForm,
+  setProjectDraftName,
+  setItemDraftTitle,
+  setItemDraftContent,
+  resetProjectDraft,
+  resetItemDraft,
+  getProjectDraftName,
+  getItemDraftTitle,
+  getItemDraftContent,
 } from "./state";
 
 import { createSidebarDom } from "./dom";
@@ -29,7 +41,7 @@ import { refreshProjectsState, refreshItemsState } from "./sidebarStateSync";
 
 import { selectProject, selectItem } from "./sidebarActions";
 
-import { renderUi } from "./sidebarRenderer";
+import { renderUi } from "./renderers/renderSidebar";
 
 // ------------------------------------------------------------
 // MAIN INITIALIZER
@@ -59,91 +71,105 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
   function rerender(): void {
     renderUi({
       dom,
+
       onProjectSelect: handleProjectSelect,
+      onProjectDraftInput: handleProjectDraftInput,
+      onProjectSubmit: handleProjectSubmit,
+      onProjectCancel: handleProjectCancel,
+
       onItemSelect: handleItemSelect,
+      onItemTitleInput: handleItemTitleInput,
+      onItemContentInput: handleItemContentInput,
+      onItemSubmit: handleItemSubmit,
+      onItemCancel: handleItemCancel,
     });
   }
 
   // ----------------------------------------------------------
-  // INTERACTION HANDLERS
+  // PROJECT SELECTION
   // ----------------------------------------------------------
 
   async function handleProjectSelect(projectId: string): Promise<void> {
     await selectProject(projectId, projectSelectionDeps);
-
-    rerender();
-  }
-
-  function handleItemSelect(itemId: string): void {
-    selectItem(itemId, itemSelectionDeps);
-
     rerender();
   }
 
   // ----------------------------------------------------------
-  // CREATE PROJECT EVENT
+  // PROJECT FORM HANDLERS
   // ----------------------------------------------------------
 
-  dom.addProjectBtn.addEventListener("click", async () => {
-    const name = window.prompt("Enter project name:");
+  function handleProjectDraftInput(name: string): void {
+    setProjectDraftName(name);
+  }
 
-    if (!name) {
+  async function handleProjectSubmit(): Promise<void> {
+    const draftName = getProjectDraftName().trim();
+
+    if (!draftName) {
       return;
     }
 
-    const trimmedName = name.trim();
-
-    if (!trimmedName) {
-      return;
-    }
-
-    const project = await createProject(trimmedName);
+    const newProject = await createProject(draftName);
 
     await refreshProjectsState();
 
-    setSelectedProjectId(project.id);
+    setSelectedProjectId(newProject.id);
     setSelectedItemId(null);
 
     await refreshItemsState();
 
+    closeProjectForm();
+    resetProjectDraft();
+
     rerender();
-  });
+  }
+
+  function handleProjectCancel(): void {
+    closeProjectForm();
+    resetProjectDraft();
+    rerender();
+  }
 
   // ----------------------------------------------------------
-  // CREATE ITEM EVENT
+  // ITEM SELECTION
   // ----------------------------------------------------------
 
-  dom.addItemBtn.addEventListener("click", async () => {
-    const title = window.prompt("Enter item title:");
+  function handleItemSelect(itemId: string): void {
+    selectItem(itemId, itemSelectionDeps);
+    rerender();
+  }
 
-    if (!title) {
-      return;
-    }
+  // ----------------------------------------------------------
+  // ITEM FORM HANDLERS
+  // ----------------------------------------------------------
 
-    const content = window.prompt("Enter item content:");
+  function handleItemTitleInput(title: string): void {
+    setItemDraftTitle(title);
+  }
 
-    if (!content) {
-      return;
-    }
+  function handleItemContentInput(content: string): void {
+    setItemDraftContent(content);
+  }
 
-    const trimmedTitle = title.trim();
-    const trimmedContent = content.trim();
-
-    if (!trimmedTitle || !trimmedContent) {
-      return;
-    }
-
+  async function handleItemSubmit(): Promise<void> {
     const selectedProjectId = getSelectedProjectId();
 
     if (!selectedProjectId) {
       return;
     }
 
-    const item = await createItem(
+    const title = getItemDraftTitle().trim();
+    const content = getItemDraftContent().trim();
+
+    if (!title || !content) {
+      return;
+    }
+
+    const newItem = await createItem(
       selectedProjectId,
       "note",
-      trimmedTitle,
-      trimmedContent,
+      title,
+      content,
       {
         createdFrom: "manual",
       },
@@ -151,8 +177,39 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
 
     await refreshItemsState();
 
-    setSelectedItemId(item.id);
+    setSelectedItemId(newItem.id);
 
+    closeItemForm();
+    resetItemDraft();
+
+    rerender();
+  }
+
+  function handleItemCancel(): void {
+    closeItemForm();
+    resetItemDraft();
+    rerender();
+  }
+
+  // ----------------------------------------------------------
+  // UI BUTTON EVENTS
+  // ----------------------------------------------------------
+
+  dom.addProjectButtonEl.addEventListener("click", () => {
+    openProjectForm();
+    resetProjectDraft();
+    rerender();
+  });
+
+  dom.addItemButtonEl.addEventListener("click", () => {
+    const selectedProjectId = getSelectedProjectId();
+
+    if (!selectedProjectId) {
+      return;
+    }
+
+    openItemForm();
+    resetItemDraft();
     rerender();
   });
 

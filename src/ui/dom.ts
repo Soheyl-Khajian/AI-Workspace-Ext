@@ -14,25 +14,32 @@ function mustQuery<T extends Element>(root: ParentNode, selector: string): T {
 }
 
 export type SidebarDom = {
-  root: HTMLElement;
+  rootEl: HTMLElement;
   projectsListEl: HTMLDivElement;
   itemsListEl: HTMLDivElement;
   itemDetailsEl: HTMLDivElement;
-  addProjectBtn: HTMLButtonElement;
-  addItemBtn: HTMLButtonElement;
+  projectFormEl: HTMLDivElement;
+  itemFormEl: HTMLDivElement;
+  addProjectButtonEl: HTMLButtonElement;
+  addItemButtonEl: HTMLButtonElement;
 };
 
 // Factory: binds DOM structure to a given sidebar root
-export function createSidebarDom(root: HTMLElement): SidebarDom {
+export function createSidebarDom(rootEl: HTMLElement): SidebarDom {
   return {
-    root,
-    projectsListEl: mustQuery<HTMLDivElement>(root, "#aiw-projects-list"),
-    itemsListEl: mustQuery<HTMLDivElement>(root, "#aiw-items-list"),
-    itemDetailsEl: mustQuery(root, "#aiw-item-details"),
-    addProjectBtn: mustQuery<HTMLButtonElement>(
-      root,
+    rootEl,
+    projectsListEl: mustQuery<HTMLDivElement>(rootEl, "#aiw-projects-list"),
+    itemsListEl: mustQuery<HTMLDivElement>(rootEl, "#aiw-items-list"),
+    itemDetailsEl: mustQuery<HTMLDivElement>(rootEl, "#aiw-item-details"),
+    projectFormEl: mustQuery<HTMLDivElement>(rootEl, "#aiw-project-form"),
+    itemFormEl: mustQuery<HTMLDivElement>(rootEl, "#aiw-item-form"),
+    addProjectButtonEl: mustQuery<HTMLButtonElement>(
+      rootEl,
       "#aiw-add-project-button",
     ),
-    addItemBtn: mustQuery<HTMLButtonElement>(root, "#aiw-add-item-button"),
+    addItemButtonEl: mustQuery<HTMLButtonElement>(
+      rootEl,
+      "#aiw-add-item-button",
+    ),
   };
 }

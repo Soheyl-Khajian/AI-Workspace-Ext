@@ -6,10 +6,11 @@
   </header>
 
   <main class="aiw-main">
-    <!-- Projects Section -->
-    <section class="aiw-section">
+    <!-- PROJECTS SECTION -->
+    <section class="aiw-section aiw-section--projects">
       <div class="aiw-section__head">
         <div class="aiw-section__title">Projects</div>
+
         <button
           id="aiw-add-project-button"
           class="aiw-btn aiw-btn--primary"
@@ -19,8 +20,8 @@
         </button>
       </div>
 
-      <!-- Optional (later): project search -->
-      <!-- <input class="aiw-input" id="aiw-project-search" placeholder="Search projects" /> -->
+      <!-- Renderer mounts project form here -->
+      <div id="aiw-project-form"></div>
 
       <div
         id="aiw-projects-list"
@@ -29,11 +30,12 @@
       ></div>
     </section>
 
-    <!-- Items Section -->
-    <section class="aiw-section">
+    <!-- ITEMS SECTION -->
+    <section class="aiw-section aiw-section--items">
       <div class="aiw-section__head">
         <div class="aiw-section__title">Items</div>
         <div class="aiw-section__hint">Select a project</div>
+
         <button
           id="aiw-add-item-button"
           class="aiw-btn aiw-btn--primary"
@@ -42,14 +44,19 @@
           New
         </button>
       </div>
+
+      <!-- Renderer mounts item form here -->
+      <div id="aiw-item-form"></div>
+
       <div id="aiw-items-list" class="aiw-list" aria-label="Items list"></div>
     </section>
 
-    <!-- Item Details Section -->
-    <section class="aiw-section">
+    <!-- DETAILS SECTION -->
+    <section class="aiw-section aiw-section--details">
       <div class="aiw-section__head">
         <div class="aiw-section__title">Item Details</div>
       </div>
+
       <div
         id="aiw-item-details"
         class="aiw-details"
@@ -62,6 +69,7 @@
     <button id="aiw-build-context-button" class="aiw-btn" type="button">
       Build Context
     </button>
+
     <button id="aiw-export-button" class="aiw-btn" type="button">Export</button>
   </footer>
 </div>

@@ -18,7 +18,7 @@
 // input state → rendered DOM
 // ------------------------------------------------------------
 
-import type { Item } from "../models/item";
+import type { Item } from "../../models/item";
 
 /**
  * Maximum preview length when deriving fallback text

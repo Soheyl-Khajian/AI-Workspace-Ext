@@ -1,17 +1,14 @@
 /* src/ui/sidebar.css
-   Refined ChatGPT-like light sidebar
-   Focus: stable layout + clean hierarchy + safe scrolling behavior
+   FINAL STABLE MVP UI SYSTEM (with form + input fixes)
 */
 
 :root {
   --aiw-font:
-    ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial,
-    "Apple Color Emoji", "Segoe UI Emoji";
+    ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
 
   --aiw-bg: #ffffff;
   --aiw-surface: #ffffff;
   --aiw-surface-2: #f7f7f8;
-  --aiw-surface-3: #f2f2f3;
 
   --aiw-border: rgba(0, 0, 0, 0.08);
   --aiw-border-2: rgba(0, 0, 0, 0.06);
@@ -21,19 +18,22 @@
 
   --aiw-accent: #10a37f;
   --aiw-accent-hover: #0e8f70;
-  --aiw-focus: rgba(16, 163, 127, 0.22);
 
-  --aiw-r-lg: 14px;
   --aiw-r-md: 12px;
+  --aiw-r-lg: 14px;
 
   --aiw-width: 360px;
 }
 
-/* SIDEBAR ROOT */
+/* ------------------------------------------------------------
+   ROOT
+------------------------------------------------------------ */
+
 #aiw-sidebar-root.aiw {
   position: fixed;
   top: 0;
   right: 0;
+
   width: var(--aiw-width);
   height: 100vh;
 
@@ -47,13 +47,17 @@
   border-left: 1px solid var(--aiw-border);
 }
 
-/* HEADER */
+/* ------------------------------------------------------------
+   HEADER
+------------------------------------------------------------ */
+
 .aiw-header {
   display: flex;
   justify-content: space-between;
   align-items: baseline;
 
   padding: 12px 14px;
+
   border-bottom: 1px solid var(--aiw-border-2);
 }
 
@@ -67,9 +71,13 @@
   color: var(--aiw-muted);
 }
 
-/* MAIN LAYOUT (IMPORTANT: stable flex column) */
+/* ------------------------------------------------------------
+   MAIN LAYOUT
+------------------------------------------------------------ */
+
 .aiw-main {
   flex: 1;
+
   display: flex;
   flex-direction: column;
 
@@ -79,7 +87,10 @@
   overflow: hidden;
 }
 
-/* SECTIONS (NO FLEX GROWTH COMPETITION) */
+/* ------------------------------------------------------------
+   SECTIONS (STABLE LAYOUT)
+------------------------------------------------------------ */
+
 .aiw-section {
   display: flex;
   flex-direction: column;
@@ -93,20 +104,23 @@
   min-height: 0;
 }
 
-.aiw-section:nth-of-type(1) {
+.aiw-section--projects {
   flex: 0 0 25%;
 }
 
-.aiw-section:nth-of-type(2) {
+.aiw-section--items {
   flex: 1 1 auto;
   min-height: 180px;
 }
 
-.aiw-section:nth-of-type(3) {
+.aiw-section--details {
   flex: 0 0 40%;
 }
 
-/* SECTION HEADER */
+/* ------------------------------------------------------------
+   HEADERS
+------------------------------------------------------------ */
+
 .aiw-section__head {
   display: flex;
   justify-content: space-between;
@@ -115,14 +129,12 @@
   padding: 10px 12px;
 
   border-bottom: 1px solid var(--aiw-border-2);
-  background: var(--aiw-surface);
 }
 
 .aiw-section__title {
   font-size: 12px;
   font-weight: 700;
   color: rgba(0, 0, 0, 0.72);
-  letter-spacing: 0.2px;
 }
 
 .aiw-section__hint {
@@ -130,17 +142,21 @@
   color: var(--aiw-muted);
 }
 
-/* LIST AREA (CRITICAL: independent scroll per section) */
+/* ------------------------------------------------------------
+   LISTS
+------------------------------------------------------------ */
+
 .aiw-list {
   padding: 8px;
 
-  max-height: 38vh;
   overflow-y: auto;
-
   min-height: 0;
 }
 
-/* ROWS */
+/* ------------------------------------------------------------
+   ROWS
+------------------------------------------------------------ */
+
 .aiw-projects-row,
 .aiw-items-row {
   padding: 10px;
@@ -152,9 +168,7 @@
   cursor: pointer;
   user-select: none;
 
-  transition:
-    background 120ms ease,
-    border-color 120ms ease;
+  transition: background 120ms ease;
 }
 
 .aiw-projects-row:hover,
@@ -168,61 +182,18 @@
   border-left: 2px solid var(--aiw-accent);
 }
 
-/* ITEM DETAILS WRAPPER (STABLE, NOT FLEX-GROWING) */
-.aiw-item-details__wrapper {
-  display: flex;
-  flex-direction: column;
+/* ------------------------------------------------------------
+   DETAILS
+------------------------------------------------------------ */
 
-  margin: 8px;
-
-  border: 1px solid var(--aiw-border-2);
-  border-radius: var(--aiw-r-lg);
-
-  overflow: hidden;
-
-  background: var(--aiw-surface);
+.aiw-details {
+  padding: 10px;
 }
 
-/* TITLE */
-.aiw-item-details__title {
-  padding: 10px 12px;
+/* ------------------------------------------------------------
+   BUTTONS
+------------------------------------------------------------ */
 
-  font-size: 14px;
-  font-weight: 700;
-
-  border-bottom: 1px solid var(--aiw-border-2);
-}
-
-/* TYPE META */
-.aiw-item-details__type {
-  padding: 6px 12px;
-
-  font-size: 11px;
-  font-weight: 700;
-
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-
-  color: var(--aiw-muted);
-}
-
-/* CONTENT (SAFE SCROLLING BEHAVIOR) */
-.aiw-item-details__content {
-  padding: 10px 12px;
-
-  font-size: 13px;
-  line-height: 1.55;
-
-  color: var(--aiw-text);
-
-  white-space: pre-wrap;
-  word-break: break-word;
-
-  max-height: 32vh;
-  overflow-y: auto;
-}
-
-/* BUTTONS */
 .aiw-btn {
   appearance: none;
 
@@ -238,21 +209,18 @@
 
   cursor: pointer;
 
-  transition:
-    background 120ms ease,
-    border-color 120ms ease,
-    transform 80ms ease;
+  transition: background 120ms ease;
 }
 
 .aiw-btn:hover {
   background: var(--aiw-surface-2);
 }
 
-.aiw-btn:active {
-  transform: translateY(0.5px);
+.aiw-btn:focus-visible {
+  outline: 3px solid rgba(16, 163, 127, 0.25);
+  outline-offset: 2px;
 }
 
-/* PRIMARY BUTTON */
 .aiw-btn--primary {
   background: var(--aiw-accent);
   color: white;
@@ -263,7 +231,10 @@
   background: var(--aiw-accent-hover);
 }
 
-/* FOOTER */
+/* ------------------------------------------------------------
+   FOOTER
+------------------------------------------------------------ */
+
 .aiw-footer {
   display: flex;
   gap: 10px;
@@ -277,17 +248,58 @@
   flex: 1;
 }
 
-/* EMPTY STATE (FIXED TYPOGRAPHY BALANCE) */
+/* ------------------------------------------------------------
+   EMPTY
+------------------------------------------------------------ */
+
 .aiw-empty {
   padding: 12px;
-
   font-size: 13px;
-  line-height: 1.45;
-
   color: var(--aiw-muted);
 }
 
-/* SCROLLBAR */
+/* ------------------------------------------------------------
+   FORM STYLES (THIS FIXES YOUR ISSUE)
+------------------------------------------------------------ */
+
+.aiw input,
+.aiw textarea {
+  width: 100%;
+  box-sizing: border-box;
+
+  font-family: inherit;
+  font-size: 13px;
+
+  padding: 8px 10px;
+
+  border: 1px solid var(--aiw-border);
+  border-radius: var(--aiw-r-md);
+
+  background: white;
+  color: var(--aiw-text);
+
+  outline: none;
+}
+
+.aiw input:focus,
+.aiw textarea:focus {
+  border-color: var(--aiw-accent);
+  box-shadow: 0 0 0 3px rgba(16, 163, 127, 0.15);
+}
+
+/* layout spacing for forms */
+.aiw form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+
+  padding: 8px;
+}
+
+/* ------------------------------------------------------------
+   SCROLLBARS
+------------------------------------------------------------ */
+
 .aiw-list::-webkit-scrollbar,
 .aiw-item-details__content::-webkit-scrollbar {
   width: 10px;
@@ -299,9 +311,4 @@
   border-radius: 999px;
   border: 3px solid transparent;
   background-clip: content-box;
-}
-
-.aiw-list::-webkit-scrollbar-thumb:hover,
-.aiw-item-details__content::-webkit-scrollbar-thumb:hover {
-  background: rgba(0, 0, 0, 0.18);
 }
