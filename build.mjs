@@ -8,7 +8,7 @@ const watch = process.argv.includes("--watch");
 
 // Set paths for input and output
 const entryPoints = [
-  "src/content/injectSidebar.ts",
+  "src/content/injectFloatingUi.ts",
   "src/background/serviceWorker.ts",
 ];
 const outdir = "dist";
@@ -37,17 +37,17 @@ if (watch) {
 }
 
 // Ensure that the ui folder exists in dist
-const uiDestDir = path.resolve("dist/ui");
+const uiDestDir = path.resolve("dist/ui/floating");
 if (!fs.existsSync(uiDestDir)) {
   fs.mkdirSync(uiDestDir, { recursive: true }); // Create the folder if it doesn't exist
 }
 
 // Copy sidebar.html and sidebar.css to dist/ui/
 fs.copyFileSync(
-  path.resolve("src/ui/sidebar.html"),
-  path.resolve(uiDestDir, "sidebar.html"),
+  path.resolve("src/ui/floating/floatingShell.html"),
+  path.resolve(uiDestDir, "floatingShell.html"),
 );
 fs.copyFileSync(
-  path.resolve("src/ui/sidebar.css"),
-  path.resolve(uiDestDir, "sidebar.css"),
+  path.resolve("src/ui/floating/floatingShell.css"),
+  path.resolve(uiDestDir, "floatingShell.css"),
 );

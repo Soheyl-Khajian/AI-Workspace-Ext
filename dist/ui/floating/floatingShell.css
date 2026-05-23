@@ -1,0 +1,660 @@
+/* ------------------------------------------------------------
+   FLOATING UI ROOT
+------------------------------------------------------------ */
+/*
+  Global floating layer for the extension.
+
+  This layer spans the entire viewport and becomes the shared
+  positioning + animation space for all future floating UI.
+
+  Future systems:
+  - radial menus
+  - overlays
+  - panels
+  - tooltips
+  - animations
+  - click-outside detection
+*/
+
+#aiw-floating-root {
+  /*
+    Attach directly to viewport.
+  */
+  position: fixed;
+
+  /*
+    Fill entire screen.
+  */
+  inset: 0;
+
+  /*
+    Prevent invisible overlay from blocking ChatGPT UI.
+  */
+  pointer-events: none;
+
+  /*
+    Extension must sit above host application.
+  */
+  z-index: 999999;
+
+  /*
+    Shared typography baseline.
+  */
+  font-family:
+    Inter,
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    sans-serif;
+}
+
+/* ------------------------------------------------------------
+   FLOATING ORB BUTTON
+------------------------------------------------------------ */
+/*
+  Main interaction anchor.
+
+  The orb is:
+  - entrypoint
+  - animation origin
+  - radial menu anchor
+  - future navigation hub
+*/
+
+#aiw-orb-button {
+  /*
+    Positioned relative to floating root.
+  */
+  position: absolute;
+
+  /*
+    Floating offset from viewport edges.
+
+    Do NOT hug corners tightly.
+  */
+  right: 52px;
+  bottom: 52px;
+
+  /*
+    Perfect circle dimensions.
+  */
+  width: 56px;
+  height: 56px;
+
+  /*
+    Remove browser defaults.
+  */
+  border: none;
+
+  /*
+    Circular shape.
+  */
+  border-radius: 50%;
+
+  /*
+    Parent disables pointer events,
+    so interactive elements must re-enable them.
+  */
+  pointer-events: auto;
+
+  /*
+    Interaction feedback.
+  */
+  cursor: pointer;
+
+  /*
+    Floating glass surface.
+  */
+  background: rgba(30, 30, 30, 0.84);
+
+  /*
+    Background blur for glass effect.
+  */
+  backdrop-filter: blur(14px);
+
+  /*
+    Floating elevation shadow.
+  */
+  box-shadow:
+    0 10px 32px rgba(0, 0, 0, 0.28),
+    0 2px 10px rgba(0, 0, 0, 0.18);
+
+  /*
+    Smooth state transitions.
+  */
+  transition:
+    transform 160ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+
+  /*
+    Removes Chromium tap flash.
+  */
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* ------------------------------------------------------------
+   ORB HOVER STATE
+------------------------------------------------------------ */
+
+#aiw-orb-button:hover {
+  /*
+    Slight lift effect.
+  */
+  transform: translateY(-2px);
+
+  /*
+    Slightly brighter surface.
+  */
+  background: rgba(44, 44, 44, 0.92);
+
+  /*
+    Stronger elevation.
+  */
+  box-shadow:
+    0 14px 40px rgba(0, 0, 0, 0.34),
+    0 4px 14px rgba(0, 0, 0, 0.22);
+}
+
+/* ------------------------------------------------------------
+   ORB PRESSED STATE
+------------------------------------------------------------ */
+
+#aiw-orb-button:active {
+  /*
+    Tactile press feedback.
+  */
+  transform: scale(0.96);
+}
+
+/* ------------------------------------------------------------
+   ORB FOCUS STATE
+------------------------------------------------------------ */
+
+#aiw-orb-button:focus-visible {
+  /*
+    Remove default browser outline.
+  */
+  outline: none;
+
+  /*
+    Accessible focus ring.
+  */
+  box-shadow:
+    0 0 0 4px rgba(16, 163, 127, 0.28),
+    0 10px 32px rgba(0, 0, 0, 0.28);
+}
+
+/* ------------------------------------------------------------
+   ORB EXPANDED STATE
+------------------------------------------------------------ */
+/*
+  Visual feedback when radial menu is opened.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"] #aiw-orb-button {
+  /*
+    Slight scale increase creates active feeling.
+  */
+  transform: scale(1.05);
+
+  /*
+    Active tinted surface.
+  */
+  background: rgba(24, 42, 76, 0.88);
+
+  /*
+    Stronger active glow.
+  */
+  box-shadow:
+    0 0 18px rgba(59, 130, 246, 0.18),
+    0 12px 38px rgba(0, 0, 0, 0.34);
+}
+
+/* ------------------------------------------------------------
+   ORB ACTIONS CONTAINER
+------------------------------------------------------------ */
+/*
+  Shared coordinate space for radial action buttons.
+
+  IMPORTANT:
+  This container itself is NOT interactive.
+
+  Only child buttons are interactive.
+*/
+
+#aiw-orb-actions {
+  /*
+    Positioned relative to floating root.
+  */
+  position: absolute;
+
+  /*
+    Match orb anchor coordinates.
+  */
+  right: 52px;
+  bottom: 52px;
+
+  /*
+    Same initial size as orb.
+  */
+  width: 56px;
+  height: 56px;
+
+  /*
+    Container itself should not block clicks.
+  */
+  pointer-events: none;
+
+  /*
+    Allow buttons to escape container bounds.
+  */
+  overflow: visible;
+}
+
+/* ------------------------------------------------------------
+   ORB ACTION BUTTONS
+------------------------------------------------------------ */
+/*
+  Floating radial actions.
+
+  Initially:
+  - stacked at center
+  - invisible
+  - scaled down
+
+  Expanded state moves them outward.
+*/
+
+.aiw-orb-action {
+  /*
+    Absolute positioning enables radial geometry.
+  */
+  position: absolute;
+
+  /*
+    All buttons initially stack from same origin.
+  */
+  top: 0;
+  left: 0;
+
+  /*
+    Initial collapsed state.
+  */
+  transform: translate(0, 0) scale(0.72);
+
+  /*
+    Hidden initially.
+  */
+  opacity: 0;
+
+  /*
+    Hidden buttons must not receive clicks.
+  */
+  pointer-events: none;
+
+  /*
+    Floating chip dimensions.
+  */
+  width: 96px;
+  height: 40px;
+
+  /*
+    Remove default browser button styles.
+  */
+  border: none;
+
+  /*
+    Pill shape.
+  */
+  border-radius: 999px;
+
+  /*
+    Floating dark glass surface.
+  */
+  background: rgba(28, 28, 28, 0.94);
+
+  /*
+    Text color.
+  */
+  color: rgba(255, 255, 255, 0.96);
+
+  /*
+    Glass blur.
+  */
+  backdrop-filter: blur(10px);
+
+  /*
+    Floating shadow.
+  */
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.24),
+    0 2px 8px rgba(0, 0, 0, 0.14);
+
+  /*
+    Interaction cursor.
+  */
+  cursor: pointer;
+
+  /*
+    Typography.
+  */
+  font-size: 13px;
+  font-weight: 500;
+
+  /*
+    Prevent accidental text selection.
+  */
+  user-select: none;
+
+  /*
+    Smooth radial animation.
+  */
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+/* ------------------------------------------------------------
+   ACTION BUTTON HOVER
+------------------------------------------------------------ */
+
+.aiw-orb-action:hover {
+  /*
+    Slight visual lift.
+  */
+  background: rgba(42, 42, 42, 0.98);
+
+  /*
+    Slight elevation.
+  */
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.28),
+    0 3px 10px rgba(0, 0, 0, 0.16);
+}
+
+/* ------------------------------------------------------------
+   ACTION BUTTON FOCUS
+------------------------------------------------------------ */
+
+.aiw-orb-action:focus-visible {
+  outline: none;
+
+  box-shadow:
+    0 0 0 4px rgba(16, 163, 127, 0.24),
+    0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+/* ------------------------------------------------------------
+   EXPANDED ACTION BASE STATE
+------------------------------------------------------------ */
+/*
+  Shared expanded behavior.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"] .aiw-orb-action {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ------------------------------------------------------------
+   PROJECTS ACTION POSITION
+------------------------------------------------------------ */
+/*
+  Left + slightly upward.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"]
+  .aiw-orb-action[data-action-id="projects"] {
+  transform: translate(-140px, 10px) scale(1);
+}
+
+/* ------------------------------------------------------------
+   CAPTURE ACTION POSITION
+------------------------------------------------------------ */
+/*
+  Upper-left diagonal.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"]
+  .aiw-orb-action[data-action-id="capture"] {
+  transform: translate(-90px, -65px) scale(1);
+}
+
+/* ------------------------------------------------------------
+   SEARCH ACTION POSITION
+------------------------------------------------------------ */
+/*
+  Directly upward.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"]
+  .aiw-orb-action[data-action-id="search"] {
+  transform: translate(-20px, -140px) scale(1);
+}
+
+/* ------------------------------------------------------------
+   FLOATING PANELS ROOT
+------------------------------------------------------------ */
+/*
+  Shared mounting area for ALL floating panels.
+
+  Examples:
+  - projects
+  - capture
+  - search
+  - future settings panel
+*/
+
+#aiw-orb-panels {
+  /*
+    Position relative to viewport.
+  */
+  position: absolute;
+
+  /*
+    Anchor near orb.
+  */
+  right: 235px;
+  bottom: 110px;
+
+  /*
+    Allow future animated overflow.
+  */
+  overflow: visible;
+
+  /*
+    Container itself should not block UI.
+  */
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   FLOATING PANEL SHELL
+------------------------------------------------------------ */
+/*
+  Reusable glass panel foundation.
+
+  ALL future panels reuse this shell.
+*/
+
+.aiw-floating-panel {
+  /*
+    Actual interactive surface.
+  */
+  pointer-events: auto;
+
+  /*
+    Floating geometry.
+  */
+  width: 380px;
+  min-height: 240px;
+  max-height: 72vh;
+
+  /*
+    Rounded glass card.
+  */
+  border-radius: 24px;
+
+  /*
+    Frosted surface.
+  */
+  background: rgba(20, 20, 20, 0.82);
+
+  /*
+    Glass blur.
+  */
+  backdrop-filter: blur(18px);
+
+  /*
+    Subtle glass border.
+  */
+  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  /*
+    Floating depth.
+  */
+  box-shadow:
+    0 24px 64px rgba(0, 0, 0, 0.42),
+    0 8px 20px rgba(0, 0, 0, 0.22);
+
+  /*
+    Internal layout.
+  */
+  display: flex;
+  flex-direction: column;
+
+  /*
+    Prevent content overflow glitches.
+  */
+  overflow: hidden;
+
+  /*
+    Smooth panel entrance behavior.
+  */
+  animation: aiw-panel-enter 180ms ease;
+}
+
+/* ------------------------------------------------------------
+   PANEL HEADER
+------------------------------------------------------------ */
+
+.aiw-floating-panel__header {
+  /*
+    Horizontal layout.
+  */
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  /*
+    Internal spacing.
+  */
+  padding: 18px 20px;
+
+  /*
+    Soft divider.
+  */
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------
+   PANEL TITLE
+------------------------------------------------------------ */
+
+.aiw-floating-panel__title {
+  /*
+    Remove browser heading spacing.
+  */
+  margin: 0;
+
+  /*
+    Typography.
+  */
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+
+  /*
+    Bright text.
+  */
+  color: rgba(255, 255, 255, 0.96);
+}
+
+/* ------------------------------------------------------------
+   PANEL BODY
+------------------------------------------------------------ */
+
+.aiw-floating-panel__body {
+  /*
+    Flexible content region.
+  */
+  flex: 1;
+
+  /*
+    Internal spacing.
+  */
+  padding: 20px;
+
+  /*
+    Scroll support for future content.
+  */
+  overflow-y: auto;
+}
+
+/* ------------------------------------------------------------
+   PANEL PLACEHOLDER
+------------------------------------------------------------ */
+
+.aiw-floating-panel__placeholder {
+  /*
+    Remove paragraph defaults.
+  */
+  margin: 0;
+
+  /*
+    Softer typography.
+  */
+  font-size: 14px;
+  line-height: 1.5;
+
+  /*
+    Muted color.
+  */
+  color: rgba(255, 255, 255, 0.62);
+}
+
+/* ------------------------------------------------------------
+   PANEL SCROLLBAR
+------------------------------------------------------------ */
+
+.aiw-floating-panel__body::-webkit-scrollbar {
+  width: 10px;
+}
+
+.aiw-floating-panel__body::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 999px;
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* ------------------------------------------------------------
+   PANEL ENTRANCE ANIMATION
+------------------------------------------------------------ */
+
+@keyframes aiw-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}

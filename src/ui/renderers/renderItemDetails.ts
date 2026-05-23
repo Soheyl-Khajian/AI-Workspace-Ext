@@ -1,4 +1,4 @@
-// src/ui/renderItemDetails.ts
+// src/ui/renderers/renderItemDetails.ts
 // ------------------------------------------------------------
 // Responsibility:
 // Render a single Item (or empty state) into the detail panel.
@@ -10,7 +10,7 @@
 // - Must produce consistent DOM structure per render
 // ------------------------------------------------------------
 
-import type { Item } from "../models/item";
+import type { Item } from "../../models/item";
 
 /**
  * Main render function for item details panel.

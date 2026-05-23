@@ -1,4 +1,4 @@
-// src/ui/renderItems.ts
+// src/ui/renderers/renderItems.ts
 // ------------------------------------------------------------
 // ITEMS RENDERER
 //

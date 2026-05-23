@@ -1,4 +1,4 @@
-// src/ui/renderProjects.ts
+// src/ui/renderers/renderProjects.ts
 // ------------------------------------------------------------
 // Responsibility:
 // Render Project domain objects into a sidebar container.
@@ -10,7 +10,7 @@
 // - Interaction delegated via callback
 // ------------------------------------------------------------
 
-import { Project } from "../models/project";
+import { Project } from "../../models/project";
 
 /**
  * Render the project list UI.

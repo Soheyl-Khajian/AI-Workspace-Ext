@@ -47,8 +47,10 @@ import { renderUi } from "./renderers/renderSidebar";
 // MAIN INITIALIZER
 // ------------------------------------------------------------
 
-export async function initSidebarController(root: HTMLElement): Promise<void> {
-  const dom = createSidebarDom(root);
+export async function initSidebarController(
+  rootEl: HTMLElement,
+): Promise<void> {
+  const dom = createSidebarDom(rootEl);
 
   // ----------------------------------------------------------
   // ACTION DEPENDENCIES
@@ -119,14 +121,13 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
     await refreshItemsState();
 
     closeProjectForm();
-    resetProjectDraft();
 
     rerender();
   }
 
   function handleProjectCancel(): void {
     closeProjectForm();
-    resetProjectDraft();
+
     rerender();
   }
 
@@ -180,14 +181,13 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
     setSelectedItemId(newItem.id);
 
     closeItemForm();
-    resetItemDraft();
 
     rerender();
   }
 
   function handleItemCancel(): void {
     closeItemForm();
-    resetItemDraft();
+
     rerender();
   }
 
@@ -197,7 +197,9 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
 
   dom.addProjectButtonEl.addEventListener("click", () => {
     openProjectForm();
+    closeItemForm();
     resetProjectDraft();
+
     rerender();
   });
 
@@ -209,7 +211,9 @@ export async function initSidebarController(root: HTMLElement): Promise<void> {
     }
 
     openItemForm();
+    closeProjectForm();
     resetItemDraft();
+
     rerender();
   });
 
