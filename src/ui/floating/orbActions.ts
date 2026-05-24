@@ -3,11 +3,12 @@
 // ORB ACTIONS
 //
 // This is NOT UI. It is domain-level mapping.
+// ------------------------------------------------------------
 
-export type OrbActionId = "projects" | "capture" | "search";
+import type { OrbPanelId } from "./types";
 
 export type OrbAction = {
-  id: OrbActionId;
+  id: OrbPanelId;
   label: string;
 };
 

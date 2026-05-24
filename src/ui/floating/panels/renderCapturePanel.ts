@@ -1,6 +1,6 @@
-// src/ui/floating/panels/renderProjectsPanel.ts
+// src/ui/floating/panels/renderCapturePanel.ts
 // ------------------------------------------------------------
-// PROJECTS PANEL RENDERER
+// CAPTURE PANEL RENDERER
 // ------------------------------------------------------------
 
 // Responsibility:
@@ -16,6 +16,7 @@
 // - NO global DOM queries
 // - NO business logic
 // - NO async logic
+// ------------------------------------------------------------
 
 export function renderCapturePanel(containerEl: HTMLElement): void {
   const panelEl = document.createElement("section");

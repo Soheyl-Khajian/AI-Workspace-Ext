@@ -16,6 +16,7 @@
 // - NO global DOM queries
 // - NO business logic
 // - NO async logic
+// ------------------------------------------------------------
 
 export function renderProjectsPanel(containerEl: HTMLElement): void {
   const panelEl = document.createElement("section");

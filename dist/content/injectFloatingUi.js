@@ -206,7 +206,7 @@
   function mustQuery(root, selector) {
     const el = root.querySelector(selector);
     if (!el) {
-      throw new Error(`Missing required sidebar element: ${selector}`);
+      throw new Error(`Missing required UI element: ${selector}`);
     }
     return el;
   }
@@ -224,74 +224,28 @@
     }
   });
 
-  // src/ui/floating/floatingState.ts
-  function isOrbExpanded() {
-    return state.isOrbExpanded;
-  }
-  function expandOrb() {
-    state.isOrbExpanded = true;
-  }
-  function collapseOrb() {
-    state.isOrbExpanded = false;
-  }
-  var state;
-  var init_floatingState = __esm({
-    "src/ui/floating/floatingState.ts"() {
-      "use strict";
-      state = {
-        isOrbExpanded: false
-      };
-    }
-  });
-
-  // src/ui/floating/panels/floatingPanelState.ts
-  function setActivePanel(panel) {
-    activePanel = panel;
-  }
-  function clearActivePanel() {
-    activePanel = null;
-  }
-  function getActivePanel() {
-    return activePanel;
-  }
-  var activePanel;
-  var init_floatingPanelState = __esm({
-    "src/ui/floating/panels/floatingPanelState.ts"() {
-      "use strict";
-      activePanel = null;
-    }
-  });
-
   // src/ui/floating/orbActionRouter.ts
   function handleOrbAction(actionId, context) {
-    const currentPanel = getActivePanel();
-    if (currentPanel === actionId) {
-      context.closeAllPanels();
-      return;
-    }
-    context.closeAllPanels();
     switch (actionId) {
       case "projects":
-        context.closeAllPanels();
-        context.openProjectsPanel();
+        context.toggleProjectsPanel();
         break;
       case "capture":
-        context.closeAllPanels();
-        context.openCapturePanel();
+        context.toggleCapturePanel();
         break;
       case "search":
-        context.closeAllPanels();
-        context.openSearchPanel();
+        context.toggleSearchPanel();
         break;
       default:
-        console.log(`Unknown action ID: ${actionId}`);
-        return;
+        assertNever(actionId);
     }
+  }
+  function assertNever(value) {
+    throw new Error(`Unhandled action: ${String(value)}`);
   }
   var init_orbActionRouter = __esm({
     "src/ui/floating/orbActionRouter.ts"() {
       "use strict";
-      init_floatingPanelState();
     }
   });
 
@@ -357,6 +311,46 @@
     "src/ui/floating/renderers/renderOrbActions.ts"() {
       "use strict";
       init_createOrbActionButton();
+    }
+  });
+
+  // src/ui/floating/state/floatingUiState.ts
+  function isOrbExpanded() {
+    return state.orbExpanded;
+  }
+  function getActivePanel() {
+    return state.activePanel;
+  }
+  function expandOrb() {
+    state.orbExpanded = true;
+  }
+  function collapseOrb() {
+    state.orbExpanded = false;
+    state.activePanel = null;
+  }
+  function openPanel(panel) {
+    state.activePanel = panel;
+    state.orbExpanded = true;
+  }
+  function closePanel() {
+    state.activePanel = null;
+  }
+  function togglePanel(panel) {
+    const current = getActivePanel();
+    if (current === panel) {
+      closePanel();
+    } else {
+      openPanel(panel);
+    }
+  }
+  var state;
+  var init_floatingUiState = __esm({
+    "src/ui/floating/state/floatingUiState.ts"() {
+      "use strict";
+      state = {
+        orbExpanded: false,
+        activePanel: null
+      };
     }
   });
 
@@ -438,11 +432,11 @@
   // src/ui/floating/panels/renderFloatingPanels.ts
   function renderFloatingPanels(containerEl) {
     containerEl.textContent = "";
-    const activePanel2 = getActivePanel();
-    if (activePanel2 === null) {
+    const activePanel = getActivePanel();
+    if (activePanel === null) {
       return;
     }
-    switch (activePanel2) {
+    switch (activePanel) {
       case "projects":
         renderProjectsPanel(containerEl);
         break;
@@ -453,16 +447,16 @@
         renderSearchPanel(containerEl);
         break;
       default:
-        assertNever(activePanel2);
+        assertNever2(activePanel);
     }
   }
-  function assertNever(value) {
+  function assertNever2(value) {
     throw new Error(`Unhandled panel type: ${String(value)}`);
   }
   var init_renderFloatingPanels = __esm({
     "src/ui/floating/panels/renderFloatingPanels.ts"() {
       "use strict";
-      init_floatingPanelState();
+      init_floatingUiState();
       init_renderProjectsPanel();
       init_renderCapturePanel();
       init_renderSearchPanel();
@@ -470,10 +464,10 @@
   });
 
   // src/ui/floating/floatingController.ts
-  async function initFloatingController(rootEl) {
+  function initFloatingController(rootEl) {
     const dom = createFloatingDom(rootEl);
     const actionsContext = createOrbActionContext();
-    syncVisualState();
+    renderUi();
     function handleDocumentPointerDown(event) {
       const target = event.target;
       if (!(target instanceof Node)) {
@@ -487,30 +481,35 @@
     }
     function createOrbActionContext() {
       return {
-        openProjectsPanel: () => {
-          setActivePanel("projects");
+        toggleProjectsPanel: () => {
+          togglePanel("projects");
         },
-        openCapturePanel: () => {
-          setActivePanel("capture");
+        toggleCapturePanel: () => {
+          togglePanel("capture");
         },
-        openSearchPanel: () => {
-          setActivePanel("search");
-        },
-        closeAllPanels: () => {
-          clearActivePanel();
+        toggleSearchPanel: () => {
+          togglePanel("search");
         }
       };
     }
     function closeFloatingUi() {
       collapseOrb();
-      clearActivePanel();
-      syncVisualState();
+      renderUi();
+    }
+    function handleOrbButtonClick() {
+      const expanded = isOrbExpanded();
+      if (expanded) {
+        collapseOrb();
+      } else {
+        expandOrb();
+      }
+      renderUi();
     }
     function handleOrbActionClick(actionId) {
       handleOrbAction(actionId, actionsContext);
-      syncVisualState();
+      renderUi();
     }
-    function syncVisualState() {
+    function renderUi() {
       const expanded = isOrbExpanded();
       const orbActions2 = getOrbActions();
       dom.rootEl.dataset.orbExpanded = String(expanded);
@@ -522,28 +521,22 @@
       );
       renderFloatingPanels(dom.orbPanelsEl);
     }
-    dom.orbButtonEl.addEventListener("click", () => {
-      const expanded = isOrbExpanded();
-      if (expanded) {
-        collapseOrb();
-        clearActivePanel();
-      } else {
-        expandOrb();
-      }
-      syncVisualState();
-    });
+    dom.orbButtonEl.addEventListener("click", handleOrbButtonClick);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
+    return function destroyFloatingController() {
+      dom.orbButtonEl.removeEventListener("click", handleOrbButtonClick);
+      document.removeEventListener("pointerdown", handleDocumentPointerDown);
+    };
   }
   var init_floatingController = __esm({
     "src/ui/floating/floatingController.ts"() {
       "use strict";
       init_floatingDom();
-      init_floatingState();
       init_orbActionRouter();
       init_orbActions();
       init_renderOrbActions();
       init_renderFloatingPanels();
-      init_floatingPanelState();
+      init_floatingUiState();
     }
   });
 

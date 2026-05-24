@@ -17,8 +17,9 @@
 // - NO business logic
 // - NO async logic
 // - NO event orchestration
+// ------------------------------------------------------------
 
-import { getActivePanel } from "./floatingPanelState";
+import { getActivePanel } from "../state/floatingUiState";
 import { renderProjectsPanel } from "./renderProjectsPanel";
 import { renderCapturePanel } from "./renderCapturePanel";
 import { renderSearchPanel } from "./renderSearchPanel";

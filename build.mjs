@@ -42,12 +42,28 @@ if (!fs.existsSync(uiDestDir)) {
   fs.mkdirSync(uiDestDir, { recursive: true }); // Create the folder if it doesn't exist
 }
 
-// Copy sidebar.html and sidebar.css to dist/ui/
+// Copy html and css files to dist/ui/
 fs.copyFileSync(
   path.resolve("src/ui/floating/floatingShell.html"),
   path.resolve(uiDestDir, "floatingShell.html"),
 );
 fs.copyFileSync(
-  path.resolve("src/ui/floating/floatingShell.css"),
+  path.resolve("src/ui/floating/styles/floatingShell.css"),
   path.resolve(uiDestDir, "floatingShell.css"),
+);
+fs.copyFileSync(
+  path.resolve("src/ui/floating/styles/root.css"),
+  path.resolve(uiDestDir, "root.css"),
+);
+fs.copyFileSync(
+  path.resolve("src/ui/floating/styles/orb.css"),
+  path.resolve(uiDestDir, "orb.css"),
+);
+fs.copyFileSync(
+  path.resolve("src/ui/floating/styles/actions.css"),
+  path.resolve(uiDestDir, "actions.css"),
+);
+fs.copyFileSync(
+  path.resolve("src/ui/floating/styles/panels.css"),
+  path.resolve(uiDestDir, "panels.css"),
 );

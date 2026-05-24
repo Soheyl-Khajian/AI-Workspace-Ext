@@ -7,7 +7,7 @@ function mustQuery<T extends Element>(root: ParentNode, selector: string): T {
   const el = root.querySelector(selector);
 
   if (!el) {
-    throw new Error(`Missing required sidebar element: ${selector}`);
+    throw new Error(`Missing required UI element: ${selector}`);
   }
 
   return el as T;

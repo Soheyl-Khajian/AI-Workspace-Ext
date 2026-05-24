@@ -16,12 +16,13 @@
 // No global state.
 // No rendering orchestration.
 // No querying existing DOM.
+// ------------------------------------------------------------
 
-type OrbActionId = "projects" | "capture" | "search";
+import type { OrbPanelId } from "../types";
 
 type OrbActionButtonParams = {
   label: string;
-  actionId: OrbActionId;
+  actionId: OrbPanelId;
 };
 
 export function createOrbActionButton({

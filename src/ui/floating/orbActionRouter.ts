@@ -1,62 +1,49 @@
 // src/ui/floating/orbActionRouter.ts
 // ------------------------------------------------------------
-// this is a router
-// it only maps actions → behaviors
-// it is not allowed to mutate UI or state directly
+// ORB ACTION ROUTER
+// ------------------------------------------------------------
 //
 // Responsibility:
+// - map orb actions to UI behaviors
+// - delegate behavior execution to provided context
 //
-// receives actionId
-// decides what system behavior runs
-// does NOT render anything
-// does NOT touch DOM
-// does NOT manage UI state
+// IMPORTANT:
+// - NO DOM access
+// - NO rendering
+// - NO state ownership
+// - NO business logic
+// ------------------------------------------------------------
 
-import { getActivePanel } from "./panels/floatingPanelState";
-
-// Only orchestration of behavior.
-
-type OrbActionId = "projects" | "capture" | "search";
+import type { OrbPanelId } from "./types";
 
 export type OrbActionContext = {
-  openProjectsPanel: () => void;
-  openCapturePanel: () => void;
-  openSearchPanel: () => void;
-
-  closeAllPanels: () => void;
+  toggleProjectsPanel: () => void;
+  toggleCapturePanel: () => void;
+  toggleSearchPanel: () => void;
 };
 
 export function handleOrbAction(
-  actionId: OrbActionId,
+  actionId: OrbPanelId,
   context: OrbActionContext,
 ): void {
-  const currentPanel = getActivePanel();
-
-  if (currentPanel === actionId) {
-    context.closeAllPanels();
-    return;
-  }
-
-  context.closeAllPanels();
-
   switch (actionId) {
     case "projects":
-      context.closeAllPanels();
-      context.openProjectsPanel();
+      context.toggleProjectsPanel();
       break;
 
     case "capture":
-      context.closeAllPanels();
-      context.openCapturePanel();
+      context.toggleCapturePanel();
       break;
 
     case "search":
-      context.closeAllPanels();
-      context.openSearchPanel();
+      context.toggleSearchPanel();
       break;
 
     default:
-      console.log(`Unknown action ID: ${actionId}`);
-      return;
+      assertNever(actionId);
   }
+}
+
+function assertNever(value: never): never {
+  throw new Error(`Unhandled action: ${String(value)}`);
 }

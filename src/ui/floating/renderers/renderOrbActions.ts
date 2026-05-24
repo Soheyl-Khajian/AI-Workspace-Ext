@@ -7,13 +7,13 @@
 // mounting/unmounting them
 // reflecting expanded/collapsed state
 // attaching click callbacks
+// ------------------------------------------------------------
 
+import type { OrbPanelId } from "../types";
 import { createOrbActionButton } from "../components/createOrbActionButton";
 
-type OrbActionId = "projects" | "capture" | "search";
-
 type OrbAction = {
-  id: OrbActionId;
+  id: OrbPanelId;
   label: string;
 };
 
@@ -21,7 +21,7 @@ export function renderOrbActions(
   containerEl: HTMLElement,
   expanded: boolean,
   actions: OrbAction[],
-  onActionClick: (actionId: OrbActionId) => void,
+  onActionClick: (actionId: OrbPanelId) => void,
 ): void {
   containerEl.textContent = "";
 

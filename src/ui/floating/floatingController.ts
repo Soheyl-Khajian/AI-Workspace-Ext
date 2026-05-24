@@ -1,28 +1,44 @@
 // src/ui/floating/floatingController.ts
 // ------------------------------------------------------------
 // FLOATING UI CONTROLLER
+//
+// Responsibility:
+// - initialize floating UI systems
+// - wire UI events to state mutations
+// - synchronize state → visual rendering
+// - manage controller lifecycle
+//
+// IMPORTANT:
+// - owns event listeners
+// - coordinates render flow
+// - may orchestrate state modules
+//
+// NOT RESPONSIBLE FOR:
+// - DOM creation details
+// - rendering implementation
+// - business logic
+// - persistent storage
+// ------------------------------------------------------------
 
 import { createFloatingDom } from "./floatingDom";
+import { handleOrbAction } from "./orbActionRouter";
+import type { OrbActionContext } from "./orbActionRouter";
+import { getOrbActions } from "./orbActions";
+import type { OrbPanelId } from "./types";
+import { renderOrbActions } from "./renderers/renderOrbActions";
+import { renderFloatingPanels } from "./panels/renderFloatingPanels";
 import {
   collapseOrb,
   expandOrb,
   isOrbExpanded,
-  toggleOrb,
-} from "./floatingState";
-import { handleOrbAction } from "./orbActionRouter";
-import { getOrbActions } from "./orbActions";
-import type { OrbActionId } from "./orbActions";
-import { renderOrbActions } from "./renderers/renderOrbActions";
-import { renderFloatingPanels } from "./panels/renderFloatingPanels";
-import { setActivePanel, clearActivePanel } from "./panels/floatingPanelState";
+  togglePanel,
+} from "./state/floatingUiState";
 
-export async function initFloatingController(
-  rootEl: HTMLElement,
-): Promise<void> {
+export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
   const actionsContext = createOrbActionContext();
 
-  syncVisualState();
+  renderUi();
 
   function handleDocumentPointerDown(event: PointerEvent): void {
     /*
@@ -58,43 +74,47 @@ export async function initFloatingController(
     closeFloatingUi();
   }
 
-  function createOrbActionContext() {
+  function createOrbActionContext(): OrbActionContext {
     return {
-      openProjectsPanel: () => {
-        setActivePanel("projects");
+      toggleProjectsPanel: () => {
+        togglePanel("projects");
       },
 
-      openCapturePanel: () => {
-        setActivePanel("capture");
+      toggleCapturePanel: () => {
+        togglePanel("capture");
       },
 
-      openSearchPanel: () => {
-        setActivePanel("search");
-      },
-
-      closeAllPanels: () => {
-        clearActivePanel();
+      toggleSearchPanel: () => {
+        togglePanel("search");
       },
     };
   }
 
   function closeFloatingUi(): void {
     collapseOrb();
-    clearActivePanel();
 
-    /*
-      Reflect latest state into UI.
-    */
-    syncVisualState();
+    renderUi();
   }
 
-  function handleOrbActionClick(actionId: OrbActionId): void {
+  function handleOrbButtonClick(): void {
+    const expanded = isOrbExpanded();
+
+    if (expanded) {
+      collapseOrb();
+    } else {
+      expandOrb();
+    }
+
+    renderUi();
+  }
+
+  function handleOrbActionClick(actionId: OrbPanelId): void {
     handleOrbAction(actionId, actionsContext);
 
-    syncVisualState();
+    renderUi();
   }
 
-  function syncVisualState(): void {
+  function renderUi(): void {
     const expanded = isOrbExpanded();
     const orbActions = getOrbActions();
 
@@ -110,17 +130,12 @@ export async function initFloatingController(
     renderFloatingPanels(dom.orbPanelsEl);
   }
 
-  dom.orbButtonEl.addEventListener("click", () => {
-    const expanded = isOrbExpanded();
-    if (expanded) {
-      collapseOrb();
-      clearActivePanel();
-    } else {
-      expandOrb();
-    }
-
-    syncVisualState();
-  });
+  dom.orbButtonEl.addEventListener("click", handleOrbButtonClick);
 
   document.addEventListener("pointerdown", handleDocumentPointerDown);
+
+  return function destroyFloatingController(): void {
+    dom.orbButtonEl.removeEventListener("click", handleOrbButtonClick);
+    document.removeEventListener("pointerdown", handleDocumentPointerDown);
+  };
 }

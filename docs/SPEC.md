@@ -9,7 +9,7 @@ Architecture Style: Local-first, vertical-slice development
 
 # 1. Purpose
 
-AI Workspace is a local-first browser extension that injects a persistent workspace sidebar into ChatGPT.
+AI Workspace is a local-first browser extension that injects a persistent workspace extension into ChatGPT.
 
 The extension allows users to:
 
@@ -709,14 +709,14 @@ Promise<void>;
 
 ---
 
-# 8.1 Sidebar Injection
+# 8.1 UI Injection
 
-The extension injects a fixed-position sidebar into ChatGPT pages.
+The extension injects a fixed-position orb button into ChatGPT pages.
 
 Requirements:
 
 - idempotent injection
-- no duplicate sidebars
+- no duplicate orb button
 - no duplicate CSS injection
 
 ---
@@ -894,7 +894,7 @@ The MVP is complete only when all are true:
 - Selection capture works
 - Context pack generation works
 - Export/import works
-- Sidebar injection is stable
+- UI injection is stable
 - No duplicate injection bugs remain
 
 ---
