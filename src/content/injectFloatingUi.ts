@@ -18,11 +18,11 @@ import { initFloatingController } from "../ui/floating/floatingController";
    Asset Injection (CSS + HTML)
 ------------------------------------------------------------ */
 
-async function injectFloatingAssets(): Promise<void> {
+async function injectFloatingAssets(): Promise<HTMLElement> {
   // Inject stylesheet only once (idempotent)
-  const styleExists = document.getElementById("aiw-floating-style");
+  const existingStyle = document.getElementById("aiw-floating-style");
 
-  if (!styleExists) {
+  if (!existingStyle) {
     const link = document.createElement("link");
     link.id = "aiw-floating-style";
     link.rel = "stylesheet";
@@ -32,9 +32,9 @@ async function injectFloatingAssets(): Promise<void> {
   }
 
   // Inject HTML structure only once
-  const rootExists = document.getElementById("aiw-floating-root");
+  let existingRoot = document.getElementById("aiw-floating-root");
 
-  if (!rootExists) {
+  if (!existingRoot) {
     const response = await fetch(
       chrome.runtime.getURL("dist/ui/floating/floatingShell.html"),
     );
@@ -49,14 +49,15 @@ async function injectFloatingAssets(): Promise<void> {
       "beforeend",
       html,
     );
+
+    existingRoot = document.getElementById("aiw-floating-root");
   }
 
-  // Hard invariant: ensure injection succeeded
-  const root = document.getElementById("aiw-floating-root");
-
-  if (!root) {
+  if (!existingRoot) {
     throw new Error("floating UI root not found after injection");
   }
+
+  return existingRoot;
 }
 
 /* ------------------------------------------------------------
@@ -85,19 +86,12 @@ async function seedDevDataOnce(): Promise<void> {
 
 async function bootstrap(): Promise<void> {
   // Step 1: inject UI assets into host page
-  await injectFloatingAssets();
+  const root = await injectFloatingAssets();
 
-  // Step 2: acquire root element for controller
-  const root = document.getElementById("aiw-floating-root");
+  // Step 2: hand over control to UI controller
+  initFloatingController(root);
 
-  if (!root) {
-    throw new Error("floating UI root missing after injection");
-  }
-
-  // Step 3: hand over control to UI controller
-  await initFloatingController(root);
-
-  // Step 4: optional dev initialization
+  // Step 3: optional dev initialization
   await seedDevDataOnce();
 }
 

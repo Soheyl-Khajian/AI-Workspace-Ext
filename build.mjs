@@ -1,4 +1,13 @@
-//build.mjs
+// ./build.mjs
+// ------------------------------------------------------------
+// BUILD CONFIG
+//
+// Responsibility:
+// build orchestration
+// esbuild config
+// asset copying
+// watch/build mode
+
 import * as esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
@@ -22,7 +31,7 @@ const ctx = await esbuild.context({
   target: "chrome120", // Target the most recent Chrome (use latest version for future-proofing)
   format: "iife", // Immediately Invoked Function Expression (for the browser environment)
   loader: {
-    ".ts": "tsx", // Handle TypeScript and JSX syntax
+    ".ts": "ts", // Handle TypeScript syntax
   },
   plugins: [],
 });
@@ -42,28 +51,13 @@ if (!fs.existsSync(uiDestDir)) {
   fs.mkdirSync(uiDestDir, { recursive: true }); // Create the folder if it doesn't exist
 }
 
-// Copy html and css files to dist/ui/
 fs.copyFileSync(
   path.resolve("src/ui/floating/floatingShell.html"),
   path.resolve(uiDestDir, "floatingShell.html"),
 );
-fs.copyFileSync(
-  path.resolve("src/ui/floating/styles/floatingShell.css"),
-  path.resolve(uiDestDir, "floatingShell.css"),
-);
-fs.copyFileSync(
-  path.resolve("src/ui/floating/styles/root.css"),
-  path.resolve(uiDestDir, "root.css"),
-);
-fs.copyFileSync(
-  path.resolve("src/ui/floating/styles/orb.css"),
-  path.resolve(uiDestDir, "orb.css"),
-);
-fs.copyFileSync(
-  path.resolve("src/ui/floating/styles/actions.css"),
-  path.resolve(uiDestDir, "actions.css"),
-);
-fs.copyFileSync(
-  path.resolve("src/ui/floating/styles/panels.css"),
-  path.resolve(uiDestDir, "panels.css"),
+
+fs.cpSync(
+  path.resolve("src/ui/floating/styles"),
+  path.resolve("dist/ui/floating"),
+  { recursive: true },
 );

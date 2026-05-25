@@ -27,6 +27,7 @@ import { renderSearchPanel } from "./renderSearchPanel";
 export function renderFloatingPanels(containerEl: HTMLElement): void {
   containerEl.textContent = "";
 
+  // potential future spaghetti due to state read :D
   const activePanel = getActivePanel();
 
   if (activePanel === null) {

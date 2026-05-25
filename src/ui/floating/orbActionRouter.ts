@@ -17,9 +17,7 @@
 import type { OrbPanelId } from "./types";
 
 export type OrbActionContext = {
-  toggleProjectsPanel: () => void;
-  toggleCapturePanel: () => void;
-  toggleSearchPanel: () => void;
+  togglePanel: (panelId: OrbPanelId) => void;
 };
 
 export function handleOrbAction(
@@ -28,15 +26,9 @@ export function handleOrbAction(
 ): void {
   switch (actionId) {
     case "projects":
-      context.toggleProjectsPanel();
-      break;
-
     case "capture":
-      context.toggleCapturePanel();
-      break;
-
     case "search":
-      context.toggleSearchPanel();
+      context.togglePanel(actionId);
       break;
 
     default:

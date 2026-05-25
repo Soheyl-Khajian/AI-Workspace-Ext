@@ -51,10 +51,6 @@ export function getActivePanel(): OrbPanelId | null {
   return state.activePanel;
 }
 
-export function hasOpenPanel(): boolean {
-  return state.activePanel !== null;
-}
-
 // ----------------------------------------------------------
 // MUTATIONS
 // ----------------------------------------------------------
@@ -78,12 +74,13 @@ export function closePanel(): void {
 }
 
 export function togglePanel(panel: OrbPanelId): void {
-  const current = getActivePanel();
+  const current = state.activePanel;
 
   if (current === panel) {
-    closePanel();
+    state.activePanel = null;
   } else {
-    openPanel(panel);
+    state.activePanel = panel;
+    state.orbExpanded = true;
   }
 }
 

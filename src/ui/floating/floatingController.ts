@@ -42,20 +42,13 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   function handleDocumentPointerDown(event: PointerEvent): void {
     /*
-      event.target is typed as:
-      EventTarget | null
-  
-      But .contains() expects:
-      Node
-  
+      event.target is typed as: EventTarget | null But .contains() expects: Node. 
       So we must safely narrow the type first.
     */
     const target = event.target;
 
     /*
-      Extremely defensive safety check.
-  
-      In browser environments this is almost always a Node,
+      Extremely defensive safety check. In browser environments this is almost always a Node,
       but never assume.
     */
     if (!(target instanceof Node)) {
@@ -71,48 +64,50 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       return;
     }
 
-    closeFloatingUi();
+    setOrbCollapsed();
   }
 
-  function createOrbActionContext(): OrbActionContext {
-    return {
-      toggleProjectsPanel: () => {
-        togglePanel("projects");
-      },
+  // ----------------------------------------------------------
+  // HELPER FUNCTIONS
+  // ----------------------------------------------------------
 
-      toggleCapturePanel: () => {
-        togglePanel("capture");
-      },
-
-      toggleSearchPanel: () => {
-        togglePanel("search");
-      },
-    };
+  function setOrbExpanded(): void {
+    expandOrb();
+    renderUi();
   }
 
-  function closeFloatingUi(): void {
+  function setOrbCollapsed(): void {
     collapseOrb();
 
     renderUi();
   }
 
-  function handleOrbButtonClick(): void {
+  function toggleOrbVisibility(): void {
     const expanded = isOrbExpanded();
 
     if (expanded) {
-      collapseOrb();
+      setOrbCollapsed();
     } else {
-      expandOrb();
+      setOrbExpanded();
     }
+  }
 
+  function toggleFloatingPanel(panelId: OrbPanelId): void {
+    togglePanel(panelId);
     renderUi();
+  }
+
+  function createOrbActionContext(): OrbActionContext {
+    return { togglePanel: toggleFloatingPanel };
   }
 
   function handleOrbActionClick(actionId: OrbPanelId): void {
     handleOrbAction(actionId, actionsContext);
-
-    renderUi();
   }
+
+  // ----------------------------------------------------------
+  // RENDER AND EVENTS
+  // ----------------------------------------------------------
 
   function renderUi(): void {
     const expanded = isOrbExpanded();
@@ -130,12 +125,12 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     renderFloatingPanels(dom.orbPanelsEl);
   }
 
-  dom.orbButtonEl.addEventListener("click", handleOrbButtonClick);
+  dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
 
   document.addEventListener("pointerdown", handleDocumentPointerDown);
 
   return function destroyFloatingController(): void {
-    dom.orbButtonEl.removeEventListener("click", handleOrbButtonClick);
+    dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
   };
 }
