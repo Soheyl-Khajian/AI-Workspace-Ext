@@ -55,7 +55,7 @@
   */
   width: 380px;
   min-height: 240px;
-  max-height: 72vh;
+  max-height: 38vh;
 
   /*
     Rounded glass card.
@@ -219,4 +219,152 @@
     opacity: 1;
     transform: translateY(0) scale(1);
   }
+}
+
+/* ------------------------------------------------------------
+   PROJECTS PANEL STATES
+------------------------------------------------------------ */
+
+.aiw-projects-state {
+  /*
+    Center lightweight placeholder states.
+  */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /*
+    Comfortable vertical spacing.
+  */
+  min-height: 140px;
+
+  /*
+    Softer typography.
+  */
+  font-size: 14px;
+  line-height: 1.5;
+
+  /*
+    Muted text color.
+  */
+  color: rgba(255, 255, 255, 0.62);
+
+  /*
+    Center text visually.
+  */
+  text-align: center;
+}
+
+/* ------------------------------------------------------------
+   ERROR STATE
+------------------------------------------------------------ */
+
+.aiw-projects-state--error {
+  /*
+    Slight error tint.
+  */
+  color: rgba(255, 120, 120, 0.92);
+}
+
+/* ------------------------------------------------------------
+   PROJECTS LIST
+------------------------------------------------------------ */
+
+.aiw-projects-list {
+  /*
+    Vertical stacking layout.
+  */
+  display: flex;
+  flex-direction: column;
+
+  /*
+    Space between rows.
+  */
+  gap: 10px;
+}
+
+/* ------------------------------------------------------------
+   PROJECT ROW
+------------------------------------------------------------ */
+
+.aiw-project-row {
+  /*
+    Remove browser defaults.
+  */
+  border: none;
+
+  /*
+    Full-width clickable row.
+  */
+  width: 100%;
+
+  /*
+    Horizontal alignment.
+  */
+  display: flex;
+  align-items: center;
+
+  /*
+    Internal spacing.
+  */
+  padding: 14px 16px;
+
+  /*
+    Rounded card surface.
+  */
+  border-radius: 16px;
+
+  /*
+    Dark glass row.
+  */
+  background: rgba(255, 255, 255, 0.04);
+
+  /*
+    Typography.
+  */
+  font-size: 14px;
+  font-weight: 500;
+
+  /*
+    Bright text.
+  */
+  color: rgba(255, 255, 255, 0.92);
+
+  /*
+    Interactive behavior.
+  */
+  cursor: pointer;
+
+  /*
+    Smooth hover transitions.
+  */
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+/* ------------------------------------------------------------
+   PROJECT ROW HOVER
+------------------------------------------------------------ */
+
+.aiw-project-row:hover {
+  /*
+    Slight lift effect.
+  */
+  transform: translateY(-1px);
+
+  /*
+    Slightly brighter surface.
+  */
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ------------------------------------------------------------
+   PROJECT ROW FOCUS
+------------------------------------------------------------ */
+
+.aiw-project-row:focus-visible {
+  outline: none;
+
+  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
 }

@@ -20,25 +20,31 @@
 // - persistent storage
 // ------------------------------------------------------------
 
-import { createFloatingDom } from "./floatingDom";
-import { handleOrbAction } from "./orbActionRouter";
-import type { OrbActionContext } from "./orbActionRouter";
-import { getOrbActions } from "./orbActions";
-import type { OrbPanelId } from "./types";
-import { renderOrbActions } from "./renderers/renderOrbActions";
-import { renderFloatingPanels } from "./panels/renderFloatingPanels";
+import { createFloatingDom } from "../floatingDom";
+import { handleOrbAction } from "../orbActionRouter";
+import type { OrbActionContext } from "../orbActionRouter";
+import { getOrbActions } from "../orbActions";
+import type { OrbPanelId } from "../types";
+import { renderOrbActions } from "../renderers/renderOrbActions";
+import { renderFloatingPanels } from "../panels/renderFloatingPanels";
 import {
   collapseOrb,
   expandOrb,
   isOrbExpanded,
   togglePanel,
-} from "./state/floatingUiState";
+} from "../state/floatingUiState";
+import { createProjectsController } from "./projectsController";
 
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
+  const projectsController = createProjectsController({
+    onStateChange: renderUi,
+  });
   const actionsContext = createOrbActionContext();
 
   renderUi();
+
+  void projectsController.load();
 
   function handleDocumentPointerDown(event: PointerEvent): void {
     /*

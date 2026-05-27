@@ -12,7 +12,7 @@
 // beyond verifying existence of the injected root.
 
 import { createProject } from "../storage/index";
-import { initFloatingController } from "../ui/floating/floatingController";
+import { initFloatingController } from "../ui/floating/controllers/floatingController";
 
 /* ------------------------------------------------------------
    Asset Injection (CSS + HTML)
@@ -72,7 +72,9 @@ async function seedDevDataOnce(): Promise<void> {
   await chrome.storage.local.set({ aiw_devSeeded: true });
 
   try {
-    await createProject("Test Project");
+    for (let i = 0; i < 5; i++) {
+      await createProject("Test Project");
+    }
   } catch (err) {
     // rollback flag if seeding fails
     await chrome.storage.local.set({ aiw_devSeeded: false });

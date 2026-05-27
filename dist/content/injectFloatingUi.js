@@ -154,6 +154,20 @@
       db.close();
     }
   }
+  async function getAllProjects() {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_PROJECTS, "readonly");
+      const store = tx.objectStore(STORE_PROJECTS);
+      const req = store.getAll();
+      const rows = await requestToPromise(req);
+      await txToPromise(tx);
+      rows.sort((a, b) => b.createdAt - a.createdAt);
+      return rows;
+    } finally {
+      db.close();
+    }
+  }
   var init_projectsRepo = __esm({
     "src/storage/repo/projectsRepo.ts"() {
       "use strict";
@@ -194,6 +208,9 @@
     await insertProject(project);
     return project;
   }
+  async function listProjects() {
+    return getAllProjects();
+  }
   var init_storage = __esm({
     "src/storage/index.ts"() {
       "use strict";
@@ -228,13 +245,9 @@
   function handleOrbAction(actionId, context) {
     switch (actionId) {
       case "projects":
-        context.toggleProjectsPanel();
-        break;
       case "capture":
-        context.toggleCapturePanel();
-        break;
       case "search":
-        context.toggleSearchPanel();
+        context.togglePanel(actionId);
         break;
       default:
         assertNever(actionId);
@@ -328,19 +341,13 @@
     state.orbExpanded = false;
     state.activePanel = null;
   }
-  function openPanel(panel) {
-    state.activePanel = panel;
-    state.orbExpanded = true;
-  }
-  function closePanel() {
-    state.activePanel = null;
-  }
   function togglePanel(panel) {
-    const current = getActivePanel();
+    const current = state.activePanel;
     if (current === panel) {
-      closePanel();
+      state.activePanel = null;
     } else {
-      openPanel(panel);
+      state.activePanel = panel;
+      state.orbExpanded = true;
     }
   }
   var state;
@@ -354,8 +361,43 @@
     }
   });
 
+  // src/ui/floating/state/projectsState.ts
+  function getProjects() {
+    return [...state2.projects];
+  }
+  function isProjectsLoading() {
+    return state2.loading;
+  }
+  function getProjectsError() {
+    return state2.error;
+  }
+  function setProjects(projectsList) {
+    state2.projects = [...projectsList];
+  }
+  function setLoading(loading) {
+    state2.loading = loading;
+  }
+  function setError(error) {
+    state2.error = error;
+  }
+  var state2;
+  var init_projectsState = __esm({
+    "src/ui/floating/state/projectsState.ts"() {
+      "use strict";
+      state2 = {
+        projects: [],
+        loading: false,
+        error: null
+      };
+    }
+  });
+
   // src/ui/floating/panels/renderProjectsPanel.ts
   function renderProjectsPanel(containerEl) {
+    const loading = isProjectsLoading();
+    const error = getProjectsError();
+    const projects = getProjects();
+    const isEmpty = projects.length === 0;
     const panelEl = document.createElement("section");
     panelEl.className = "aiw-floating-panel";
     const headerEl = document.createElement("header");
@@ -366,16 +408,52 @@
     headerEl.append(titleEl);
     const bodyEl = document.createElement("div");
     bodyEl.className = "aiw-floating-panel__body";
-    const placeholderEl = document.createElement("p");
-    placeholderEl.className = "aiw-floating-panel__placeholder";
-    placeholderEl.textContent = "Projects panel placeholder";
-    bodyEl.append(placeholderEl);
+    function renderLoadingState() {
+      const loadingStateEl = document.createElement("div");
+      loadingStateEl.className = "aiw-projects-state";
+      loadingStateEl.textContent = "Loading projects...";
+      bodyEl.append(loadingStateEl);
+    }
+    function renderErrorState(message) {
+      const errorStateEl = document.createElement("div");
+      errorStateEl.className = "aiw-projects-state aiw-projects-state--error";
+      errorStateEl.textContent = message;
+      bodyEl.append(errorStateEl);
+    }
+    function renderEmptyState() {
+      const emptyStateEl = document.createElement("div");
+      emptyStateEl.className = "aiw-projects-state";
+      emptyStateEl.textContent = "No projects yet";
+      bodyEl.append(emptyStateEl);
+    }
+    function renderProjectsList(projectsList) {
+      const listEl = document.createElement("div");
+      listEl.className = "aiw-projects-list";
+      for (const project of projectsList) {
+        const rowEl = document.createElement("button");
+        rowEl.type = "button";
+        rowEl.className = "aiw-project-row";
+        rowEl.textContent = project.name;
+        listEl.append(rowEl);
+      }
+      bodyEl.append(listEl);
+    }
+    if (loading) {
+      renderLoadingState();
+    } else if (error !== null) {
+      renderErrorState(error);
+    } else if (isEmpty) {
+      renderEmptyState();
+    } else {
+      renderProjectsList(projects);
+    }
     panelEl.append(headerEl, bodyEl);
     containerEl.append(panelEl);
   }
   var init_renderProjectsPanel = __esm({
     "src/ui/floating/panels/renderProjectsPanel.ts"() {
       "use strict";
+      init_projectsState();
     }
   });
 
@@ -463,11 +541,62 @@
     }
   });
 
-  // src/ui/floating/floatingController.ts
+  // src/ui/floating/controllers/loadProjects.ts
+  async function loadProjects() {
+    setLoading(true);
+    setError(null);
+    try {
+      const projects = await listProjects();
+      setProjects(projects);
+    } catch (error) {
+      setProjects([]);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to load projects.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+  var init_loadProjects = __esm({
+    "src/ui/floating/controllers/loadProjects.ts"() {
+      "use strict";
+      init_storage();
+      init_projectsState();
+    }
+  });
+
+  // src/ui/floating/controllers/projectsController.ts
+  function createProjectsController(dependencies) {
+    const { onStateChange } = dependencies;
+    async function load() {
+      try {
+        await loadProjects();
+      } finally {
+        onStateChange();
+      }
+    }
+    return {
+      load
+    };
+  }
+  var init_projectsController = __esm({
+    "src/ui/floating/controllers/projectsController.ts"() {
+      "use strict";
+      init_loadProjects();
+    }
+  });
+
+  // src/ui/floating/controllers/floatingController.ts
   function initFloatingController(rootEl) {
     const dom = createFloatingDom(rootEl);
+    const projectsController = createProjectsController({
+      onStateChange: renderUi
+    });
     const actionsContext = createOrbActionContext();
     renderUi();
+    void projectsController.load();
     function handleDocumentPointerDown(event) {
       const target = event.target;
       if (!(target instanceof Node)) {
@@ -477,37 +606,33 @@
       if (clickedInsideFloatingUi) {
         return;
       }
-      closeFloatingUi();
+      setOrbCollapsed();
     }
-    function createOrbActionContext() {
-      return {
-        toggleProjectsPanel: () => {
-          togglePanel("projects");
-        },
-        toggleCapturePanel: () => {
-          togglePanel("capture");
-        },
-        toggleSearchPanel: () => {
-          togglePanel("search");
-        }
-      };
+    function setOrbExpanded() {
+      expandOrb();
+      renderUi();
     }
-    function closeFloatingUi() {
+    function setOrbCollapsed() {
       collapseOrb();
       renderUi();
     }
-    function handleOrbButtonClick() {
+    function toggleOrbVisibility() {
       const expanded = isOrbExpanded();
       if (expanded) {
-        collapseOrb();
+        setOrbCollapsed();
       } else {
-        expandOrb();
+        setOrbExpanded();
       }
+    }
+    function toggleFloatingPanel(panelId) {
+      togglePanel(panelId);
       renderUi();
+    }
+    function createOrbActionContext() {
+      return { togglePanel: toggleFloatingPanel };
     }
     function handleOrbActionClick(actionId) {
       handleOrbAction(actionId, actionsContext);
-      renderUi();
     }
     function renderUi() {
       const expanded = isOrbExpanded();
@@ -521,15 +646,15 @@
       );
       renderFloatingPanels(dom.orbPanelsEl);
     }
-    dom.orbButtonEl.addEventListener("click", handleOrbButtonClick);
+    dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     return function destroyFloatingController() {
-      dom.orbButtonEl.removeEventListener("click", handleOrbButtonClick);
+      dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
     };
   }
   var init_floatingController = __esm({
-    "src/ui/floating/floatingController.ts"() {
+    "src/ui/floating/controllers/floatingController.ts"() {
       "use strict";
       init_floatingDom();
       init_orbActionRouter();
@@ -537,6 +662,7 @@
       init_renderOrbActions();
       init_renderFloatingPanels();
       init_floatingUiState();
+      init_projectsController();
     }
   });
 
@@ -546,16 +672,16 @@
       init_storage();
       init_floatingController();
       async function injectFloatingAssets() {
-        const styleExists = document.getElementById("aiw-floating-style");
-        if (!styleExists) {
+        const existingStyle = document.getElementById("aiw-floating-style");
+        if (!existingStyle) {
           const link = document.createElement("link");
           link.id = "aiw-floating-style";
           link.rel = "stylesheet";
           link.href = chrome.runtime.getURL("dist/ui/floating/floatingShell.css");
           (document.head ?? document.documentElement).append(link);
         }
-        const rootExists = document.getElementById("aiw-floating-root");
-        if (!rootExists) {
+        let existingRoot = document.getElementById("aiw-floating-root");
+        if (!existingRoot) {
           const response = await fetch(
             chrome.runtime.getURL("dist/ui/floating/floatingShell.html")
           );
@@ -567,30 +693,29 @@
             "beforeend",
             html
           );
+          existingRoot = document.getElementById("aiw-floating-root");
         }
-        const root = document.getElementById("aiw-floating-root");
-        if (!root) {
+        if (!existingRoot) {
           throw new Error("floating UI root not found after injection");
         }
+        return existingRoot;
       }
       async function seedDevDataOnce() {
         const flag = await chrome.storage.local.get("aiw_devSeeded");
         if (flag.aiw_devSeeded === true) return;
         await chrome.storage.local.set({ aiw_devSeeded: true });
         try {
-          await createProject("Test Project");
+          for (let i = 0; i < 5; i++) {
+            await createProject("Test Project");
+          }
         } catch (err) {
           await chrome.storage.local.set({ aiw_devSeeded: false });
           throw err;
         }
       }
       async function bootstrap() {
-        await injectFloatingAssets();
-        const root = document.getElementById("aiw-floating-root");
-        if (!root) {
-          throw new Error("floating UI root missing after injection");
-        }
-        await initFloatingController(root);
+        const root = await injectFloatingAssets();
+        initFloatingController(root);
         await seedDevDataOnce();
       }
       bootstrap().catch((err) => {
