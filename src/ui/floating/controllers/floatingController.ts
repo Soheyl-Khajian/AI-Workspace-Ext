@@ -1,4 +1,4 @@
-// src/ui/floating/floatingController.ts
+// src/ui/floating/controllers/floatingController.ts
 // ------------------------------------------------------------
 // FLOATING UI CONTROLLER
 //

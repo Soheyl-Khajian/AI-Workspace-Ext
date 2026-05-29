@@ -361,6 +361,64 @@
     }
   });
 
+  // src/ui/floating/components/createFloatingPanelShell.ts
+  function createFloatingPanelShell(title) {
+    const panelEl = document.createElement("section");
+    panelEl.className = "aiw-floating-panel";
+    const headerEl = document.createElement("header");
+    headerEl.className = "aiw-floating-panel__header";
+    const titleEl = document.createElement("h2");
+    titleEl.className = "aiw-floating-panel__title";
+    titleEl.textContent = title;
+    headerEl.append(titleEl);
+    const bodyEl = document.createElement("div");
+    bodyEl.className = "aiw-floating-panel__body";
+    panelEl.append(headerEl, bodyEl);
+    return {
+      panelEl,
+      bodyEl
+    };
+  }
+  var init_createFloatingPanelShell = __esm({
+    "src/ui/floating/components/createFloatingPanelShell.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/floating/components/createPanelState.ts
+  function createPanelState({
+    variant,
+    message
+  }) {
+    const el = document.createElement("div");
+    el.className = "aiw-panel-state";
+    switch (variant) {
+      case "loading":
+        el.classList.add("aiw-panel-state--loading");
+        break;
+      case "empty":
+        el.classList.add("aiw-panel-state--empty");
+        break;
+      case "error":
+        el.classList.add("aiw-panel-state--error");
+        break;
+      case "placeholder":
+        el.classList.add("aiw-panel-state--placeholder");
+        break;
+      default: {
+        const _exhaustive = variant;
+        throw new Error(`Unhandled panel variant: ${_exhaustive}`);
+      }
+    }
+    el.textContent = message;
+    return el;
+  }
+  var init_createPanelState = __esm({
+    "src/ui/floating/components/createPanelState.ts"() {
+      "use strict";
+    }
+  });
+
   // src/ui/floating/state/projectsState.ts
   function getProjects() {
     return [...state2.projects];
@@ -386,6 +444,7 @@
       "use strict";
       state2 = {
         projects: [],
+        selectedProjectId: null,
         loading: false,
         error: null
       };
@@ -394,38 +453,11 @@
 
   // src/ui/floating/panels/renderProjectsPanel.ts
   function renderProjectsPanel(containerEl) {
+    let shellEl = createFloatingPanelShell("Projects");
     const loading = isProjectsLoading();
     const error = getProjectsError();
     const projects = getProjects();
     const isEmpty = projects.length === 0;
-    const panelEl = document.createElement("section");
-    panelEl.className = "aiw-floating-panel";
-    const headerEl = document.createElement("header");
-    headerEl.className = "aiw-floating-panel__header";
-    const titleEl = document.createElement("h2");
-    titleEl.className = "aiw-floating-panel__title";
-    titleEl.textContent = "Projects";
-    headerEl.append(titleEl);
-    const bodyEl = document.createElement("div");
-    bodyEl.className = "aiw-floating-panel__body";
-    function renderLoadingState() {
-      const loadingStateEl = document.createElement("div");
-      loadingStateEl.className = "aiw-projects-state";
-      loadingStateEl.textContent = "Loading projects...";
-      bodyEl.append(loadingStateEl);
-    }
-    function renderErrorState(message) {
-      const errorStateEl = document.createElement("div");
-      errorStateEl.className = "aiw-projects-state aiw-projects-state--error";
-      errorStateEl.textContent = message;
-      bodyEl.append(errorStateEl);
-    }
-    function renderEmptyState() {
-      const emptyStateEl = document.createElement("div");
-      emptyStateEl.className = "aiw-projects-state";
-      emptyStateEl.textContent = "No projects yet";
-      bodyEl.append(emptyStateEl);
-    }
     function renderProjectsList(projectsList) {
       const listEl = document.createElement("div");
       listEl.className = "aiw-projects-list";
@@ -436,23 +468,33 @@
         rowEl.textContent = project.name;
         listEl.append(rowEl);
       }
-      bodyEl.append(listEl);
+      shellEl.bodyEl.append(listEl);
     }
     if (loading) {
-      renderLoadingState();
+      const loadingStateEl = createPanelState({
+        variant: "loading",
+        message: "Loading..."
+      });
+      shellEl.bodyEl.append(loadingStateEl);
     } else if (error !== null) {
-      renderErrorState(error);
+      const errorStateEl = createPanelState({ variant: "error", message: error });
+      shellEl.bodyEl.append(errorStateEl);
     } else if (isEmpty) {
-      renderEmptyState();
+      const emptyStateEl = createPanelState({
+        variant: "empty",
+        message: "No projects yet"
+      });
+      shellEl.bodyEl.append(emptyStateEl);
     } else {
       renderProjectsList(projects);
     }
-    panelEl.append(headerEl, bodyEl);
-    containerEl.append(panelEl);
+    containerEl.append(shellEl.panelEl);
   }
   var init_renderProjectsPanel = __esm({
     "src/ui/floating/panels/renderProjectsPanel.ts"() {
       "use strict";
+      init_createFloatingPanelShell();
+      init_createPanelState();
       init_projectsState();
     }
   });

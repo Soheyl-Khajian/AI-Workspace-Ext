@@ -20,7 +20,8 @@
 // ------------------------------------------------------------
 
 import type { Project } from "../../../models/project";
-
+import { createFloatingPanelShell } from "../components/createFloatingPanelShell";
+import { createPanelState } from "../components/createPanelState";
 import {
   getProjects,
   getProjectsError,
@@ -28,6 +29,8 @@ import {
 } from "../state/projectsState";
 
 export function renderProjectsPanel(containerEl: HTMLElement): void {
+  const shell = createFloatingPanelShell("Projects");
+
   // ------------------------------------------------------------
   // READ RUNTIME STATE SNAPSHOT
   // ------------------------------------------------------------
@@ -39,62 +42,8 @@ export function renderProjectsPanel(containerEl: HTMLElement): void {
   const isEmpty = projects.length === 0;
 
   // ------------------------------------------------------------
-  // PANEL ROOT
-  // ------------------------------------------------------------
-
-  const panelEl = document.createElement("section");
-  panelEl.className = "aiw-floating-panel";
-
-  // ------------------------------------------------------------
-  // PANEL HEADER
-  // ------------------------------------------------------------
-
-  const headerEl = document.createElement("header");
-  headerEl.className = "aiw-floating-panel__header";
-
-  const titleEl = document.createElement("h2");
-  titleEl.className = "aiw-floating-panel__title";
-  titleEl.textContent = "Projects";
-
-  headerEl.append(titleEl);
-
-  // ------------------------------------------------------------
-  // PANEL BODY
-  // ------------------------------------------------------------
-
-  const bodyEl = document.createElement("div");
-  bodyEl.className = "aiw-floating-panel__body";
-
-  // ------------------------------------------------------------
   // RENDER HELPERS
   // ------------------------------------------------------------
-
-  function renderLoadingState(): void {
-    const loadingStateEl = document.createElement("div");
-
-    loadingStateEl.className = "aiw-projects-state";
-    loadingStateEl.textContent = "Loading projects...";
-
-    bodyEl.append(loadingStateEl);
-  }
-
-  function renderErrorState(message: string): void {
-    const errorStateEl = document.createElement("div");
-
-    errorStateEl.className = "aiw-projects-state aiw-projects-state--error";
-    errorStateEl.textContent = message;
-
-    bodyEl.append(errorStateEl);
-  }
-
-  function renderEmptyState(): void {
-    const emptyStateEl = document.createElement("div");
-
-    emptyStateEl.className = "aiw-projects-state";
-    emptyStateEl.textContent = "No projects yet";
-
-    bodyEl.append(emptyStateEl);
-  }
 
   function renderProjectsList(projectsList: Project[]): void {
     const listEl = document.createElement("div");
@@ -112,7 +61,7 @@ export function renderProjectsPanel(containerEl: HTMLElement): void {
       listEl.append(rowEl);
     }
 
-    bodyEl.append(listEl);
+    shell.bodyEl.append(listEl);
   }
 
   // ------------------------------------------------------------
@@ -120,11 +69,23 @@ export function renderProjectsPanel(containerEl: HTMLElement): void {
   // ------------------------------------------------------------
 
   if (loading) {
-    renderLoadingState();
+    const loadingStateEl = createPanelState({
+      variant: "loading",
+      message: "Loading...",
+    });
+
+    shell.bodyEl.append(loadingStateEl);
   } else if (error !== null) {
-    renderErrorState(error);
+    const errorStateEl = createPanelState({ variant: "error", message: error });
+
+    shell.bodyEl.append(errorStateEl);
   } else if (isEmpty) {
-    renderEmptyState();
+    const emptyStateEl = createPanelState({
+      variant: "empty",
+      message: "No projects yet",
+    });
+
+    shell.bodyEl.append(emptyStateEl);
   } else {
     renderProjectsList(projects);
   }
@@ -133,7 +94,5 @@ export function renderProjectsPanel(containerEl: HTMLElement): void {
   // FINAL ASSEMBLY
   // ------------------------------------------------------------
 
-  panelEl.append(headerEl, bodyEl);
-
-  containerEl.append(panelEl);
+  containerEl.append(shell.panelEl);
 }
