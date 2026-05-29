@@ -22,8 +22,10 @@
 import type { Project } from "../../../models/project";
 import { createFloatingPanelShell } from "../components/createFloatingPanelShell";
 import { createPanelState } from "../components/createPanelState";
+import { createProjectRow } from "../components/createProjectRow";
 import {
   getProjects,
+  getSelectedProjectId,
   getProjectsError,
   isProjectsLoading,
 } from "../state/projectsState";
@@ -38,6 +40,7 @@ export function renderProjectsPanel(containerEl: HTMLElement): void {
   const loading = isProjectsLoading();
   const error = getProjectsError();
   const projects = getProjects();
+  const selectedProjectId = getSelectedProjectId();
 
   const isEmpty = projects.length === 0;
 
@@ -51,12 +54,9 @@ export function renderProjectsPanel(containerEl: HTMLElement): void {
     listEl.className = "aiw-projects-list";
 
     for (const project of projectsList) {
-      const rowEl = document.createElement("button");
+      const selected = project.id === selectedProjectId;
 
-      rowEl.type = "button";
-      rowEl.className = "aiw-project-row";
-
-      rowEl.textContent = project.name;
+      const rowEl = createProjectRow(project, selected);
 
       listEl.append(rowEl);
     }

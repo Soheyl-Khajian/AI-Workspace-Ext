@@ -419,9 +419,30 @@
     }
   });
 
+  // src/ui/floating/components/createProjectRow.ts
+  function createProjectRow(project, selected) {
+    const rowEl = document.createElement("button");
+    rowEl.type = "button";
+    rowEl.className = "aiw-project-row";
+    rowEl.textContent = project.name;
+    rowEl.dataset.projectId = project.id;
+    if (selected) {
+      rowEl.classList.add("aiw-project-row--selected");
+    }
+    return rowEl;
+  }
+  var init_createProjectRow = __esm({
+    "src/ui/floating/components/createProjectRow.ts"() {
+      "use strict";
+    }
+  });
+
   // src/ui/floating/state/projectsState.ts
   function getProjects() {
     return [...state2.projects];
+  }
+  function getSelectedProjectId() {
+    return state2.selectedProjectId;
   }
   function isProjectsLoading() {
     return state2.loading;
@@ -431,6 +452,9 @@
   }
   function setProjects(projectsList) {
     state2.projects = [...projectsList];
+  }
+  function setSelectedProjectId(id) {
+    state2.selectedProjectId = id;
   }
   function setLoading(loading) {
     state2.loading = loading;
@@ -453,99 +477,85 @@
 
   // src/ui/floating/panels/renderProjectsPanel.ts
   function renderProjectsPanel(containerEl) {
-    let shellEl = createFloatingPanelShell("Projects");
+    const shell = createFloatingPanelShell("Projects");
     const loading = isProjectsLoading();
     const error = getProjectsError();
     const projects = getProjects();
+    const selectedProjectId = getSelectedProjectId();
     const isEmpty = projects.length === 0;
     function renderProjectsList(projectsList) {
       const listEl = document.createElement("div");
       listEl.className = "aiw-projects-list";
       for (const project of projectsList) {
-        const rowEl = document.createElement("button");
-        rowEl.type = "button";
-        rowEl.className = "aiw-project-row";
-        rowEl.textContent = project.name;
+        const selected = project.id === selectedProjectId;
+        const rowEl = createProjectRow(project, selected);
         listEl.append(rowEl);
       }
-      shellEl.bodyEl.append(listEl);
+      shell.bodyEl.append(listEl);
     }
     if (loading) {
       const loadingStateEl = createPanelState({
         variant: "loading",
         message: "Loading..."
       });
-      shellEl.bodyEl.append(loadingStateEl);
+      shell.bodyEl.append(loadingStateEl);
     } else if (error !== null) {
       const errorStateEl = createPanelState({ variant: "error", message: error });
-      shellEl.bodyEl.append(errorStateEl);
+      shell.bodyEl.append(errorStateEl);
     } else if (isEmpty) {
       const emptyStateEl = createPanelState({
         variant: "empty",
         message: "No projects yet"
       });
-      shellEl.bodyEl.append(emptyStateEl);
+      shell.bodyEl.append(emptyStateEl);
     } else {
       renderProjectsList(projects);
     }
-    containerEl.append(shellEl.panelEl);
+    containerEl.append(shell.panelEl);
   }
   var init_renderProjectsPanel = __esm({
     "src/ui/floating/panels/renderProjectsPanel.ts"() {
       "use strict";
       init_createFloatingPanelShell();
       init_createPanelState();
+      init_createProjectRow();
       init_projectsState();
     }
   });
 
   // src/ui/floating/panels/renderCapturePanel.ts
   function renderCapturePanel(containerEl) {
-    const panelEl = document.createElement("section");
-    panelEl.className = "aiw-floating-panel";
-    const headerEl = document.createElement("header");
-    headerEl.className = "aiw-floating-panel__header";
-    const titleEl = document.createElement("h2");
-    titleEl.className = "aiw-floating-panel__title";
-    titleEl.textContent = "Capture";
-    headerEl.append(titleEl);
-    const bodyEl = document.createElement("div");
-    bodyEl.className = "aiw-floating-panel__body";
-    const placeholderEl = document.createElement("p");
-    placeholderEl.className = "aiw-floating-panel__placeholder";
-    placeholderEl.textContent = "Capture panel placeholder";
-    bodyEl.append(placeholderEl);
-    panelEl.append(headerEl, bodyEl);
-    containerEl.append(panelEl);
+    const shell = createFloatingPanelShell("Capture");
+    const panelStateEl = createPanelState({
+      variant: "placeholder",
+      message: "Nothing here yet"
+    });
+    shell.bodyEl.append(panelStateEl);
+    containerEl.append(shell.panelEl);
   }
   var init_renderCapturePanel = __esm({
     "src/ui/floating/panels/renderCapturePanel.ts"() {
       "use strict";
+      init_createFloatingPanelShell();
+      init_createPanelState();
     }
   });
 
   // src/ui/floating/panels/renderSearchPanel.ts
   function renderSearchPanel(containerEl) {
-    const panelEl = document.createElement("section");
-    panelEl.className = "aiw-floating-panel";
-    const headerEl = document.createElement("header");
-    headerEl.className = "aiw-floating-panel__header";
-    const titleEl = document.createElement("h2");
-    titleEl.className = "aiw-floating-panel__title";
-    titleEl.textContent = "Search";
-    headerEl.append(titleEl);
-    const bodyEl = document.createElement("div");
-    bodyEl.className = "aiw-floating-panel__body";
-    const placeholderEl = document.createElement("p");
-    placeholderEl.className = "aiw-floating-panel__placeholder";
-    placeholderEl.textContent = "Search panel placeholder";
-    bodyEl.append(placeholderEl);
-    panelEl.append(headerEl, bodyEl);
-    containerEl.append(panelEl);
+    const shell = createFloatingPanelShell("Search");
+    const panelStateEl = createPanelState({
+      variant: "placeholder",
+      message: "Nothing here yet"
+    });
+    shell.bodyEl.append(panelStateEl);
+    containerEl.append(shell.panelEl);
   }
   var init_renderSearchPanel = __esm({
     "src/ui/floating/panels/renderSearchPanel.ts"() {
       "use strict";
+      init_createFloatingPanelShell();
+      init_createPanelState();
     }
   });
 
@@ -619,13 +629,19 @@
         onStateChange();
       }
     }
+    function selectProject(projectId) {
+      setSelectedProjectId(projectId);
+      onStateChange();
+    }
     return {
-      load
+      load,
+      selectProject
     };
   }
   var init_projectsController = __esm({
     "src/ui/floating/controllers/projectsController.ts"() {
       "use strict";
+      init_projectsState();
       init_loadProjects();
     }
   });
@@ -676,6 +692,21 @@
     function handleOrbActionClick(actionId) {
       handleOrbAction(actionId, actionsContext);
     }
+    function handleProjectSelect(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const row = target.closest(PROJECT_ROW_SELECTOR);
+      if (!(row instanceof HTMLElement)) {
+        return;
+      }
+      const projectId = row.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      projectsController.selectProject(projectId);
+    }
     function renderUi() {
       const expanded = isOrbExpanded();
       const orbActions2 = getOrbActions();
@@ -689,12 +720,15 @@
       renderFloatingPanels(dom.orbPanelsEl);
     }
     dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
+    dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     return function destroyFloatingController() {
       dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
+      dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
     };
   }
+  var PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY;
   var init_floatingController = __esm({
     "src/ui/floating/controllers/floatingController.ts"() {
       "use strict";
@@ -705,6 +739,8 @@
       init_renderFloatingPanels();
       init_floatingUiState();
       init_projectsController();
+      PROJECT_ROW_SELECTOR = ".aiw-project-row";
+      PROJECT_ID_DATASET_KEY = "projectId";
     }
   });
 

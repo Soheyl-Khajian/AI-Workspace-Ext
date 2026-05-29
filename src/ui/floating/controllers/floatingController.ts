@@ -35,35 +35,36 @@ import {
 } from "../state/floatingUiState";
 import { createProjectsController } from "./projectsController";
 
+// ------------------------------------------------------------
+// SHARED CONSTANTS (temporary scope; can later relocate)
+// ------------------------------------------------------------
+
+const PROJECT_ROW_SELECTOR = ".aiw-project-row";
+const PROJECT_ID_DATASET_KEY = "projectId";
+
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
+
   const projectsController = createProjectsController({
     onStateChange: renderUi,
   });
+
   const actionsContext = createOrbActionContext();
 
   renderUi();
-
   void projectsController.load();
 
+  // ----------------------------------------------------------
+  // OUTSIDE CLICK HANDLING (collapse behavior)
+  // ----------------------------------------------------------
+
   function handleDocumentPointerDown(event: PointerEvent): void {
-    /*
-      event.target is typed as: EventTarget | null But .contains() expects: Node. 
-      So we must safely narrow the type first.
-    */
     const target = event.target;
 
-    /*
-      Extremely defensive safety check. In browser environments this is almost always a Node,
-      but never assume.
-    */
     if (!(target instanceof Node)) {
       return;
     }
 
-    /*
-      Determine whether click happened INSIDE floating UI.
-    */
     const clickedInsideFloatingUi = rootEl.contains(target);
 
     if (clickedInsideFloatingUi) {
@@ -74,7 +75,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
-  // HELPER FUNCTIONS
+  // ORB STATE HELPERS
   // ----------------------------------------------------------
 
   function setOrbExpanded(): void {
@@ -84,7 +85,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   function setOrbCollapsed(): void {
     collapseOrb();
-
     renderUi();
   }
 
@@ -112,7 +112,33 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
-  // RENDER AND EVENTS
+  // PROJECT SELECTION HANDLER
+  // ----------------------------------------------------------
+
+  function handleProjectSelect(event: MouseEvent): void {
+    const target = event.target;
+
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const row = target.closest(PROJECT_ROW_SELECTOR);
+
+    if (!(row instanceof HTMLElement)) {
+      return;
+    }
+
+    const projectId = row.dataset[PROJECT_ID_DATASET_KEY];
+
+    if (!projectId) {
+      return;
+    }
+
+    projectsController.selectProject(projectId);
+  }
+
+  // ----------------------------------------------------------
+  // RENDER
   // ----------------------------------------------------------
 
   function renderUi(): void {
@@ -131,12 +157,21 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     renderFloatingPanels(dom.orbPanelsEl);
   }
 
-  dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
+  // ----------------------------------------------------------
+  // EVENT REGISTRATION
+  // ----------------------------------------------------------
 
+  dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
+  dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
+
+  // ----------------------------------------------------------
+  // CLEANUP
+  // ----------------------------------------------------------
 
   return function destroyFloatingController(): void {
     dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
+    dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
   };
 }

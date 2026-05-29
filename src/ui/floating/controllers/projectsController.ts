@@ -30,6 +30,7 @@
 // renderer re-reads state
 // ------------------------------------------------------------
 
+import { setSelectedProjectId } from "../state/projectsState";
 import { loadProjects } from "./loadProjects";
 
 // ------------------------------------------------------------
@@ -61,6 +62,7 @@ type ProjectsController = {
     3. notify UI to re-render
   */
   load: () => Promise<void>;
+  selectProject: (projectId: string) => void;
 };
 
 // ------------------------------------------------------------
@@ -105,10 +107,21 @@ export function createProjectsController(
   }
 
   // ----------------------------------------------------------
+  // SELECT PROJECT WORKFLOW
+  // ----------------------------------------------------------
+
+  function selectProject(projectId: string): void {
+    setSelectedProjectId(projectId);
+
+    onStateChange();
+  }
+
+  // ----------------------------------------------------------
   // PUBLIC API
   // ----------------------------------------------------------
 
   return {
     load,
+    selectProject,
   };
 }

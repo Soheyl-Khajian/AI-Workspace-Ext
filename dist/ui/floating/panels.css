@@ -288,83 +288,59 @@
 ------------------------------------------------------------ */
 
 .aiw-project-row {
-  /*
-    Remove browser defaults.
-  */
   border: none;
-
-  /*
-    Full-width clickable row.
-  */
   width: 100%;
-
-  /*
-    Horizontal alignment.
-  */
   display: flex;
   align-items: center;
 
-  /*
-    Internal spacing.
-  */
   padding: 14px 16px;
-
-  /*
-    Rounded card surface.
-  */
   border-radius: 16px;
 
-  /*
-    Dark glass row.
-  */
   background: rgba(255, 255, 255, 0.04);
 
-  /*
-    Typography.
-  */
   font-size: 14px;
   font-weight: 500;
-
-  /*
-    Bright text.
-  */
   color: rgba(255, 255, 255, 0.92);
 
-  /*
-    Interactive behavior.
-  */
   cursor: pointer;
 
-  /*
-    Smooth hover transitions.
-  */
   transition:
     background-color 140ms ease,
     transform 140ms ease;
 }
 
 /* ------------------------------------------------------------
-   PROJECT ROW HOVER
+   HOVER (ONLY WHEN NOT SELECTED)
 ------------------------------------------------------------ */
 
-.aiw-project-row:hover {
-  /*
-    Slight lift effect.
-  */
+.aiw-project-row:not(.aiw-project-row--selected):hover {
   transform: translateY(-1px);
-
-  /*
-    Slightly brighter surface.
-  */
   background: rgba(255, 255, 255, 0.08);
 }
 
 /* ------------------------------------------------------------
-   PROJECT ROW FOCUS
+   FOCUS
 ------------------------------------------------------------ */
 
 .aiw-project-row:focus-visible {
   outline: none;
-
   box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
+}
+
+/* ------------------------------------------------------------
+   SELECTED STATE (ALWAYS WINS FOR BACKGROUND)
+------------------------------------------------------------ */
+
+.aiw-project-row--selected {
+  background: rgba(255, 255, 255, 0.212);
+  border-left: 2px solid var(--aiw-accent);
+}
+
+/* ------------------------------------------------------------
+   SELECTED + HOVER (EXPLICIT OVERRIDE SAFETY)
+------------------------------------------------------------ */
+
+.aiw-project-row--selected:hover {
+  background: rgba(255, 255, 255, 0.212);
+  transform: translateY(-1px);
 }
