@@ -1,0 +1,182 @@
+/* src/ui/styles/actions.css*/
+/* ------------------------------------------------------------
+ORB ACTION BUTTONS
+------------------------------------------------------------ */
+/*
+Floating radial actions.
+
+Initially:
+- stacked at center
+- invisible
+- scaled down
+
+Expanded state moves them outward.
+*/
+
+.aiw-orb-action {
+  /*
+ Absolute positioning enables radial geometry.
+*/
+  position: absolute;
+
+  /*
+ All buttons initially stack from same origin.
+*/
+  top: 0;
+  left: 0;
+
+  /*
+ Initial collapsed state.
+*/
+  transform: translate(0, 0) scale(0.72);
+
+  /*
+ Hidden initially.
+*/
+  opacity: 0;
+
+  /*
+ Hidden buttons must not receive clicks.
+*/
+  pointer-events: none;
+
+  /*
+ Floating chip dimensions.
+*/
+  width: 96px;
+  height: 40px;
+
+  /*
+ Remove default browser button styles.
+*/
+  border: none;
+
+  /*
+ Pill shape.
+*/
+  border-radius: 999px;
+
+  /*
+ Floating dark glass surface.
+*/
+  background: rgba(28, 28, 28, 0.94);
+
+  /*
+ Text color.
+*/
+  color: rgba(255, 255, 255, 0.96);
+
+  /*
+ Glass blur.
+*/
+  backdrop-filter: blur(10px);
+
+  /*
+ Floating shadow.
+*/
+  box-shadow:
+    0 8px 24px rgba(0, 0, 0, 0.24),
+    0 2px 8px rgba(0, 0, 0, 0.14);
+
+  /*
+ Interaction cursor.
+*/
+  cursor: pointer;
+
+  /*
+ Typography.
+*/
+  font-size: 13px;
+  font-weight: 500;
+
+  /*
+ Prevent accidental text selection.
+*/
+  user-select: none;
+
+  /*
+ Smooth radial animation.
+*/
+  transition:
+    transform 180ms ease,
+    opacity 180ms ease,
+    background-color 160ms ease,
+    box-shadow 160ms ease;
+}
+
+/* ------------------------------------------------------------
+   ACTION BUTTON HOVER
+------------------------------------------------------------ */
+.aiw-orb-action:hover {
+  /*
+    Slight visual lift.
+  */
+  background: rgba(42, 42, 42, 0.98);
+
+  /*
+    Slight elevation.
+  */
+  box-shadow:
+    0 12px 30px rgba(0, 0, 0, 0.28),
+    0 3px 10px rgba(0, 0, 0, 0.16);
+}
+
+/* ------------------------------------------------------------
+   ACTION BUTTON FOCUS
+------------------------------------------------------------ */
+
+.aiw-orb-action:focus-visible {
+  outline: none;
+
+  box-shadow:
+    0 0 0 4px rgba(16, 163, 127, 0.24),
+    0 8px 24px rgba(0, 0, 0, 0.24);
+}
+
+/* ------------------------------------------------------------
+   EXPANDED ACTION BASE STATE
+------------------------------------------------------------ */
+/*
+  Shared expanded behavior.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"] .aiw-orb-action {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ------------------------------------------------------------
+   PROJECTS ACTION POSITION
+------------------------------------------------------------ */
+/*
+  Left + slightly upward.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"]
+  .aiw-orb-action[data-action-id="projects"] {
+  transform: translate(-140px, 10px) scale(1);
+}
+
+/* ------------------------------------------------------------
+   CAPTURE ACTION POSITION
+------------------------------------------------------------ */
+/*
+  Upper-left diagonal.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"]
+  .aiw-orb-action[data-action-id="capture"] {
+  transform: translate(-90px, -65px) scale(1);
+}
+
+/* ------------------------------------------------------------
+   SEARCH ACTION POSITION
+------------------------------------------------------------ */
+/*
+  Directly upward.
+*/
+
+#aiw-floating-root[data-orb-expanded="true"]
+  .aiw-orb-action[data-action-id="search"] {
+  transform: translate(-20px, -140px) scale(1);
+}

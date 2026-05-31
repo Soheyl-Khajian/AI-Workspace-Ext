@@ -12,7 +12,7 @@
 // beyond verifying existence of the injected root.
 
 import { createProject, createItem } from "../storage/index";
-import { initFloatingController } from "../ui/floating/controllers/floatingController";
+import { initFloatingController } from "../ui/core/floatingController";
 
 /* ------------------------------------------------------------
    Asset Injection (CSS + HTML)
@@ -26,7 +26,7 @@ async function injectFloatingAssets(): Promise<HTMLElement> {
     const link = document.createElement("link");
     link.id = "aiw-floating-style";
     link.rel = "stylesheet";
-    link.href = chrome.runtime.getURL("dist/ui/floating/floatingShell.css");
+    link.href = chrome.runtime.getURL("dist/ui/floatingShell.css");
 
     (document.head ?? document.documentElement).append(link);
   }
@@ -36,7 +36,7 @@ async function injectFloatingAssets(): Promise<HTMLElement> {
 
   if (!existingRoot) {
     const response = await fetch(
-      chrome.runtime.getURL("dist/ui/floating/floatingShell.html"),
+      chrome.runtime.getURL("dist/ui/floatingShell.html"),
     );
 
     if (!response.ok) {

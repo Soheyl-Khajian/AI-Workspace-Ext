@@ -46,18 +46,16 @@ if (watch) {
 }
 
 // Ensure that the ui folder exists in dist
-const uiDestDir = path.resolve("dist/ui/floating");
+const uiDestDir = path.resolve("dist/ui");
 if (!fs.existsSync(uiDestDir)) {
   fs.mkdirSync(uiDestDir, { recursive: true }); // Create the folder if it doesn't exist
 }
 
 fs.copyFileSync(
-  path.resolve("src/ui/floating/floatingShell.html"),
+  path.resolve("src/ui/core/floatingShell.html"),
   path.resolve(uiDestDir, "floatingShell.html"),
 );
 
-fs.cpSync(
-  path.resolve("src/ui/floating/styles"),
-  path.resolve("dist/ui/floating"),
-  { recursive: true },
-);
+fs.cpSync(path.resolve("src/ui/styles"), path.resolve(uiDestDir), {
+  recursive: true,
+});

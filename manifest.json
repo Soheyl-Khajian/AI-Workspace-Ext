@@ -18,12 +18,12 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "dist/ui/floating/floatingShell.html",
-        "dist/ui/floating/floatingShell.css",
-        "dist/ui/floating/root.css",
-        "dist/ui/floating/orb.css",
-        "dist/ui/floating/actions.css",
-        "dist/ui/floating/panels.css"
+        "dist/ui/floatingShell.html",
+        "dist/ui/floatingShell.css",
+        "dist/ui/root.css",
+        "dist/ui/orb.css",
+        "dist/ui/actions.css",
+        "dist/ui/panels.css"
       ],
       "matches": ["https://chatgpt.com/*"]
     }

@@ -296,7 +296,7 @@
     }
   });
 
-  // src/ui/floating/floatingDom.ts
+  // src/ui/core/floatingDom.ts
   function mustQuery(root, selector) {
     const el = root.querySelector(selector);
     if (!el) {
@@ -313,12 +313,12 @@
     };
   }
   var init_floatingDom = __esm({
-    "src/ui/floating/floatingDom.ts"() {
+    "src/ui/core/floatingDom.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/floating/orbActionRouter.ts
+  // src/ui/core/orbActionRouter.ts
   function handleOrbAction(actionId, context) {
     switch (actionId) {
       case "projects":
@@ -334,18 +334,18 @@
     throw new Error(`Unhandled action: ${String(value)}`);
   }
   var init_orbActionRouter = __esm({
-    "src/ui/floating/orbActionRouter.ts"() {
+    "src/ui/core/orbActionRouter.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/floating/orbActions.ts
+  // src/ui/core/orbActions.ts
   function getOrbActions() {
     return orbActions;
   }
   var orbActions;
   var init_orbActions = __esm({
-    "src/ui/floating/orbActions.ts"() {
+    "src/ui/core/orbActions.ts"() {
       "use strict";
       orbActions = [
         {
@@ -364,7 +364,7 @@
     }
   });
 
-  // src/ui/floating/components/createOrbActionButton.ts
+  // src/ui/shared/createOrbActionButton.ts
   function createOrbActionButton({
     label,
     actionId
@@ -377,12 +377,12 @@
     return buttonEl;
   }
   var init_createOrbActionButton = __esm({
-    "src/ui/floating/components/createOrbActionButton.ts"() {
+    "src/ui/shared/createOrbActionButton.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/floating/renderers/renderOrbActions.ts
+  // src/ui/core/renderOrbActions.ts
   function renderOrbActions(containerEl, expanded, actions, onActionClick) {
     containerEl.textContent = "";
     if (!expanded) {
@@ -398,13 +398,13 @@
     }
   }
   var init_renderOrbActions = __esm({
-    "src/ui/floating/renderers/renderOrbActions.ts"() {
+    "src/ui/core/renderOrbActions.ts"() {
       "use strict";
       init_createOrbActionButton();
     }
   });
 
-  // src/ui/floating/state/floatingUiState.ts
+  // src/ui/core/floatingUiState.ts
   function isOrbExpanded() {
     return state.orbExpanded;
   }
@@ -433,7 +433,7 @@
   }
   var state;
   var init_floatingUiState = __esm({
-    "src/ui/floating/state/floatingUiState.ts"() {
+    "src/ui/core/floatingUiState.ts"() {
       "use strict";
       state = {
         orbExpanded: false,
@@ -442,7 +442,7 @@
     }
   });
 
-  // src/ui/floating/components/createFloatingPanelShell.ts
+  // src/ui/shared/createFloatingPanelShell.ts
   function createFloatingPanelShell(title) {
     const panelEl = document.createElement("section");
     panelEl.className = "aiw-floating-panel";
@@ -462,12 +462,12 @@
     };
   }
   var init_createFloatingPanelShell = __esm({
-    "src/ui/floating/components/createFloatingPanelShell.ts"() {
+    "src/ui/shared/createFloatingPanelShell.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/floating/components/createPanelState.ts
+  // src/ui/shared/createPanelState.ts
   function createPanelState({
     variant,
     message
@@ -496,12 +496,12 @@
     return el;
   }
   var init_createPanelState = __esm({
-    "src/ui/floating/components/createPanelState.ts"() {
+    "src/ui/shared/createPanelState.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/floating/components/createProjectRow.ts
+  // src/ui/features/projects/createProjectRow.ts
   function createProjectRow(project, selected) {
     const rowEl = document.createElement("button");
     rowEl.type = "button";
@@ -514,12 +514,12 @@
     return rowEl;
   }
   var init_createProjectRow = __esm({
-    "src/ui/floating/components/createProjectRow.ts"() {
+    "src/ui/features/projects/createProjectRow.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/floating/state/projectsState.ts
+  // src/ui/features/projects/projectsState.ts
   function getProjects() {
     return [...state2.projects];
   }
@@ -546,7 +546,7 @@
   }
   var state2;
   var init_projectsState = __esm({
-    "src/ui/floating/state/projectsState.ts"() {
+    "src/ui/features/projects/projectsState.ts"() {
       "use strict";
       state2 = {
         projects: [],
@@ -557,7 +557,7 @@
     }
   });
 
-  // src/ui/floating/panels/renderProjectsPanel.ts
+  // src/ui/features/projects/renderProjectsPanel.ts
   function renderProjectsPanel(containerEl) {
     const shell = createFloatingPanelShell("Projects");
     const loading = isProjectsLoading();
@@ -596,7 +596,7 @@
     containerEl.append(shell.panelEl);
   }
   var init_renderProjectsPanel = __esm({
-    "src/ui/floating/panels/renderProjectsPanel.ts"() {
+    "src/ui/features/projects/renderProjectsPanel.ts"() {
       "use strict";
       init_createFloatingPanelShell();
       init_createPanelState();
@@ -605,7 +605,7 @@
     }
   });
 
-  // src/ui/floating/panels/renderCapturePanel.ts
+  // src/ui/features/capture/renderCapturePanel.ts
   function renderCapturePanel(containerEl) {
     const shell = createFloatingPanelShell("Capture");
     const panelStateEl = createPanelState({
@@ -616,14 +616,14 @@
     containerEl.append(shell.panelEl);
   }
   var init_renderCapturePanel = __esm({
-    "src/ui/floating/panels/renderCapturePanel.ts"() {
+    "src/ui/features/capture/renderCapturePanel.ts"() {
       "use strict";
       init_createFloatingPanelShell();
       init_createPanelState();
     }
   });
 
-  // src/ui/floating/panels/renderSearchPanel.ts
+  // src/ui/features/search/renderSearchPanel.ts
   function renderSearchPanel(containerEl) {
     const shell = createFloatingPanelShell("Search");
     const panelStateEl = createPanelState({
@@ -634,14 +634,14 @@
     containerEl.append(shell.panelEl);
   }
   var init_renderSearchPanel = __esm({
-    "src/ui/floating/panels/renderSearchPanel.ts"() {
+    "src/ui/features/search/renderSearchPanel.ts"() {
       "use strict";
       init_createFloatingPanelShell();
       init_createPanelState();
     }
   });
 
-  // src/ui/floating/components/createItemRow.ts
+  // src/ui/features/items/createItemRow.ts
   function createItemRow(item) {
     const rowEl = document.createElement("button");
     rowEl.type = "button";
@@ -651,12 +651,12 @@
     return rowEl;
   }
   var init_createItemRow = __esm({
-    "src/ui/floating/components/createItemRow.ts"() {
+    "src/ui/features/items/createItemRow.ts"() {
       "use strict";
     }
   });
 
-  // src/ui/floating/state/itemsState.ts
+  // src/ui/features/items/itemsState.ts
   function getItems() {
     return [...state3.items];
   }
@@ -677,7 +677,7 @@
   }
   var state3;
   var init_itemsState = __esm({
-    "src/ui/floating/state/itemsState.ts"() {
+    "src/ui/features/items/itemsState.ts"() {
       "use strict";
       state3 = {
         items: [],
@@ -687,7 +687,7 @@
     }
   });
 
-  // src/ui/floating/panels/renderItemsPanel.ts
+  // src/ui/features/items/renderItemsPanel.ts
   function renderItemsPanel(containerEl) {
     const shell = createFloatingPanelShell("Items");
     const backButtonEl = document.createElement("button");
@@ -739,7 +739,7 @@
     containerEl.append(shell.panelEl);
   }
   var init_renderItemsPanel = __esm({
-    "src/ui/floating/panels/renderItemsPanel.ts"() {
+    "src/ui/features/items/renderItemsPanel.ts"() {
       "use strict";
       init_createFloatingPanelShell();
       init_createItemRow();
@@ -749,7 +749,7 @@
     }
   });
 
-  // src/ui/floating/panels/renderFloatingPanels.ts
+  // src/ui/core/renderFloatingPanels.ts
   function renderFloatingPanels(containerEl) {
     containerEl.textContent = "";
     const activePanel = getActivePanel();
@@ -777,7 +777,7 @@
     throw new Error(`Unhandled panel type: ${String(value)}`);
   }
   var init_renderFloatingPanels = __esm({
-    "src/ui/floating/panels/renderFloatingPanels.ts"() {
+    "src/ui/core/renderFloatingPanels.ts"() {
       "use strict";
       init_floatingUiState();
       init_renderProjectsPanel();
@@ -787,7 +787,7 @@
     }
   });
 
-  // src/ui/floating/controllers/loadProjects.ts
+  // src/ui/features/projects/loadProjects.ts
   async function loadProjects() {
     setLoading(true);
     setError(null);
@@ -806,14 +806,14 @@
     }
   }
   var init_loadProjects = __esm({
-    "src/ui/floating/controllers/loadProjects.ts"() {
+    "src/ui/features/projects/loadProjects.ts"() {
       "use strict";
       init_storage();
       init_projectsState();
     }
   });
 
-  // src/ui/floating/controllers/projectsController.ts
+  // src/ui/features/projects/projectsController.ts
   function createProjectsController(dependencies) {
     const { onStateChange, itemsController } = dependencies;
     async function load() {
@@ -834,7 +834,7 @@
     };
   }
   var init_projectsController = __esm({
-    "src/ui/floating/controllers/projectsController.ts"() {
+    "src/ui/features/projects/projectsController.ts"() {
       "use strict";
       init_floatingUiState();
       init_projectsState();
@@ -842,7 +842,7 @@
     }
   });
 
-  // src/ui/floating/controllers/loadItems.ts
+  // src/ui/features/items/loadItems.ts
   async function loadItems(projectId) {
     setItemsLoading(true);
     setItemsError(null);
@@ -862,14 +862,14 @@
     }
   }
   var init_loadItems = __esm({
-    "src/ui/floating/controllers/loadItems.ts"() {
+    "src/ui/features/items/loadItems.ts"() {
       "use strict";
       init_storage();
       init_itemsState();
     }
   });
 
-  // src/ui/floating/controllers/itemsController.ts
+  // src/ui/features/items/itemsController.ts
   function createItemsController(dependencies) {
     const { onStateChange } = dependencies;
     async function load(projectId) {
@@ -885,13 +885,13 @@
     };
   }
   var init_itemsController = __esm({
-    "src/ui/floating/controllers/itemsController.ts"() {
+    "src/ui/features/items/itemsController.ts"() {
       "use strict";
       init_loadItems();
     }
   });
 
-  // src/ui/floating/controllers/floatingController.ts
+  // src/ui/core/floatingController.ts
   function initFloatingController(rootEl) {
     const dom = createFloatingDom(rootEl);
     const itemsController = createItemsController({ onStateChange: renderUi });
@@ -992,7 +992,7 @@
   }
   var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY;
   var init_floatingController = __esm({
-    "src/ui/floating/controllers/floatingController.ts"() {
+    "src/ui/core/floatingController.ts"() {
       "use strict";
       init_floatingDom();
       init_orbActionRouter();
@@ -1019,13 +1019,13 @@
           const link = document.createElement("link");
           link.id = "aiw-floating-style";
           link.rel = "stylesheet";
-          link.href = chrome.runtime.getURL("dist/ui/floating/floatingShell.css");
+          link.href = chrome.runtime.getURL("dist/ui/floatingShell.css");
           (document.head ?? document.documentElement).append(link);
         }
         let existingRoot = document.getElementById("aiw-floating-root");
         if (!existingRoot) {
           const response = await fetch(
-            chrome.runtime.getURL("dist/ui/floating/floatingShell.html")
+            chrome.runtime.getURL("dist/ui/floatingShell.html")
           );
           if (!response.ok) {
             throw new Error(`Failed to load floating HTML (${response.status})`);
