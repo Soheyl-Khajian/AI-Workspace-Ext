@@ -18,11 +18,11 @@
 // No querying existing DOM.
 // ------------------------------------------------------------
 
-import type { OrbPanelId } from "../types";
+import type { OrbActionId } from "../types";
 
 type OrbActionButtonParams = {
   label: string;
-  actionId: OrbPanelId;
+  actionId: OrbActionId;
 };
 
 export function createOrbActionButton({

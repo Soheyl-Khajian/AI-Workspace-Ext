@@ -1,10 +1,10 @@
-// src/ui/floating/state/projectsState.ts
+// src/ui/floating/state/itemsState.ts
 // ------------------------------------------------------------
-// PROJECTS RUNTIME STATE
+// ITEMS RUNTIME STATE
 // ------------------------------------------------------------
 //
 // Responsibility:
-// - hold runtime projects state in memory
+// - hold runtime items state in memory
 // - expose controlled getters
 // - expose controlled mutations
 // - isolate render state from persistent storage
@@ -22,27 +22,39 @@
 //
 // This module ONLY answers:
 //
-// "What is the current projects UI state?"
+// "What is the current items UI state?"
 // ------------------------------------------------------------
 
-import type { Project } from "../../../models/project";
+import type { Item } from "../../../models/item";
 
 // ------------------------------------------------------------
 // STATE SHAPE
 // ------------------------------------------------------------
 //
-// Represents runtime UI state for projects.
+// Represents runtime UI state for items.
 //
 // IMPORTANT:
 //
-// This state exists ONLY in memory during runtime.
-// It is NOT persistent storage.
+// - Runtime-only memory state
+// - NOT persistent storage
+// - Represents currently loaded items for the
+//   currently selected project
 // ------------------------------------------------------------
 
-type ProjectsState = {
-  projects: Project[];
-  selectedProjectId: string | null;
+type ItemsState = {
+  /*
+    Current in-memory items snapshot.
+  */
+  items: Item[];
+
+  /*
+    Indicates active async loading lifecycle.
+  */
   loading: boolean;
+
+  /*
+    Human-readable runtime error state.
+  */
   error: string | null;
 };
 
@@ -55,9 +67,8 @@ type ProjectsState = {
 // Must NEVER be mutated outside this module.
 // ------------------------------------------------------------
 
-const state: ProjectsState = {
-  projects: [],
-  selectedProjectId: null,
+const state: ItemsState = {
+  items: [],
   loading: false,
   error: null,
 };
@@ -73,23 +84,19 @@ const state: ProjectsState = {
 // Getters should avoid leaking mutable references.
 // ------------------------------------------------------------
 
-export function getProjects(): Project[] {
-  return [...state.projects];
+export function getItems(): Item[] {
+  return [...state.items];
 }
 
-export function hasProjects(): boolean {
-  return state.projects.length > 0;
+export function hasItems(): boolean {
+  return state.items.length > 0;
 }
 
-export function getSelectedProjectId(): string | null {
-  return state.selectedProjectId;
-}
-
-export function isProjectsLoading(): boolean {
+export function isItemsLoading(): boolean {
   return state.loading;
 }
 
-export function getProjectsError(): string | null {
+export function getItemsError(): string | null {
   return state.error;
 }
 
@@ -105,20 +112,29 @@ export function getProjectsError(): string | null {
 // and avoid external reference leaks.
 // ------------------------------------------------------------
 
-export function setProjects(projectsList: Project[]): void {
-  state.projects = [...projectsList];
+export function setItems(itemsList: Item[]): void {
+  state.items = [...itemsList];
 }
 
-export function setSelectedProjectId(id: string | null): void {
-  state.selectedProjectId = id;
-}
-
-export function setLoading(loading: boolean): void {
+export function setItemsLoading(loading: boolean): void {
   state.loading = loading;
 }
 
-export function setError(error: string | null): void {
+export function setItemsError(error: string | null): void {
   state.error = error;
+}
+
+/*
+  Clears currently loaded items while preserving
+  surrounding runtime state.
+
+  Useful before:
+  - switching selected project
+  - starting fresh loading cycles
+  - preventing stale UI snapshots
+*/
+export function clearItems(): void {
+  state.items = [];
 }
 
 // ------------------------------------------------------------
@@ -126,12 +142,15 @@ export function setError(error: string | null): void {
 // ------------------------------------------------------------
 //
 // Restores initial runtime state.
-// Useful for teardown/testing/future session resets.
+//
+// Useful for:
+// - teardown
+// - testing
+// - future session resets
 // ------------------------------------------------------------
 
-export function resetProjectsState(): void {
-  state.projects = [];
-  state.selectedProjectId = null;
+export function resetItemsState(): void {
+  state.items = [];
   state.loading = false;
   state.error = null;
 }

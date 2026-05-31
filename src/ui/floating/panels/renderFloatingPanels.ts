@@ -23,6 +23,7 @@ import { getActivePanel } from "../state/floatingUiState";
 import { renderProjectsPanel } from "./renderProjectsPanel";
 import { renderCapturePanel } from "./renderCapturePanel";
 import { renderSearchPanel } from "./renderSearchPanel";
+import { renderItemsPanel } from "./renderItemsPanel";
 
 export function renderFloatingPanels(containerEl: HTMLElement): void {
   containerEl.textContent = "";
@@ -37,6 +38,10 @@ export function renderFloatingPanels(containerEl: HTMLElement): void {
   switch (activePanel) {
     case "projects":
       renderProjectsPanel(containerEl);
+      break;
+
+    case "items":
+      renderItemsPanel(containerEl);
       break;
 
     case "capture":

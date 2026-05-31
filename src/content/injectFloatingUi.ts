@@ -11,7 +11,7 @@
 // This file MUST NOT contain UI state, rendering logic, or DOM queries
 // beyond verifying existence of the injected root.
 
-import { createProject } from "../storage/index";
+import { createProject, createItem } from "../storage/index";
 import { initFloatingController } from "../ui/floating/controllers/floatingController";
 
 /* ------------------------------------------------------------
@@ -65,21 +65,52 @@ async function injectFloatingAssets(): Promise<HTMLElement> {
 ------------------------------------------------------------ */
 
 async function seedDevDataOnce(): Promise<void> {
-  const flag = await chrome.storage.local.get("aiw_devSeeded");
+  const emptyProject = await createProject("Empty Project");
 
-  if (flag.aiw_devSeeded === true) return;
+  const singleItemProject = await createProject("Single Item Project");
 
-  await chrome.storage.local.set({ aiw_devSeeded: true });
+  await createItem(
+    singleItemProject.id,
+    "note",
+    "First Note",
+    "This project contains exactly one item.",
+    {
+      createdFrom: "manual",
+    },
+  );
 
-  try {
-    for (let i = 0; i < 5; i++) {
-      await createProject("Test Project");
-    }
-  } catch (err) {
-    // rollback flag if seeding fails
-    await chrome.storage.local.set({ aiw_devSeeded: false });
-    throw err;
-  }
+  const multiItemProject = await createProject("Multi Item Project");
+
+  await createItem(
+    multiItemProject.id,
+    "note",
+    "Research Notes",
+    "Collected findings from testing.",
+    {
+      createdFrom: "manual",
+    },
+  );
+
+  await createItem(
+    multiItemProject.id,
+    "task",
+    "Implement Selection",
+    "Add selectedItemId runtime state.",
+    {
+      createdFrom: "manual",
+    },
+  );
+
+  await createItem(
+    multiItemProject.id,
+    "link",
+    "Architecture Reference",
+    "https://example.com",
+    {
+      sourceUrl: "https://example.com",
+      createdFrom: "selection",
+    },
+  );
 }
 
 /* ------------------------------------------------------------

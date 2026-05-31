@@ -5,10 +5,10 @@
 // This is NOT UI. It is domain-level mapping.
 // ------------------------------------------------------------
 
-import type { OrbPanelId } from "./types";
+import type { OrbActionId } from "./types";
 
 export type OrbAction = {
-  id: OrbPanelId;
+  id: OrbActionId;
   label: string;
 };
 

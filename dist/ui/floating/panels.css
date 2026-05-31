@@ -344,3 +344,90 @@
   background: rgba(255, 255, 255, 0.212);
   transform: translateY(-1px);
 }
+
+/* ------------------------------------------------------------
+   ITEMS LIST
+------------------------------------------------------------ */
+
+.aiw-items-list {
+  /*
+    Vertical stacking layout.
+  */
+  display: flex;
+  flex-direction: column;
+
+  /*
+    Space between rows.
+  */
+  gap: 10px;
+}
+
+/* ------------------------------------------------------------
+   ITEM PANEL BACK BUTTON
+------------------------------------------------------------ */
+
+.aiw-panel-back-button {
+  color: rgba(255, 255, 255, 0.92);
+}
+
+/* ------------------------------------------------------------
+   ITEM ROW
+------------------------------------------------------------ */
+
+.aiw-item-row {
+  border: none;
+  width: 100%;
+  display: flex;
+  align-items: center;
+
+  padding: 14px 16px;
+  border-radius: 16px;
+
+  background: rgba(255, 255, 255, 0.04);
+
+  font-size: 14px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.92);
+
+  cursor: pointer;
+
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+/* ------------------------------------------------------------
+   HOVER (ONLY WHEN NOT SELECTED)
+------------------------------------------------------------ */
+
+.aiw-item-row:not(.aiw-item-row--selected):hover {
+  transform: translateY(-1px);
+  background: rgba(255, 255, 255, 0.08);
+}
+
+/* ------------------------------------------------------------
+   FOCUS
+------------------------------------------------------------ */
+
+.aiw-item-row:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
+}
+
+/* ------------------------------------------------------------
+   SELECTED STATE (ALWAYS WINS FOR BACKGROUND)
+------------------------------------------------------------ */
+
+.aiw-item-row--selected {
+  background: rgba(255, 255, 255, 0.212);
+  border-left: 2px solid var(--aiw-accent);
+}
+
+/* ------------------------------------------------------------
+   SELECTED + HOVER (EXPLICIT OVERRIDE SAFETY)
+------------------------------------------------------------ */
+
+.aiw-item-row--selected:hover {
+  background: rgba(255, 255, 255, 0.212);
+  transform: translateY(-1px);
+}

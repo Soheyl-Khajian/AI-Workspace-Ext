@@ -17,6 +17,7 @@
 
 export function createFloatingPanelShell(title: string): {
   panelEl: HTMLElement;
+  headerEl: HTMLElement;
   bodyEl: HTMLDivElement;
 } {
   // ------------------------------------------------------------
@@ -54,6 +55,7 @@ export function createFloatingPanelShell(title: string): {
 
   return {
     panelEl,
+    headerEl,
     bodyEl,
   };
 }

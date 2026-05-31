@@ -9,11 +9,11 @@
 // attaching click callbacks
 // ------------------------------------------------------------
 
-import type { OrbPanelId } from "../types";
+import type { OrbActionId } from "../types";
 import { createOrbActionButton } from "../components/createOrbActionButton";
 
 type OrbAction = {
-  id: OrbPanelId;
+  id: OrbActionId;
   label: string;
 };
 
@@ -21,7 +21,7 @@ export function renderOrbActions(
   containerEl: HTMLElement,
   expanded: boolean,
   actions: OrbAction[],
-  onActionClick: (actionId: OrbPanelId) => void,
+  onActionClick: (actionId: OrbActionId) => void,
 ): void {
   containerEl.textContent = "";
 

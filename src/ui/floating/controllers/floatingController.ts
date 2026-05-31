@@ -24,6 +24,7 @@ import { createFloatingDom } from "../floatingDom";
 import { handleOrbAction } from "../orbActionRouter";
 import type { OrbActionContext } from "../orbActionRouter";
 import { getOrbActions } from "../orbActions";
+import type { OrbActionId } from "../types";
 import type { OrbPanelId } from "../types";
 import { renderOrbActions } from "../renderers/renderOrbActions";
 import { renderFloatingPanels } from "../panels/renderFloatingPanels";
@@ -31,22 +32,28 @@ import {
   collapseOrb,
   expandOrb,
   isOrbExpanded,
+  openPanel,
   togglePanel,
 } from "../state/floatingUiState";
 import { createProjectsController } from "./projectsController";
+import { createItemsController } from "./itemsController";
 
 // ------------------------------------------------------------
 // SHARED CONSTANTS (temporary scope; can later relocate)
 // ------------------------------------------------------------
 
+const PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
 const PROJECT_ROW_SELECTOR = ".aiw-project-row";
 const PROJECT_ID_DATASET_KEY = "projectId";
 
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
 
+  const itemsController = createItemsController({ onStateChange: renderUi });
+
   const projectsController = createProjectsController({
     onStateChange: renderUi,
+    itemsController,
   });
 
   const actionsContext = createOrbActionContext();
@@ -107,7 +114,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     return { togglePanel: toggleFloatingPanel };
   }
 
-  function handleOrbActionClick(actionId: OrbPanelId): void {
+  function handleOrbActionClick(actionId: OrbActionId): void {
     handleOrbAction(actionId, actionsContext);
   }
 
@@ -138,10 +145,32 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
+  // BACK BUTTON HANDLER
+  // ----------------------------------------------------------
+
+  function handleBackButtonClick(event: MouseEvent): void {
+    const target = event.target;
+
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const backButton = target.closest(PANEL_BACK_BUTTON_SELECTOR);
+
+    if (!(backButton instanceof HTMLElement)) {
+      return;
+    }
+
+    openPanel("projects");
+    renderUi();
+  }
+
+  // ----------------------------------------------------------
   // RENDER
   // ----------------------------------------------------------
 
   function renderUi(): void {
+    console.count("renderUi");
     const expanded = isOrbExpanded();
     const orbActions = getOrbActions();
 
@@ -163,6 +192,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
   dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
+  dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
 
   // ----------------------------------------------------------
@@ -172,6 +202,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   return function destroyFloatingController(): void {
     dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
     dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
+    dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
   };
 }

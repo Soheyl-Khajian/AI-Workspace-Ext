@@ -30,6 +30,7 @@
 // renderer re-reads state
 // ------------------------------------------------------------
 
+import { openPanel } from "../state/floatingUiState";
 import { setSelectedProjectId } from "../state/projectsState";
 import { loadProjects } from "./loadProjects";
 
@@ -38,13 +39,10 @@ import { loadProjects } from "./loadProjects";
 // ------------------------------------------------------------
 
 type ProjectsControllerDependencies = {
-  /*
-    Callback provided by parent UI controller.
-
-    This callback triggers a complete UI render cycle
-    after runtime state has changed.
-  */
   onStateChange: () => void;
+  itemsController: {
+    load: (projectId: string) => Promise<void>;
+  };
 };
 
 // ------------------------------------------------------------
@@ -52,15 +50,6 @@ type ProjectsControllerDependencies = {
 // ------------------------------------------------------------
 
 type ProjectsController = {
-  /*
-    Starts projects loading lifecycle.
-
-    Flow:
-
-    1. execute async loadProjects()
-    2. projectsState mutates internally
-    3. notify UI to re-render
-  */
   load: () => Promise<void>;
   selectProject: (projectId: string) => void;
 };
@@ -72,7 +61,7 @@ type ProjectsController = {
 export function createProjectsController(
   dependencies: ProjectsControllerDependencies,
 ): ProjectsController {
-  const { onStateChange } = dependencies;
+  const { onStateChange, itemsController } = dependencies;
 
   // ----------------------------------------------------------
   // LOAD PROJECTS WORKFLOW
@@ -113,7 +102,9 @@ export function createProjectsController(
   function selectProject(projectId: string): void {
     setSelectedProjectId(projectId);
 
-    onStateChange();
+    openPanel("items");
+
+    itemsController.load(projectId);
   }
 
   // ----------------------------------------------------------

@@ -14,14 +14,14 @@
 // - NO business logic
 // ------------------------------------------------------------
 
-import type { OrbPanelId } from "./types";
+import type { OrbActionId } from "./types";
 
 export type OrbActionContext = {
-  togglePanel: (panelId: OrbPanelId) => void;
+  togglePanel: (panelId: OrbActionId) => void;
 };
 
 export function handleOrbAction(
-  actionId: OrbPanelId,
+  actionId: OrbActionId,
   context: OrbActionContext,
 ): void {
   switch (actionId) {

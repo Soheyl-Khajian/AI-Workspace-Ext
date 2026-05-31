@@ -178,6 +178,33 @@
   });
 
   // src/storage/repo/itemsRepo.ts
+  async function insertItem(item) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_ITEMS, "readwrite");
+      const store = tx.objectStore(STORE_ITEMS);
+      const req = store.put(item);
+      await requestToPromise(req);
+      await txToPromise(tx);
+    } finally {
+      db.close();
+    }
+  }
+  async function getItemsByProjectId(projectId) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_ITEMS, "readonly");
+      const store = tx.objectStore(STORE_ITEMS);
+      const index = store.index(IDX_ITEMS_BY_PROJECT);
+      const req = index.getAll(projectId);
+      const rows = await requestToPromise(req);
+      await txToPromise(tx);
+      rows.sort((a, b) => b.createdAt - a.createdAt);
+      return rows;
+    } finally {
+      db.close();
+    }
+  }
   var init_itemsRepo = __esm({
     "src/storage/repo/itemsRepo.ts"() {
       "use strict";
@@ -210,6 +237,56 @@
   }
   async function listProjects() {
     return getAllProjects();
+  }
+  async function createItem(projectId, type, title, content, meta) {
+    if (projectId == null) {
+      throw new Error("projectId is required (null/undefined)");
+    }
+    const trimmedProjectId = projectId.trim();
+    if (trimmedProjectId.length === 0) {
+      throw new Error("projectId cannot be empty");
+    }
+    if (!type) {
+      throw new Error("Item type is required");
+    }
+    if (title == null) {
+      throw new Error("Item title is required (null/undefined)");
+    }
+    const trimmedTitle = title.trim();
+    if (trimmedTitle.length === 0) {
+      throw new Error("Item title cannot be empty");
+    }
+    if (content == null) {
+      throw new Error("Item content is required (null/undefined)");
+    }
+    const trimmedContent = content.trim();
+    if (trimmedContent.length === 0) {
+      throw new Error("Item content cannot be empty");
+    }
+    if (!meta) {
+      throw new Error("Item meta is required");
+    }
+    const item = {
+      id: crypto.randomUUID(),
+      projectId: trimmedProjectId,
+      type,
+      title: trimmedTitle,
+      content: trimmedContent,
+      createdAt: Date.now(),
+      meta
+    };
+    await insertItem(item);
+    return item;
+  }
+  async function listItemsByProject(projectId) {
+    if (projectId == null) {
+      throw new Error("projectId is required (null/undefined)");
+    }
+    const trimmedProjectId = projectId.trim();
+    if (trimmedProjectId.length === 0) {
+      throw new Error("projectId cannot be empty");
+    }
+    return getItemsByProjectId(trimmedProjectId);
   }
   var init_storage = __esm({
     "src/storage/index.ts"() {
@@ -341,6 +418,10 @@
     state.orbExpanded = false;
     state.activePanel = null;
   }
+  function openPanel(panel) {
+    state.activePanel = panel;
+    state.orbExpanded = true;
+  }
   function togglePanel(panel) {
     const current = state.activePanel;
     if (current === panel) {
@@ -376,6 +457,7 @@
     panelEl.append(headerEl, bodyEl);
     return {
       panelEl,
+      headerEl,
       bodyEl
     };
   }
@@ -559,6 +641,114 @@
     }
   });
 
+  // src/ui/floating/components/createItemRow.ts
+  function createItemRow(item) {
+    const rowEl = document.createElement("button");
+    rowEl.type = "button";
+    rowEl.className = "aiw-item-row";
+    rowEl.textContent = item.title;
+    rowEl.dataset.itemId = item.id;
+    return rowEl;
+  }
+  var init_createItemRow = __esm({
+    "src/ui/floating/components/createItemRow.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/floating/state/itemsState.ts
+  function getItems() {
+    return [...state3.items];
+  }
+  function isItemsLoading() {
+    return state3.loading;
+  }
+  function getItemsError() {
+    return state3.error;
+  }
+  function setItems(itemsList) {
+    state3.items = [...itemsList];
+  }
+  function setItemsLoading(loading) {
+    state3.loading = loading;
+  }
+  function setItemsError(error) {
+    state3.error = error;
+  }
+  var state3;
+  var init_itemsState = __esm({
+    "src/ui/floating/state/itemsState.ts"() {
+      "use strict";
+      state3 = {
+        items: [],
+        loading: false,
+        error: null
+      };
+    }
+  });
+
+  // src/ui/floating/panels/renderItemsPanel.ts
+  function renderItemsPanel(containerEl) {
+    const shell = createFloatingPanelShell("Items");
+    const backButtonEl = document.createElement("button");
+    backButtonEl.type = "button";
+    backButtonEl.className = "aiw-panel-back-button";
+    backButtonEl.textContent = "\u2190";
+    shell.headerEl.prepend(backButtonEl);
+    const selectedProjectId = getSelectedProjectId();
+    const loading = isItemsLoading();
+    const error = getItemsError();
+    const items = getItems();
+    const isEmpty = items.length === 0;
+    function renderItemsList(itemsList) {
+      const listEl = document.createElement("div");
+      listEl.className = "aiw-items-list";
+      for (const item of itemsList) {
+        const rowEl = createItemRow(item);
+        listEl.append(rowEl);
+      }
+      shell.bodyEl.append(listEl);
+    }
+    if (selectedProjectId === null) {
+      const placeholderStateEl = createPanelState({
+        variant: "placeholder",
+        message: "Select a project to view items"
+      });
+      shell.bodyEl.append(placeholderStateEl);
+    } else if (loading) {
+      const loadingStateEl = createPanelState({
+        variant: "loading",
+        message: "Loading items..."
+      });
+      shell.bodyEl.append(loadingStateEl);
+    } else if (error !== null) {
+      const errorStateEl = createPanelState({
+        variant: "error",
+        message: error
+      });
+      shell.bodyEl.append(errorStateEl);
+    } else if (isEmpty) {
+      const emptyStateEl = createPanelState({
+        variant: "empty",
+        message: "No items yet"
+      });
+      shell.bodyEl.append(emptyStateEl);
+    } else {
+      renderItemsList(items);
+    }
+    containerEl.append(shell.panelEl);
+  }
+  var init_renderItemsPanel = __esm({
+    "src/ui/floating/panels/renderItemsPanel.ts"() {
+      "use strict";
+      init_createFloatingPanelShell();
+      init_createItemRow();
+      init_createPanelState();
+      init_itemsState();
+      init_projectsState();
+    }
+  });
+
   // src/ui/floating/panels/renderFloatingPanels.ts
   function renderFloatingPanels(containerEl) {
     containerEl.textContent = "";
@@ -569,6 +759,9 @@
     switch (activePanel) {
       case "projects":
         renderProjectsPanel(containerEl);
+        break;
+      case "items":
+        renderItemsPanel(containerEl);
         break;
       case "capture":
         renderCapturePanel(containerEl);
@@ -590,6 +783,7 @@
       init_renderProjectsPanel();
       init_renderCapturePanel();
       init_renderSearchPanel();
+      init_renderItemsPanel();
     }
   });
 
@@ -621,7 +815,7 @@
 
   // src/ui/floating/controllers/projectsController.ts
   function createProjectsController(dependencies) {
-    const { onStateChange } = dependencies;
+    const { onStateChange, itemsController } = dependencies;
     async function load() {
       try {
         await loadProjects();
@@ -631,7 +825,8 @@
     }
     function selectProject(projectId) {
       setSelectedProjectId(projectId);
-      onStateChange();
+      openPanel("items");
+      itemsController.load(projectId);
     }
     return {
       load,
@@ -641,16 +836,68 @@
   var init_projectsController = __esm({
     "src/ui/floating/controllers/projectsController.ts"() {
       "use strict";
+      init_floatingUiState();
       init_projectsState();
       init_loadProjects();
+    }
+  });
+
+  // src/ui/floating/controllers/loadItems.ts
+  async function loadItems(projectId) {
+    setItemsLoading(true);
+    setItemsError(null);
+    setItems([]);
+    try {
+      const items = await listItemsByProject(projectId);
+      setItems(items);
+    } catch (error) {
+      setItems([]);
+      if (error instanceof Error) {
+        setItemsError(error.message);
+      } else {
+        setItemsError("Failed to load items.");
+      }
+    } finally {
+      setItemsLoading(false);
+    }
+  }
+  var init_loadItems = __esm({
+    "src/ui/floating/controllers/loadItems.ts"() {
+      "use strict";
+      init_storage();
+      init_itemsState();
+    }
+  });
+
+  // src/ui/floating/controllers/itemsController.ts
+  function createItemsController(dependencies) {
+    const { onStateChange } = dependencies;
+    async function load(projectId) {
+      onStateChange();
+      try {
+        await loadItems(projectId);
+      } finally {
+        onStateChange();
+      }
+    }
+    return {
+      load
+    };
+  }
+  var init_itemsController = __esm({
+    "src/ui/floating/controllers/itemsController.ts"() {
+      "use strict";
+      init_loadItems();
     }
   });
 
   // src/ui/floating/controllers/floatingController.ts
   function initFloatingController(rootEl) {
     const dom = createFloatingDom(rootEl);
+    const itemsController = createItemsController({ onStateChange: renderUi });
     const projectsController = createProjectsController({
-      onStateChange: renderUi
+      onStateChange: renderUi,
+      itemsController
     });
     const actionsContext = createOrbActionContext();
     renderUi();
@@ -707,7 +954,20 @@
       }
       projectsController.selectProject(projectId);
     }
+    function handleBackButtonClick(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const backButton = target.closest(PANEL_BACK_BUTTON_SELECTOR);
+      if (!(backButton instanceof HTMLElement)) {
+        return;
+      }
+      openPanel("projects");
+      renderUi();
+    }
     function renderUi() {
+      console.count("renderUi");
       const expanded = isOrbExpanded();
       const orbActions2 = getOrbActions();
       dom.rootEl.dataset.orbExpanded = String(expanded);
@@ -721,14 +981,16 @@
     }
     dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
     dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
+    dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     return function destroyFloatingController() {
       dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
       dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
+      dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
     };
   }
-  var PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY;
   var init_floatingController = __esm({
     "src/ui/floating/controllers/floatingController.ts"() {
       "use strict";
@@ -739,6 +1001,8 @@
       init_renderFloatingPanels();
       init_floatingUiState();
       init_projectsController();
+      init_itemsController();
+      PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
       PROJECT_ID_DATASET_KEY = "projectId";
     }
@@ -779,17 +1043,46 @@
         return existingRoot;
       }
       async function seedDevDataOnce() {
-        const flag = await chrome.storage.local.get("aiw_devSeeded");
-        if (flag.aiw_devSeeded === true) return;
-        await chrome.storage.local.set({ aiw_devSeeded: true });
-        try {
-          for (let i = 0; i < 5; i++) {
-            await createProject("Test Project");
+        const emptyProject = await createProject("Empty Project");
+        const singleItemProject = await createProject("Single Item Project");
+        await createItem(
+          singleItemProject.id,
+          "note",
+          "First Note",
+          "This project contains exactly one item.",
+          {
+            createdFrom: "manual"
           }
-        } catch (err) {
-          await chrome.storage.local.set({ aiw_devSeeded: false });
-          throw err;
-        }
+        );
+        const multiItemProject = await createProject("Multi Item Project");
+        await createItem(
+          multiItemProject.id,
+          "note",
+          "Research Notes",
+          "Collected findings from testing.",
+          {
+            createdFrom: "manual"
+          }
+        );
+        await createItem(
+          multiItemProject.id,
+          "task",
+          "Implement Selection",
+          "Add selectedItemId runtime state.",
+          {
+            createdFrom: "manual"
+          }
+        );
+        await createItem(
+          multiItemProject.id,
+          "link",
+          "Architecture Reference",
+          "https://example.com",
+          {
+            sourceUrl: "https://example.com",
+            createdFrom: "selection"
+          }
+        );
       }
       async function bootstrap() {
         const root = await injectFloatingAssets();
