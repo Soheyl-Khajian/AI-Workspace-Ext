@@ -65,52 +65,62 @@ async function injectFloatingAssets(): Promise<HTMLElement> {
 ------------------------------------------------------------ */
 
 async function seedDevDataOnce(): Promise<void> {
-  const emptyProject = await createProject("Empty Project");
+  const flag = await chrome.storage.local.get("aiw_dev_seeded");
 
-  const singleItemProject = await createProject("Single Item Project");
+  if (flag.aiw_dev_seeded === true) return;
 
-  await createItem(
-    singleItemProject.id,
-    "note",
-    "First Note",
-    "This project contains exactly one item.",
-    {
-      createdFrom: "manual",
-    },
-  );
+  try {
+    const emptyProject = await createProject("Empty Project");
 
-  const multiItemProject = await createProject("Multi Item Project");
+    const singleItemProject = await createProject("Single Item Project");
 
-  await createItem(
-    multiItemProject.id,
-    "note",
-    "Research Notes",
-    "Collected findings from testing.",
-    {
-      createdFrom: "manual",
-    },
-  );
+    await createItem(
+      singleItemProject.id,
+      "note",
+      "First Note",
+      "This project contains exactly one item.",
+      {
+        createdFrom: "manual",
+      },
+    );
 
-  await createItem(
-    multiItemProject.id,
-    "task",
-    "Implement Selection",
-    "Add selectedItemId runtime state.",
-    {
-      createdFrom: "manual",
-    },
-  );
+    const multiItemProject = await createProject("Multi Item Project");
 
-  await createItem(
-    multiItemProject.id,
-    "link",
-    "Architecture Reference",
-    "https://example.com",
-    {
-      sourceUrl: "https://example.com",
-      createdFrom: "selection",
-    },
-  );
+    await createItem(
+      multiItemProject.id,
+      "note",
+      "Research Notes",
+      "Collected findings from testing.",
+      {
+        createdFrom: "manual",
+      },
+    );
+
+    await createItem(
+      multiItemProject.id,
+      "task",
+      "Implement Selection",
+      "Add selectedItemId runtime state.",
+      {
+        createdFrom: "manual",
+      },
+    );
+
+    await createItem(
+      multiItemProject.id,
+      "link",
+      "Architecture Reference",
+      "https://example.com",
+      {
+        sourceUrl: "https://example.com",
+        createdFrom: "selection",
+      },
+    );
+
+    await chrome.storage.local.set({ aiw_dev_seeded: true });
+  } catch (error) {
+    throw error;
+  }
 }
 
 /* ------------------------------------------------------------

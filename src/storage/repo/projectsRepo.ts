@@ -46,7 +46,6 @@ export async function insertProject(project: Project): Promise<void> {
     // `put` provides idempotent "insert or replace" semantics.
     // This is acceptable for v0 and simplifies retries.
     const req = store.put(project);
-
     // Wait for the request itself to succeed.
     await requestToPromise(req);
 
@@ -84,7 +83,6 @@ export async function getAllProjects(): Promise<Project[]> {
     // Fetch all project records.
     const req = store.getAll();
     const rows: Project[] = await requestToPromise(req);
-
     // Ensure the transaction completes cleanly.
     await txToPromise(tx);
 
@@ -94,6 +92,39 @@ export async function getAllProjects(): Promise<Project[]> {
     return rows;
   } finally {
     // Close connection even if an error occurred mid-operation.
+    db.close();
+  }
+}
+
+/**
+ * Delete a single Project record by primary key.
+ *
+ * Semantics:
+ * - Permanently removes the project with the given id.
+ * - No-op if the project does not exist.
+ * - Does NOT cascade to items; caller is responsible for
+ *   deleting related items before or after this call.
+ *
+ * Transaction model:
+ * - Single readwrite transaction scoped to the projects store.
+ * - Resolves only after the transaction fully commits.
+ *
+ * Failure behavior:
+ * - Any IndexedDB error rejects the promise.
+ * - DB connection is always closed, even on failure.
+ */
+export async function deleteProject(id: string): Promise<void> {
+  const db = await openDb();
+
+  try {
+    const tx = db.transaction(STORE_PROJECTS, "readwrite");
+    const store = tx.objectStore(STORE_PROJECTS);
+
+    const req = store.delete(id);
+    await requestToPromise(req);
+
+    await txToPromise(tx);
+  } finally {
     db.close();
   }
 }

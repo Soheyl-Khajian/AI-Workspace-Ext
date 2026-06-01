@@ -33,6 +33,7 @@
 // renderer re-reads state
 // ------------------------------------------------------------
 
+import { setItemsLoading } from "./itemsState";
 import { loadItems } from "./loadItems";
 
 // ------------------------------------------------------------
@@ -89,13 +90,8 @@ export function createItemsController(
   // ----------------------------------------------------------
 
   async function load(projectId: string): Promise<void> {
-    /*
-      Immediate render allows UI to reflect loading state
-      before async work completes.
+    setItemsLoading(true);
 
-      This depends on loadItems() synchronously mutating:
-      - setItemsLoading(true)
-    */
     onStateChange();
 
     try {

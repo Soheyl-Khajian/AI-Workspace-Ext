@@ -14,5 +14,5 @@ export type Item = {
   content: string;
   createdAt: number;
   updatedAt?: number;
-  meta?: ItemMeta;
+  meta: ItemMeta;
 };

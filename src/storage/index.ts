@@ -1,9 +1,15 @@
 // src/storage/index.ts
-import { insertProject, getAllProjects } from "./repo/projectsRepo";
+import {
+  insertProject,
+  getAllProjects,
+  deleteProject,
+} from "./repo/projectsRepo";
 import {
   insertItem,
   getItemsByProjectId,
   deleteItemById,
+  deleteItemsByProjectId,
+  getItemById,
 } from "./repo/itemsRepo";
 
 import type { Project } from "../models/project";
@@ -44,6 +50,22 @@ export async function createProject(
 
 export async function listProjects(): Promise<Project[]> {
   return getAllProjects();
+}
+
+export async function deleteProjectCascade(projectId: string): Promise<void> {
+  if (projectId == null) {
+    throw new Error("project id is required (null/undefined)");
+  }
+
+  const trimmedProjectId = projectId.trim();
+
+  if (trimmedProjectId.length === 0) {
+    throw new Error("project id cannot be empty");
+  }
+
+  await deleteItemsByProjectId(trimmedProjectId);
+
+  await deleteProject(trimmedProjectId);
 }
 
 /* -------------------------------------------------------
@@ -120,6 +142,62 @@ export async function listItemsByProject(projectId: string): Promise<Item[]> {
   return getItemsByProjectId(trimmedProjectId);
 }
 
+/**
+ * Apply a partial update to an existing Item record.
+ *
+ * Semantics:
+ * - Loads the existing item from storage.
+ * - Merges mutable fields from partialUpdate into the existing record.
+ * - Immutable fields (id, projectId, createdAt) are always preserved
+ *   regardless of what partialUpdate contains.
+ * - Sets updatedAt to the current timestamp on every successful update.
+ * - Persists the merged result using upsert semantics.
+ *
+ * Failure behavior:
+ * - Throws if itemId is null, undefined, or empty.
+ * - Throws if no item exists with the given itemId.
+ * - Any IndexedDB error propagates as a rejected promise.
+ *
+ * Returns:
+ * - The fully merged, persisted Item record.
+ */
+export async function updateItem(
+  id: string,
+  partialUpdate: Partial<Item>,
+): Promise<Item> {
+  if (id == null) {
+    throw new Error("item id is required (null/undefined)");
+  }
+
+  const trimmedId = id.trim();
+
+  if (trimmedId.length === 0) {
+    throw new Error("item id cannot be empty");
+  }
+
+  const existing = await getItemById(trimmedId);
+
+  if (existing === undefined) {
+    throw new Error(`Item not found: ${id}`);
+  }
+
+  // Merge: apply caller-supplied fields over existing record.
+  // Immutable fields are re-asserted after spread to prevent
+  // accidental overwrites from partialUpdate.
+  const merged: Item = {
+    ...existing,
+    ...partialUpdate,
+    id: existing.id,
+    projectId: existing.projectId,
+    createdAt: existing.createdAt,
+    updatedAt: Date.now(),
+  };
+
+  await insertItem(merged);
+
+  return merged;
+}
+
 export async function deleteItem(id: string): Promise<void> {
   if (id == null) {
     throw new Error("item id is required (null/undefined)");
@@ -133,15 +211,3 @@ export async function deleteItem(id: string): Promise<void> {
 
   await deleteItemById(trimmedId);
 }
-
-/* -------------------------------------------------------
-   FUTURE FUNCTIONS (NOT IMPLEMENTED YET)
-------------------------------------------------------- */
-
-// export async function updateItem(...) {
-//   // Phase 4: item editing + patch updates
-// }
-
-// export async function deleteProjectCascade(...) {
-//   // Phase 4/5: delete project + all related items
-// }

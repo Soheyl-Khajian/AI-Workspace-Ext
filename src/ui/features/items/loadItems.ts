@@ -26,11 +26,7 @@
 
 import { listItemsByProject } from "../../../storage/index";
 
-import {
-  setItems,
-  setItemsError,
-  setItemsLoading,
-} from "../../features/items/itemsState";
+import { setItems, setItemsError, setItemsLoading } from "./itemsState";
 
 // ------------------------------------------------------------
 // LOAD ITEMS

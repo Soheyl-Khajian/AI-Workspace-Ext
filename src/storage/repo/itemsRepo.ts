@@ -42,7 +42,6 @@ export async function insertItem(item: Item): Promise<void> {
     const store = tx.objectStore(STORE_ITEMS);
 
     const req = store.put(item);
-
     // Wait for the request itself to succeed.
     await requestToPromise(req);
 
@@ -76,7 +75,6 @@ export async function getItemsByProjectId(projectId: string): Promise<Item[]> {
     const req = index.getAll(projectId);
 
     const rows: Item[] = await requestToPromise(req);
-
     // Ensure transaction completion.
     await txToPromise(tx);
 
@@ -84,6 +82,40 @@ export async function getItemsByProjectId(projectId: string): Promise<Item[]> {
     rows.sort((a, b) => b.createdAt - a.createdAt);
 
     return rows;
+  } finally {
+    db.close();
+  }
+}
+
+/**
+ * Retrieve a single Item record by primary key.
+ *
+ * Semantics:
+ * - Looks up the item directly by its `id` keyPath.
+ * - Returns undefined if no matching record exists.
+ * - Does NOT throw on missing records; caller decides behavior.
+ *
+ * Transaction model:
+ * - Single readonly transaction scoped to the items store.
+ * - Resolves only after the transaction fully commits.
+ *
+ * Failure behavior:
+ * - Any IndexedDB error rejects the promise.
+ * - DB connection is always closed, even on failure.
+ */
+export async function getItemById(id: string): Promise<Item | undefined> {
+  const db = await openDb();
+
+  try {
+    const tx = db.transaction(STORE_ITEMS, "readonly");
+    const store = tx.objectStore(STORE_ITEMS);
+
+    const req = store.get(id);
+    const item: Item | undefined = await requestToPromise(req);
+
+    await txToPromise(tx);
+
+    return item;
   } finally {
     db.close();
   }
@@ -106,7 +138,6 @@ export async function deleteItemById(id: string): Promise<void> {
     const store = tx.objectStore(STORE_ITEMS);
 
     const req = store.delete(id);
-
     // Wait for delete request success.
     await requestToPromise(req);
 
@@ -141,7 +172,6 @@ export async function deleteItemsByProjectId(projectId: string): Promise<void> {
     const index = store.index(IDX_ITEMS_BY_PROJECT);
 
     const req = index.getAll(projectId);
-
     const items: Item[] = await requestToPromise(req);
 
     // Queue all delete operations into the same transaction.
