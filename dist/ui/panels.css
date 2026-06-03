@@ -1,103 +1,35 @@
-/* src/ui/styles/panels.css*/
+/* src/ui/styles/panels.css */
 /* ------------------------------------------------------------
    FLOATING PANELS ROOT
 ------------------------------------------------------------ */
-/*
-  Shared mounting area for ALL floating panels.
-
-  Examples:
-  - projects
-  - capture
-  - search
-  - future settings panel
-*/
 
 #aiw-orb-panels {
-  /*
-    Position relative to viewport.
-  */
   position: absolute;
-
-  /*
-    Anchor near orb.
-  */
   right: 235px;
   bottom: 110px;
-
-  /*
-    Allow future animated overflow.
-  */
   overflow: visible;
-
-  /*
-    Container itself should not block UI.
-  */
   pointer-events: none;
 }
 
 /* ------------------------------------------------------------
    FLOATING PANEL SHELL
 ------------------------------------------------------------ */
-/*
-  Reusable glass panel foundation.
-
-  ALL future panels reuse this shell.
-*/
 
 .aiw-floating-panel {
-  /*
-    Actual interactive surface.
-  */
   pointer-events: auto;
-
-  /*
-    Floating geometry.
-  */
   width: 380px;
   min-height: 240px;
   max-height: 38vh;
-
-  /*
-    Rounded glass card.
-  */
   border-radius: 24px;
-
-  /*
-    Frosted surface.
-  */
   background: rgba(20, 20, 20, 0.82);
-
-  /*
-    Glass blur.
-  */
   backdrop-filter: blur(18px);
-
-  /*
-    Subtle glass border.
-  */
   border: 1px solid rgba(255, 255, 255, 0.08);
-
-  /*
-    Floating depth.
-  */
   box-shadow:
     0 24px 64px rgba(0, 0, 0, 0.42),
     0 8px 20px rgba(0, 0, 0, 0.22);
-
-  /*
-    Internal layout.
-  */
   display: flex;
   flex-direction: column;
-
-  /*
-    Prevent content overflow glitches.
-  */
   overflow: hidden;
-
-  /*
-    Smooth panel entrance behavior.
-  */
   animation: aiw-panel-enter 180ms ease;
 }
 
@@ -106,22 +38,13 @@
 ------------------------------------------------------------ */
 
 .aiw-floating-panel__header {
-  /*
-    Horizontal layout.
-  */
   display: flex;
   align-items: center;
   justify-content: space-between;
-
-  /*
-    Internal spacing.
-  */
   padding: 18px 20px;
-
-  /*
-    Soft divider.
-  */
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  /* Prevent header from shrinking */
+  flex-shrink: 0;
 }
 
 /* ------------------------------------------------------------
@@ -129,21 +52,10 @@
 ------------------------------------------------------------ */
 
 .aiw-floating-panel__title {
-  /*
-    Remove browser heading spacing.
-  */
   margin: 0;
-
-  /*
-    Typography.
-  */
   font-size: 15px;
   font-weight: 600;
   letter-spacing: -0.01em;
-
-  /*
-    Bright text.
-  */
   color: rgba(255, 255, 255, 0.96);
 }
 
@@ -152,20 +64,12 @@
 ------------------------------------------------------------ */
 
 .aiw-floating-panel__body {
-  /*
-    Flexible content region.
-  */
+  /* Takes all available space between header and form */
   flex: 1;
-
-  /*
-    Internal spacing.
-  */
   padding: 20px;
-
-  /*
-    Scroll support for future content.
-  */
   overflow-y: auto;
+  /* Prevent body from growing beyond panel bounds */
+  min-height: 0;
 }
 
 /* ------------------------------------------------------------
@@ -173,20 +77,9 @@
 ------------------------------------------------------------ */
 
 .aiw-floating-panel__placeholder {
-  /*
-    Remove paragraph defaults.
-  */
   margin: 0;
-
-  /*
-    Softer typography.
-  */
   font-size: 14px;
   line-height: 1.5;
-
-  /*
-    Muted color.
-  */
   color: rgba(255, 255, 255, 0.62);
 }
 
@@ -214,7 +107,6 @@
     opacity: 0;
     transform: translateY(10px) scale(0.98);
   }
-
   to {
     opacity: 1;
     transform: translateY(0) scale(1);
@@ -222,47 +114,21 @@
 }
 
 /* ------------------------------------------------------------
-   PROJECTS PANEL STATES
+   PANEL STATE (loading / empty / error / placeholder)
 ------------------------------------------------------------ */
 
-.aiw-projects-state {
-  /*
-    Center lightweight placeholder states.
-  */
+.aiw-panel-state {
   display: flex;
   align-items: center;
   justify-content: center;
-
-  /*
-    Comfortable vertical spacing.
-  */
   min-height: 140px;
-
-  /*
-    Softer typography.
-  */
   font-size: 14px;
   line-height: 1.5;
-
-  /*
-    Muted text color.
-  */
   color: rgba(255, 255, 255, 0.62);
-
-  /*
-    Center text visually.
-  */
   text-align: center;
 }
 
-/* ------------------------------------------------------------
-   ERROR STATE
------------------------------------------------------------- */
-
-.aiw-projects-state--error {
-  /*
-    Slight error tint.
-  */
+.aiw-panel-state--error {
   color: rgba(255, 120, 120, 0.92);
 }
 
@@ -271,15 +137,8 @@
 ------------------------------------------------------------ */
 
 .aiw-projects-list {
-  /*
-    Vertical stacking layout.
-  */
   display: flex;
   flex-direction: column;
-
-  /*
-    Space between rows.
-  */
   gap: 10px;
 }
 
@@ -292,53 +151,32 @@
   width: 100%;
   display: flex;
   align-items: center;
-
   padding: 14px 16px;
   border-radius: 16px;
-
   background: rgba(255, 255, 255, 0.04);
-
   font-size: 14px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.92);
-
   cursor: pointer;
-
   transition:
     background-color 140ms ease,
     transform 140ms ease;
 }
-
-/* ------------------------------------------------------------
-   HOVER (ONLY WHEN NOT SELECTED)
------------------------------------------------------------- */
 
 .aiw-project-row:not(.aiw-project-row--selected):hover {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ------------------------------------------------------------
-   FOCUS
------------------------------------------------------------- */
-
 .aiw-project-row:focus-visible {
   outline: none;
   box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
 }
 
-/* ------------------------------------------------------------
-   SELECTED STATE (ALWAYS WINS FOR BACKGROUND)
------------------------------------------------------------- */
-
 .aiw-project-row--selected {
   background: rgba(255, 255, 255, 0.212);
   border-left: 2px solid var(--aiw-accent);
 }
-
-/* ------------------------------------------------------------
-   SELECTED + HOVER (EXPLICIT OVERRIDE SAFETY)
------------------------------------------------------------- */
 
 .aiw-project-row--selected:hover {
   background: rgba(255, 255, 255, 0.212);
@@ -346,19 +184,88 @@
 }
 
 /* ------------------------------------------------------------
+   CREATE PROJECT FORM
+------------------------------------------------------------ */
+/*
+  Pinned footer form outside the scrollable body.
+  Rendered as a direct child of the panel flex column,
+  so it stays fixed at the bottom regardless of list length.
+*/
+
+.aiw-create-project-form {
+  /* Sits as a flex child of the panel column */
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  /* Never shrink — always visible */
+  flex-shrink: 0;
+  padding: 14px 16px;
+  /* Visual separator from list above */
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.aiw-create-project-input {
+  /* Takes all remaining space in the row */
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-family: inherit;
+  /* Remove default outline */
+  outline: none;
+  transition: border-color 140ms ease;
+}
+
+.aiw-create-project-input::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.aiw-create-project-input:focus {
+  border-color: rgba(16, 163, 127, 0.48);
+}
+
+.aiw-create-project-submit {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--aiw-accent);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  /* Prevent shrinking when input takes space */
+  flex-shrink: 0;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.aiw-create-project-submit:hover {
+  background: rgba(12, 140, 110, 1);
+  transform: translateY(-1px);
+}
+
+.aiw-create-project-submit:active {
+  transform: scale(0.97);
+}
+
+.aiw-create-project-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
+}
+
+/* ------------------------------------------------------------
    ITEMS LIST
 ------------------------------------------------------------ */
 
 .aiw-items-list {
-  /*
-    Vertical stacking layout.
-  */
   display: flex;
   flex-direction: column;
-
-  /*
-    Space between rows.
-  */
   gap: 10px;
 }
 
@@ -367,7 +274,13 @@
 ------------------------------------------------------------ */
 
 .aiw-panel-back-button {
+  background: none;
+  border: none;
+  cursor: pointer;
   color: rgba(255, 255, 255, 0.92);
+  font-size: 16px;
+  padding: 0;
+  line-height: 1;
 }
 
 /* ------------------------------------------------------------
@@ -379,53 +292,32 @@
   width: 100%;
   display: flex;
   align-items: center;
-
   padding: 14px 16px;
   border-radius: 16px;
-
   background: rgba(255, 255, 255, 0.04);
-
   font-size: 14px;
   font-weight: 500;
   color: rgba(255, 255, 255, 0.92);
-
   cursor: pointer;
-
   transition:
     background-color 140ms ease,
     transform 140ms ease;
 }
-
-/* ------------------------------------------------------------
-   HOVER (ONLY WHEN NOT SELECTED)
------------------------------------------------------------- */
 
 .aiw-item-row:not(.aiw-item-row--selected):hover {
   transform: translateY(-1px);
   background: rgba(255, 255, 255, 0.08);
 }
 
-/* ------------------------------------------------------------
-   FOCUS
------------------------------------------------------------- */
-
 .aiw-item-row:focus-visible {
   outline: none;
   box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
 }
 
-/* ------------------------------------------------------------
-   SELECTED STATE (ALWAYS WINS FOR BACKGROUND)
------------------------------------------------------------- */
-
 .aiw-item-row--selected {
   background: rgba(255, 255, 255, 0.212);
   border-left: 2px solid var(--aiw-accent);
 }
-
-/* ------------------------------------------------------------
-   SELECTED + HOVER (EXPLICIT OVERRIDE SAFETY)
------------------------------------------------------------- */
 
 .aiw-item-row--selected:hover {
   background: rgba(255, 255, 255, 0.212);

@@ -33,6 +33,7 @@
 import { openPanel } from "../../core/floatingUiState";
 import { setSelectedProjectId } from "../../core/sessionState";
 import { loadProjects } from "./loadProjects";
+import { createProject } from "../../../storage";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -52,6 +53,7 @@ type ProjectsControllerDependencies = {
 type ProjectsController = {
   load: () => Promise<void>;
   selectProject: (projectId: string) => void;
+  create: (name: string) => Promise<void>;
 };
 
 // ------------------------------------------------------------
@@ -108,11 +110,27 @@ export function createProjectsController(
   }
 
   // ----------------------------------------------------------
+  // CREATE PROJECT WORKFLOW
+  // ----------------------------------------------------------
+
+  async function create(name: string): Promise<void> {
+    // TODO: add error state for creation failures
+    try {
+      await createProject(name);
+
+      await loadProjects();
+    } finally {
+      onStateChange();
+    }
+  }
+
+  // ----------------------------------------------------------
   // PUBLIC API
   // ----------------------------------------------------------
 
   return {
     load,
     selectProject,
+    create,
   };
 }

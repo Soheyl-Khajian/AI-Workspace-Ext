@@ -93,6 +93,26 @@ export function renderProjectsPanel(containerEl: HTMLElement): void {
   }
 
   // ------------------------------------------------------------
+  // CREATE FORM
+  // ------------------------------------------------------------
+
+  const formEl = document.createElement("div");
+  formEl.className = "aiw-create-project-form";
+
+  const inputEl = document.createElement("input");
+  inputEl.className = "aiw-create-project-input";
+  inputEl.type = "text";
+  inputEl.placeholder = "New project name";
+
+  const buttonEl = document.createElement("button");
+  buttonEl.className = "aiw-create-project-submit";
+  buttonEl.type = "button";
+  buttonEl.textContent = "Create";
+
+  formEl.append(inputEl, buttonEl);
+  shell.panelEl.append(formEl);
+
+  // ------------------------------------------------------------
   // FINAL ASSEMBLY
   // ------------------------------------------------------------
 

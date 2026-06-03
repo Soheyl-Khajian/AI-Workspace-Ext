@@ -18,6 +18,8 @@
 */
 
 #aiw-floating-root {
+  --aiw-accent: rgb(16, 163, 127);
+
   /*
       Attach directly to viewport.
     */

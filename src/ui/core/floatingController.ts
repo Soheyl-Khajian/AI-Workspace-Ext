@@ -47,6 +47,7 @@ const PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
 
 const PROJECT_ROW_SELECTOR = ".aiw-project-row";
 const PROJECT_ID_DATASET_KEY = "projectId";
+const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
 
 const ITEM_ROW_SELECTOR = ".aiw-item-row";
 const ITEM_ID_DATASET_KEY = "itemId";
@@ -150,6 +151,36 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
+  // PROJECT CREATION HANDLER
+  // ----------------------------------------------------------
+
+  async function handleCreateProject(event: MouseEvent): Promise<void> {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const submitButton = target.closest(PROJECT_CREATE_BUTTON_SELECTOR);
+    if (!(submitButton instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const input = dom.orbPanelsEl.querySelector(".aiw-create-project-input");
+    if (!(input instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const trimmedNewProjectName = input.value.trim();
+    if (trimmedNewProjectName.length === 0) {
+      return;
+    }
+
+    await projectsController.create(trimmedNewProjectName);
+
+    input.value = "";
+  }
+
+  // ----------------------------------------------------------
   // ITEM SELECTION HANDLER
   // ----------------------------------------------------------
 
@@ -225,6 +256,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
   dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
+  dom.orbPanelsEl.addEventListener("click", handleCreateProject);
   dom.orbPanelsEl.addEventListener("click", handleItemSelect);
   dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
@@ -236,6 +268,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   return function destroyFloatingController(): void {
     dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
     dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
+    dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
     dom.orbPanelsEl.removeEventListener("click", handleItemSelect);
     dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);

@@ -610,6 +610,18 @@
     } else {
       renderProjectsList(projects);
     }
+    const formEl = document.createElement("div");
+    formEl.className = "aiw-create-project-form";
+    const inputEl = document.createElement("input");
+    inputEl.className = "aiw-create-project-input";
+    inputEl.type = "text";
+    inputEl.placeholder = "New project name";
+    const buttonEl = document.createElement("button");
+    buttonEl.className = "aiw-create-project-submit";
+    buttonEl.type = "button";
+    buttonEl.textContent = "Create";
+    formEl.append(inputEl, buttonEl);
+    shell.panelEl.append(formEl);
     containerEl.append(shell.panelEl);
   }
   var init_renderProjectsPanel = __esm({
@@ -851,9 +863,18 @@
       openPanel("items");
       itemsController.load(projectId);
     }
+    async function create(name) {
+      try {
+        await createProject(name);
+        await loadProjects();
+      } finally {
+        onStateChange();
+      }
+    }
     return {
       load,
-      selectProject
+      selectProject,
+      create
     };
   }
   var init_projectsController = __esm({
@@ -862,6 +883,7 @@
       init_floatingUiState();
       init_sessionState();
       init_loadProjects();
+      init_storage();
     }
   });
 
@@ -979,6 +1001,26 @@
       }
       projectsController.selectProject(projectId);
     }
+    async function handleCreateProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const submitButton = target.closest(PROJECT_CREATE_BUTTON_SELECTOR);
+      if (!(submitButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const input = dom.orbPanelsEl.querySelector(".aiw-create-project-input");
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+      const trimmedNewProjectName = input.value.trim();
+      if (trimmedNewProjectName.length === 0) {
+        return;
+      }
+      await projectsController.create(trimmedNewProjectName);
+      input.value = "";
+    }
     function handleItemSelect(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -1022,18 +1064,20 @@
     }
     dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
     dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
+    dom.orbPanelsEl.addEventListener("click", handleCreateProject);
     dom.orbPanelsEl.addEventListener("click", handleItemSelect);
     dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     return function destroyFloatingController() {
       dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
       dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
+      dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
       dom.orbPanelsEl.removeEventListener("click", handleItemSelect);
       dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY, ITEM_ROW_SELECTOR, ITEM_ID_DATASET_KEY;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_ID_DATASET_KEY;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1049,6 +1093,7 @@
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
       PROJECT_ID_DATASET_KEY = "projectId";
+      PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_ID_DATASET_KEY = "itemId";
     }
