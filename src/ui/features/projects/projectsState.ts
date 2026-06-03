@@ -41,7 +41,6 @@ import type { Project } from "../../../models/project";
 
 type ProjectsState = {
   projects: Project[];
-  selectedProjectId: string | null;
   loading: boolean;
   error: string | null;
 };
@@ -57,7 +56,6 @@ type ProjectsState = {
 
 const state: ProjectsState = {
   projects: [],
-  selectedProjectId: null,
   loading: false,
   error: null,
 };
@@ -79,10 +77,6 @@ export function getProjects(): Project[] {
 
 export function hasProjects(): boolean {
   return state.projects.length > 0;
-}
-
-export function getSelectedProjectId(): string | null {
-  return state.selectedProjectId;
 }
 
 export function isProjectsLoading(): boolean {
@@ -109,10 +103,6 @@ export function setProjects(projectsList: Project[]): void {
   state.projects = [...projectsList];
 }
 
-export function setSelectedProjectId(id: string | null): void {
-  state.selectedProjectId = id;
-}
-
 export function setLoading(loading: boolean): void {
   state.loading = loading;
 }
@@ -131,7 +121,6 @@ export function setError(error: string | null): void {
 
 export function resetProjectsState(): void {
   state.projects = [];
-  state.selectedProjectId = null;
   state.loading = false;
   state.error = null;
 }

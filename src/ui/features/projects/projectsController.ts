@@ -31,7 +31,7 @@
 // ------------------------------------------------------------
 
 import { openPanel } from "../../core/floatingUiState";
-import { setSelectedProjectId } from "./projectsState";
+import { setSelectedProjectId } from "../../core/sessionState";
 import { loadProjects } from "./loadProjects";
 
 // ------------------------------------------------------------

@@ -42,19 +42,8 @@ import type { Item } from "../../../models/item";
 // ------------------------------------------------------------
 
 type ItemsState = {
-  /*
-    Current in-memory items snapshot.
-  */
   items: Item[];
-
-  /*
-    Indicates active async loading lifecycle.
-  */
   loading: boolean;
-
-  /*
-    Human-readable runtime error state.
-  */
   error: string | null;
 };
 

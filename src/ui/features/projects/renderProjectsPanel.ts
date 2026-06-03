@@ -23,12 +23,14 @@ import type { Project } from "../../../models/project";
 import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell";
 import { createPanelState } from "../../shared/createPanelState";
 import { createProjectRow } from "./createProjectRow";
+
 import {
   getProjects,
-  getSelectedProjectId,
   getProjectsError,
   isProjectsLoading,
 } from "./projectsState";
+
+import { getSelectedProjectId } from "../../core/sessionState";
 
 export function renderProjectsPanel(containerEl: HTMLElement): void {
   const shell = createFloatingPanelShell("Projects");

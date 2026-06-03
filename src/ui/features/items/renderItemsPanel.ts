@@ -22,16 +22,15 @@
 import type { Item } from "../../../models/item";
 
 import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell";
-import { createItemRow } from "../../features/items/createItemRow";
+import { createItemRow } from "./createItemRow";
 import { createPanelState } from "../../shared/createPanelState";
 
-import {
-  getItems,
-  getItemsError,
-  isItemsLoading,
-} from "../../features/items/itemsState";
+import { getItems, getItemsError, isItemsLoading } from "./itemsState";
 
-import { getSelectedProjectId } from "../../features/projects/projectsState";
+import {
+  getSelectedProjectId,
+  getSelectedItemId,
+} from "../../core/sessionState";
 
 export function renderItemsPanel(containerEl: HTMLElement): void {
   // ------------------------------------------------------------
@@ -52,6 +51,7 @@ export function renderItemsPanel(containerEl: HTMLElement): void {
   // ------------------------------------------------------------
 
   const selectedProjectId = getSelectedProjectId();
+  const selectedItemId = getSelectedItemId();
 
   const loading = isItemsLoading();
   const error = getItemsError();
@@ -69,7 +69,8 @@ export function renderItemsPanel(containerEl: HTMLElement): void {
     listEl.className = "aiw-items-list";
 
     for (const item of itemsList) {
-      const rowEl = createItemRow(item);
+      const selectedItem = item.id === selectedItemId;
+      const rowEl = createItemRow(item, selectedItem);
 
       listEl.append(rowEl);
     }

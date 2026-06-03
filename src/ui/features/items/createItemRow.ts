@@ -19,7 +19,10 @@
 
 import type { Item } from "../../../models/item";
 
-export function createItemRow(item: Item): HTMLButtonElement {
+export function createItemRow(
+  item: Item,
+  selected: boolean,
+): HTMLButtonElement {
   // ------------------------------------------------------------
   // ROOT ROW ELEMENT
   // ------------------------------------------------------------
@@ -57,7 +60,13 @@ export function createItemRow(item: Item): HTMLButtonElement {
     - controller event routing
     - future selection flows
   */
+
+  // Expose project identity to parent interaction systems
   rowEl.dataset.itemId = item.id;
+
+  if (selected) {
+    rowEl.classList.add("aiw-item-row--selected");
+  }
 
   return rowEl;
 }
