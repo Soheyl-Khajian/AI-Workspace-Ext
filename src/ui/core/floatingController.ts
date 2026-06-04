@@ -37,7 +37,7 @@ import {
 } from "./floatingUiState";
 import { createProjectsController } from "../features/projects/projectsController";
 import { createItemsController } from "../features/items/itemsController";
-import { setSelectedItemId } from "./sessionState";
+import { setSelectedItemId, getSelectedProjectId } from "./sessionState";
 
 // ------------------------------------------------------------
 // SHARED CONSTANTS (temporary scope; can later relocate)
@@ -51,6 +51,7 @@ const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
 
 const ITEM_ROW_SELECTOR = ".aiw-item-row";
 const ITEM_ID_DATASET_KEY = "itemId";
+const ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
 
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
@@ -209,6 +210,49 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
+  // ITEM CREATION HANDLER
+  // ----------------------------------------------------------
+
+  async function handleCreateItem(event: MouseEvent): Promise<void> {
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId === null) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const submitButton = target.closest(ITEM_CREATE_BUTTON_SELECTOR);
+    if (!(submitButton instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const titleInput = dom.orbPanelsEl.querySelector(".aiw-create-item-title");
+    const contentInput = dom.orbPanelsEl.querySelector(
+      ".aiw-create-item-content",
+    );
+    if (
+      !(titleInput instanceof HTMLInputElement) ||
+      !(contentInput instanceof HTMLTextAreaElement)
+    ) {
+      return;
+    }
+
+    const trimmedItemTitle = titleInput.value.trim();
+    const content = contentInput.value;
+    if (trimmedItemTitle.length === 0) {
+      return;
+    }
+
+    await itemsController.create(selectedProjectId, trimmedItemTitle, content);
+
+    titleInput.value = "";
+    contentInput.value = "";
+  }
+
+  // ----------------------------------------------------------
   // BACK BUTTON HANDLER
   // ----------------------------------------------------------
 
@@ -259,6 +303,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   dom.orbPanelsEl.addEventListener("click", handleCreateProject);
   dom.orbPanelsEl.addEventListener("click", handleItemSelect);
   dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
+  dom.orbPanelsEl.addEventListener("click", handleCreateItem);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
 
   // ----------------------------------------------------------
@@ -271,6 +316,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
     dom.orbPanelsEl.removeEventListener("click", handleItemSelect);
     dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
+    dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
   };
 }

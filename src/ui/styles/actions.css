@@ -14,89 +14,36 @@ Expanded state moves them outward.
 */
 
 .aiw-orb-action {
-  /*
- Absolute positioning enables radial geometry.
-*/
   position: absolute;
-
-  /*
- All buttons initially stack from same origin.
-*/
   top: 0;
   left: 0;
-
-  /*
- Initial collapsed state.
-*/
   transform: translate(0, 0) scale(0.72);
-
-  /*
- Hidden initially.
-*/
   opacity: 0;
-
-  /*
- Hidden buttons must not receive clicks.
-*/
   pointer-events: none;
 
-  /*
- Floating chip dimensions.
-*/
   width: 96px;
   height: 40px;
-
-  /*
- Remove default browser button styles.
-*/
   border: none;
-
-  /*
- Pill shape.
-*/
   border-radius: 999px;
 
-  /*
- Floating dark glass surface.
-*/
-  background: rgba(28, 28, 28, 0.94);
+  /* Glass surface */
+  background: rgba(24, 42, 76, 0.25);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
 
-  /*
- Text color.
-*/
-  color: rgba(255, 255, 255, 0.96);
-
-  /*
- Glass blur.
-*/
-  backdrop-filter: blur(10px);
-
-  /*
- Floating shadow.
-*/
+  /* Glass edge + inner highlight */
+  border: 1px solid rgba(255, 255, 255, 0.13);
   box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.24),
-    0 2px 8px rgba(0, 0, 0, 0.14);
+    0 8px 24px rgba(0, 0, 0, 0.22),
+    0 2px 8px rgba(0, 0, 0, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-  /*
- Interaction cursor.
-*/
+  color: rgba(255, 255, 255, 0.96);
   cursor: pointer;
-
-  /*
- Typography.
-*/
   font-size: 13px;
   font-weight: 500;
-
-  /*
- Prevent accidental text selection.
-*/
   user-select: none;
 
-  /*
- Smooth radial animation.
-*/
   transition:
     transform 180ms ease,
     opacity 180ms ease,
@@ -107,18 +54,13 @@ Expanded state moves them outward.
 /* ------------------------------------------------------------
    ACTION BUTTON HOVER
 ------------------------------------------------------------ */
-.aiw-orb-action:hover {
-  /*
-    Slight visual lift.
-  */
-  background: rgba(42, 42, 42, 0.98);
 
-  /*
-    Slight elevation.
-  */
+.aiw-orb-action:hover {
+  background: rgba(30, 30, 38, 0.72);
   box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.28),
-    0 3px 10px rgba(0, 0, 0, 0.16);
+    0 12px 30px rgba(0, 0, 0, 0.26),
+    0 3px 10px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* ------------------------------------------------------------

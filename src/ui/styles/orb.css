@@ -12,127 +12,45 @@ The orb is:
 - future navigation hub
 */
 #aiw-orb-button {
-  /*
- Positioned relative to floating root.
-*/
   position: absolute;
-
-  /*
- Floating offset from viewport edges.
-
- Do NOT hug corners tightly.
-*/
   right: 52px;
   bottom: 52px;
-
-  /*
- Perfect circle dimensions.
-*/
   width: 56px;
   height: 56px;
-
-  /*
- Remove browser defaults.
-*/
-  border: none;
-
-  /*
- Circular shape.
-*/
   border-radius: 50%;
-
-  /*
- Parent disables pointer events,
- so interactive elements must re-enable them.
-*/
   pointer-events: auto;
-
-  /*
- Interaction feedback.
-*/
   cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
 
-  /*
- Floating glass surface.
-*/
-  background: rgba(30, 30, 30, 0.84);
+  /* Glass surface */
+  background: rgba(10, 10, 20, 0.7);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
 
-  /*
- Background blur for glass effect.
-*/
-  backdrop-filter: blur(14px);
-
-  /*
- Floating elevation shadow.
-*/
+  /* Glass edge + inner highlight */
+  border: 1px solid rgba(255, 255, 255, 0.13);
   box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.28),
-    0 2px 10px rgba(0, 0, 0, 0.18);
+    0 10px 32px rgba(0, 0, 0, 0.24),
+    0 2px 10px rgba(0, 0, 0, 0.14),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
 
-  /*
- Smooth state transitions.
-*/
   transition:
     transform 160ms ease,
     background-color 160ms ease,
     box-shadow 160ms ease;
-
-  /*
- Removes Chromium tap flash.
-*/
-  -webkit-tap-highlight-color: transparent;
 }
 
 /* ------------------------------------------------------------
-ORB HOVER STATE
+   ORB HOVER STATE
 ------------------------------------------------------------ */
 
 #aiw-orb-button:hover {
-  /*
- Slight lift effect.
-*/
   transform: translateY(-2px);
-
-  /*
- Slightly brighter surface.
-*/
-  background: rgba(44, 44, 44, 0.92);
-
-  /*
- Stronger elevation.
-*/
+  background: rgba(30, 30, 38, 0.72);
   box-shadow:
-    0 14px 40px rgba(0, 0, 0, 0.34),
-    0 4px 14px rgba(0, 0, 0, 0.22);
-}
-
-/* ------------------------------------------------------------
-ORB PRESSED STATE
------------------------------------------------------------- */
-
-#aiw-orb-button:active {
-  /*
- Tactile press feedback.
-*/
-  transform: scale(0.96);
-}
-
-/* ------------------------------------------------------------
-ORB FOCUS STATE
------------------------------------------------------------- */
-
-#aiw-orb-button:focus-visible {
-  /*
- Remove default browser outline.
-*/
-  outline: none;
-
-  /*
- Accessible focus ring.
-*/
-  box-shadow:
-    0 0 0 4px rgba(16, 163, 127, 0.28),
-    0 10px 32px rgba(0, 0, 0, 0.28);
+    0 14px 40px rgba(0, 0, 0, 0.28),
+    0 4px 14px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 /* ------------------------------------------------------------
@@ -151,7 +69,7 @@ Visual feedback when radial menu is opened.
   /*
  Active tinted surface.
 */
-  background: rgba(24, 42, 76, 0.88);
+  background: rgba(24, 42, 76, 0.4);
 
   /*
  Stronger active glow.
@@ -159,6 +77,24 @@ Visual feedback when radial menu is opened.
   box-shadow:
     0 0 18px rgba(59, 130, 246, 0.18),
     0 12px 38px rgba(0, 0, 0, 0.34);
+}
+
+/* ------------------------------------------------------------
+ORB FOCUS STATE
+------------------------------------------------------------ */
+
+#aiw-orb-button:focus-visible {
+  /*
+ Remove default browser outline.
+*/
+  outline: none;
+
+  /*
+ Accessible focus ring.
+*/
+  box-shadow:
+    0 0 0 4px rgba(16, 163, 127, 0.28),
+    0 10px 32px rgba(0, 0, 0, 0.28);
 }
 
 /* ------------------------------------------------------------

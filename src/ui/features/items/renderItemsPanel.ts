@@ -121,6 +121,32 @@ export function renderItemsPanel(containerEl: HTMLElement): void {
   }
 
   // ------------------------------------------------------------
+  // CREATE FORM
+  // ------------------------------------------------------------
+
+  if (selectedProjectId !== null) {
+    const formEl = document.createElement("div");
+    formEl.className = "aiw-create-item-form";
+
+    const titleInputEl = document.createElement("input");
+    titleInputEl.className = "aiw-create-item-title";
+    titleInputEl.type = "text";
+    titleInputEl.placeholder = "Title";
+
+    const contentInputEl = document.createElement("textarea");
+    contentInputEl.className = "aiw-create-item-content";
+    contentInputEl.placeholder = "Content";
+
+    const buttonEl = document.createElement("button");
+    buttonEl.className = "aiw-create-item-submit";
+    buttonEl.type = "button";
+    buttonEl.textContent = "Add";
+
+    formEl.append(titleInputEl, contentInputEl, buttonEl);
+    shell.panelEl.append(formEl);
+  }
+
+  // ------------------------------------------------------------
   // FINAL ASSEMBLY
   // ------------------------------------------------------------
 

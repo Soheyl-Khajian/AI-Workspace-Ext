@@ -33,8 +33,10 @@
 // renderer re-reads state
 // ------------------------------------------------------------
 
+import type { ItemType } from "../../../models/item";
 import { setItemsLoading } from "./itemsState";
 import { loadItems } from "./loadItems";
+import { createItem } from "../../../storage";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -74,6 +76,12 @@ type ItemsController = {
     - error state
   */
   load: (projectId: string) => Promise<void>;
+  create: (
+    projectId: string,
+    title: string,
+    content: string,
+    type?: ItemType,
+  ) => Promise<void>;
 };
 
 // ------------------------------------------------------------
@@ -116,10 +124,33 @@ export function createItemsController(
   }
 
   // ----------------------------------------------------------
+  // CREATE ITEM WORKFLOW
+  // ----------------------------------------------------------
+
+  async function create(
+    projectId: string,
+    title: string,
+    content: string,
+    type: ItemType = "note",
+  ): Promise<void> {
+    // TODO: add error state for creation failures
+    try {
+      await createItem(projectId, type, title, content, {
+        createdFrom: "manual",
+      });
+
+      await loadItems(projectId);
+    } finally {
+      onStateChange();
+    }
+  }
+
+  // ----------------------------------------------------------
   // PUBLIC API
   // ----------------------------------------------------------
 
   return {
     load,
+    create,
   };
 }

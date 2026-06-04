@@ -771,6 +771,23 @@
     } else {
       renderItemsList(items);
     }
+    if (selectedProjectId !== null) {
+      const formEl = document.createElement("div");
+      formEl.className = "aiw-create-item-form";
+      const titleInputEl = document.createElement("input");
+      titleInputEl.className = "aiw-create-item-title";
+      titleInputEl.type = "text";
+      titleInputEl.placeholder = "Title";
+      const contentInputEl = document.createElement("textarea");
+      contentInputEl.className = "aiw-create-item-content";
+      contentInputEl.placeholder = "Content";
+      const buttonEl = document.createElement("button");
+      buttonEl.className = "aiw-create-item-submit";
+      buttonEl.type = "button";
+      buttonEl.textContent = "Add";
+      formEl.append(titleInputEl, contentInputEl, buttonEl);
+      shell.panelEl.append(formEl);
+    }
     containerEl.append(shell.panelEl);
   }
   var init_renderItemsPanel = __esm({
@@ -926,8 +943,19 @@
         onStateChange();
       }
     }
+    async function create(projectId, title, content, type = "note") {
+      try {
+        await createItem(projectId, type, title, content, {
+          createdFrom: "manual"
+        });
+        await loadItems(projectId);
+      } finally {
+        onStateChange();
+      }
+    }
     return {
-      load
+      load,
+      create
     };
   }
   var init_itemsController = __esm({
@@ -935,6 +963,7 @@
       "use strict";
       init_itemsState();
       init_loadItems();
+      init_storage();
     }
   });
 
@@ -1037,6 +1066,35 @@
       setSelectedItemId(itemId);
       renderUi();
     }
+    async function handleCreateItem(event) {
+      const selectedProjectId = getSelectedProjectId();
+      if (selectedProjectId === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const submitButton = target.closest(ITEM_CREATE_BUTTON_SELECTOR);
+      if (!(submitButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const titleInput = dom.orbPanelsEl.querySelector(".aiw-create-item-title");
+      const contentInput = dom.orbPanelsEl.querySelector(
+        ".aiw-create-item-content"
+      );
+      if (!(titleInput instanceof HTMLInputElement) || !(contentInput instanceof HTMLTextAreaElement)) {
+        return;
+      }
+      const trimmedItemTitle = titleInput.value.trim();
+      const content = contentInput.value;
+      if (trimmedItemTitle.length === 0) {
+        return;
+      }
+      await itemsController.create(selectedProjectId, trimmedItemTitle, content);
+      titleInput.value = "";
+      contentInput.value = "";
+    }
     function handleBackButtonClick(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -1067,6 +1125,7 @@
     dom.orbPanelsEl.addEventListener("click", handleCreateProject);
     dom.orbPanelsEl.addEventListener("click", handleItemSelect);
     dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
+    dom.orbPanelsEl.addEventListener("click", handleCreateItem);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     return function destroyFloatingController() {
       dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
@@ -1074,10 +1133,11 @@
       dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
       dom.orbPanelsEl.removeEventListener("click", handleItemSelect);
       dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
+      dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_ID_DATASET_KEY;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1096,6 +1156,7 @@
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_ID_DATASET_KEY = "itemId";
+      ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
     }
   });
 

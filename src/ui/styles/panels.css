@@ -17,16 +17,27 @@
 
 .aiw-floating-panel {
   pointer-events: auto;
-  width: 380px;
+  width: 1050px;
   min-height: 240px;
-  max-height: 38vh;
+  max-height: 78vh;
   border-radius: 24px;
-  background: rgba(20, 20, 20, 0.82);
-  backdrop-filter: blur(18px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+
+  /* Glass surface — reduced opacity lets content show through */
+  background: rgba(0, 12, 30, 0.3);
+
+  /* Blur + saturate is the core of the glass look */
+  backdrop-filter: blur(32px) saturate(180%);
+  -webkit-backdrop-filter: blur(32px) saturate(180%);
+
+  /* Brighter border for glass edge definition */
+  border: 1px solid rgba(255, 255, 255, 0.5);
+
+  /* Depth shadow + inner top highlight */
   box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.42),
-    0 8px 20px rgba(0, 0, 0, 0.22);
+    0 24px 64px rgba(0, 0, 0, 0.38),
+    0 8px 20px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -153,10 +164,11 @@
   align-items: center;
   padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 48, 120, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.96);
   cursor: pointer;
   transition:
     background-color 140ms ease,
@@ -294,10 +306,11 @@
   align-items: center;
   padding: 14px 16px;
   border-radius: 16px;
-  background: rgba(255, 255, 255, 0.04);
+  background: rgba(0, 48, 120, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.15);
   font-size: 14px;
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.92);
+  color: rgba(255, 255, 255, 0.96);
   cursor: pointer;
   transition:
     background-color 140ms ease,
@@ -322,4 +335,106 @@
 .aiw-item-row--selected:hover {
   background: rgba(255, 255, 255, 0.212);
   transform: translateY(-1px);
+}
+
+/* ------------------------------------------------------------
+   CREATE ITEM FORM
+------------------------------------------------------------ */
+/*
+  Pinned footer form outside the scrollable body.
+  Column layout to stack title, content, and button vertically.
+*/
+
+.aiw-create-item-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------
+   CREATE ITEM TITLE INPUT
+------------------------------------------------------------ */
+
+.aiw-create-item-title {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 140ms ease;
+}
+
+.aiw-create-item-title::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.aiw-create-item-title:focus {
+  border-color: rgba(16, 163, 127, 0.48);
+}
+
+/* ------------------------------------------------------------
+   CREATE ITEM CONTENT TEXTAREA
+------------------------------------------------------------ */
+
+.aiw-create-item-content {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  resize: none;
+  height: 72px;
+  transition: border-color 140ms ease;
+}
+
+.aiw-create-item-content::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.aiw-create-item-content:focus {
+  border-color: rgba(16, 163, 127, 0.48);
+}
+
+/* ------------------------------------------------------------
+   CREATE ITEM SUBMIT BUTTON
+------------------------------------------------------------ */
+
+.aiw-create-item-submit {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--aiw-accent);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.aiw-create-item-submit:hover {
+  background: rgba(12, 140, 110, 1);
+  transform: translateY(-1px);
+}
+
+.aiw-create-item-submit:active {
+  transform: scale(0.97);
+}
+
+.aiw-create-item-submit:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
 }
