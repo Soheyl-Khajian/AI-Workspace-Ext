@@ -36,7 +36,8 @@
 import type { ItemType } from "../../../models/item";
 import { setItemsLoading } from "./itemsState";
 import { loadItems } from "./loadItems";
-import { createItem } from "../../../storage";
+import { createItem, deleteItem as storageDeleteItem } from "../../../storage";
+import { getSelectedItemId, setSelectedItemId } from "../../core/sessionState";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -57,24 +58,6 @@ type ItemsControllerDependencies = {
 // ------------------------------------------------------------
 
 type ItemsController = {
-  /*
-    Starts items loading workflow for a project.
-
-    Flow:
-
-    1. trigger immediate render
-       (allows loading state to appear)
-
-    2. execute async loadItems()
-
-    3. trigger final render after async completion
-
-    UI may reflect:
-    - loading state
-    - loaded items
-    - empty state
-    - error state
-  */
   load: (projectId: string) => Promise<void>;
   create: (
     projectId: string,
@@ -82,6 +65,7 @@ type ItemsController = {
     content: string,
     type?: ItemType,
   ) => Promise<void>;
+  deleteItem: (itemId: string, projectId: string) => Promise<void>;
 };
 
 // ------------------------------------------------------------
@@ -146,11 +130,33 @@ export function createItemsController(
   }
 
   // ----------------------------------------------------------
+  // DELETE PROJECT WORKFLOW
+  // ----------------------------------------------------------
+
+  async function deleteItem(itemId: string, projectId: string): Promise<void> {
+    const selectedItemId = getSelectedItemId();
+
+    // TODO: add error state for delete failures
+    try {
+      await storageDeleteItem(itemId);
+
+      if (selectedItemId === itemId) {
+        setSelectedItemId(null);
+      }
+
+      await loadItems(projectId);
+    } finally {
+      onStateChange();
+    }
+  }
+
+  // ----------------------------------------------------------
   // PUBLIC API
   // ----------------------------------------------------------
 
   return {
     load,
     create,
+    deleteItem,
   };
 }

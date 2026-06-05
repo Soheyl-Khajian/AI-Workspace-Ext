@@ -217,6 +217,18 @@
       db.close();
     }
   }
+  async function deleteItemById(id) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_ITEMS, "readwrite");
+      const store = tx.objectStore(STORE_ITEMS);
+      const req = store.delete(id);
+      await requestToPromise(req);
+      await txToPromise(tx);
+    } finally {
+      db.close();
+    }
+  }
   async function deleteItemsByProjectId(projectId) {
     const db = await openDb();
     try {
@@ -326,6 +338,16 @@
       throw new Error("projectId cannot be empty");
     }
     return getItemsByProjectId(trimmedProjectId);
+  }
+  async function deleteItem(id) {
+    if (id == null) {
+      throw new Error("item id is required (null/undefined)");
+    }
+    const trimmedId = id.trim();
+    if (trimmedId.length === 0) {
+      throw new Error("item id cannot be empty");
+    }
+    await deleteItemById(trimmedId);
   }
   var init_storage = __esm({
     "src/storage/index.ts"() {
@@ -720,14 +742,22 @@
 
   // src/ui/features/items/createItemRow.ts
   function createItemRow(item, selected) {
-    const rowEl = document.createElement("button");
-    rowEl.type = "button";
+    const rowEl = document.createElement("div");
     rowEl.className = "aiw-item-row";
-    rowEl.textContent = item.title;
+    const itemTextEl = document.createElement("span");
+    itemTextEl.className = "aiw-item-text";
+    itemTextEl.textContent = item.title;
+    rowEl.append(itemTextEl);
     rowEl.dataset.itemId = item.id;
     if (selected) {
       rowEl.classList.add("aiw-item-row--selected");
     }
+    const deleteButtonEl = document.createElement("button");
+    deleteButtonEl.type = "button";
+    deleteButtonEl.className = "aiw-item-delete";
+    deleteButtonEl.textContent = "\xD7";
+    deleteButtonEl.dataset.itemId = item.id;
+    rowEl.append(deleteButtonEl);
     return rowEl;
   }
   var init_createItemRow = __esm({
@@ -1014,9 +1044,22 @@
         onStateChange();
       }
     }
+    async function deleteItem2(itemId, projectId) {
+      const selectedItemId = getSelectedItemId();
+      try {
+        await deleteItem(itemId);
+        if (selectedItemId === itemId) {
+          setSelectedItemId(null);
+        }
+        await loadItems(projectId);
+      } finally {
+        onStateChange();
+      }
+    }
     return {
       load,
-      create
+      create,
+      deleteItem: deleteItem2
     };
   }
   var init_itemsController = __esm({
@@ -1025,6 +1068,7 @@
       init_itemsState();
       init_loadItems();
       init_storage();
+      init_sessionState();
     }
   });
 
@@ -1133,6 +1177,7 @@
       if (!(target instanceof Element)) {
         return;
       }
+      if (target.closest(ITEM_DELETE_SELECTOR)) return;
       const row = target.closest(ITEM_ROW_SELECTOR);
       if (!(row instanceof HTMLElement)) {
         return;
@@ -1173,6 +1218,26 @@
       titleInput.value = "";
       contentInput.value = "";
     }
+    async function handleDeleteItem(event) {
+      const selectedProjectId = getSelectedProjectId();
+      if (selectedProjectId === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const deleteButton = target.closest(ITEM_DELETE_SELECTOR);
+      if (!(deleteButton instanceof HTMLElement)) {
+        return;
+      }
+      const itemId = deleteButton.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      if (!window.confirm("Delete this item?")) return;
+      await itemsController.deleteItem(itemId, selectedProjectId);
+    }
     function handleBackButtonClick(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -1206,6 +1271,7 @@
     dom.orbPanelsEl.addEventListener("click", handleItemSelect);
     dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
     dom.orbPanelsEl.addEventListener("click", handleCreateItem);
+    dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     return function destroyFloatingController() {
       dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
@@ -1215,10 +1281,11 @@
       dom.orbPanelsEl.removeEventListener("click", handleItemSelect);
       dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
       dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
+      dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1237,6 +1304,7 @@
       PROJECT_ID_DATASET_KEY = "projectId";
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
       ITEM_ROW_SELECTOR = ".aiw-item-row";
+      ITEM_DELETE_SELECTOR = ".aiw-item-delete";
       ITEM_ID_DATASET_KEY = "itemId";
       ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
     }

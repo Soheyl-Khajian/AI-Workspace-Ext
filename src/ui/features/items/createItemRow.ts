@@ -19,54 +19,39 @@
 
 import type { Item } from "../../../models/item";
 
-export function createItemRow(
-  item: Item,
-  selected: boolean,
-): HTMLButtonElement {
+export function createItemRow(item: Item, selected: boolean): HTMLDivElement {
   // ------------------------------------------------------------
-  // ROOT ROW ELEMENT
+  // ITEM ROW
   // ------------------------------------------------------------
 
-  const rowEl = document.createElement("button");
-
-  rowEl.type = "button";
+  const rowEl = document.createElement("div");
   rowEl.className = "aiw-item-row";
 
-  // ------------------------------------------------------------
-  // CONTENT
-  // ------------------------------------------------------------
+  const itemTextEl = document.createElement("span");
+  itemTextEl.className = "aiw-item-text";
+  itemTextEl.textContent = item.title;
+  rowEl.append(itemTextEl);
 
-  /*
-    Temporary presentation.
-
-    Later iterations may introduce:
-    - description preview
-    - icons
-    - metadata
-    - timestamps
-    - item type indicators
-  */
-  rowEl.textContent = item.title;
-
-  // ------------------------------------------------------------
-  // DOM METADATA
-  // ------------------------------------------------------------
-
-  /*
-    Expose stable item identity to parent interaction systems.
-
-    Used by:
-    - event delegation
-    - controller event routing
-    - future selection flows
-  */
-
-  // Expose project identity to parent interaction systems
+  // Expose item identity to parent interaction systems
   rowEl.dataset.itemId = item.id;
 
   if (selected) {
     rowEl.classList.add("aiw-item-row--selected");
   }
+
+  // ----------------------------------------------------------
+  // DELETE BUTTON
+  // ----------------------------------------------------------
+
+  const deleteButtonEl = document.createElement("button");
+  deleteButtonEl.type = "button";
+  deleteButtonEl.className = "aiw-item-delete";
+  deleteButtonEl.textContent = "×";
+
+  // Expose item identity to parent interaction systems
+  deleteButtonEl.dataset.itemId = item.id;
+
+  rowEl.append(deleteButtonEl);
 
   return rowEl;
 }

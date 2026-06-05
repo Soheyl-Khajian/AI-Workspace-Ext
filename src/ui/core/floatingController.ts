@@ -51,6 +51,7 @@ const PROJECT_ID_DATASET_KEY = "projectId";
 const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
 
 const ITEM_ROW_SELECTOR = ".aiw-item-row";
+const ITEM_DELETE_SELECTOR = ".aiw-item-delete";
 const ITEM_ID_DATASET_KEY = "itemId";
 const ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
 
@@ -221,6 +222,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       return;
     }
 
+    if (target.closest(ITEM_DELETE_SELECTOR)) return;
+
     const row = target.closest(ITEM_ROW_SELECTOR);
     if (!(row instanceof HTMLElement)) {
       return;
@@ -281,6 +284,37 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
+  // ITEM DELETE HANDLER
+  // ----------------------------------------------------------
+
+  async function handleDeleteItem(event: MouseEvent): Promise<void> {
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId === null) {
+      return;
+    }
+
+    const target = event.target;
+
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const deleteButton = target.closest(ITEM_DELETE_SELECTOR);
+    if (!(deleteButton instanceof HTMLElement)) {
+      return;
+    }
+
+    const itemId = deleteButton.dataset[ITEM_ID_DATASET_KEY];
+    if (!itemId) {
+      return;
+    }
+
+    if (!window.confirm("Delete this item?")) return;
+
+    await itemsController.deleteItem(itemId, selectedProjectId);
+  }
+
+  // ----------------------------------------------------------
   // BACK BUTTON HANDLER
   // ----------------------------------------------------------
 
@@ -334,6 +368,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   dom.orbPanelsEl.addEventListener("click", handleItemSelect);
   dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
   dom.orbPanelsEl.addEventListener("click", handleCreateItem);
+  dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
 
   // ----------------------------------------------------------
@@ -348,6 +383,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     dom.orbPanelsEl.removeEventListener("click", handleItemSelect);
     dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
     dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
+    dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
   };
 }

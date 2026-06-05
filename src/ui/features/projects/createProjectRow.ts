@@ -49,6 +49,7 @@ export function createProjectRow(
   deleteButtonEl.type = "button";
   deleteButtonEl.className = "aiw-project-delete";
   deleteButtonEl.textContent = "×";
+
   // Expose project identity to parent interaction systems
   deleteButtonEl.dataset.projectId = project.id;
 
