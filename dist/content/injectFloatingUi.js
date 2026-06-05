@@ -168,6 +168,18 @@
       db.close();
     }
   }
+  async function deleteProject(id) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_PROJECTS, "readwrite");
+      const store = tx.objectStore(STORE_PROJECTS);
+      const req = store.delete(id);
+      await requestToPromise(req);
+      await txToPromise(tx);
+    } finally {
+      db.close();
+    }
+  }
   var init_projectsRepo = __esm({
     "src/storage/repo/projectsRepo.ts"() {
       "use strict";
@@ -205,6 +217,22 @@
       db.close();
     }
   }
+  async function deleteItemsByProjectId(projectId) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_ITEMS, "readwrite");
+      const store = tx.objectStore(STORE_ITEMS);
+      const index = store.index(IDX_ITEMS_BY_PROJECT);
+      const req = index.getAll(projectId);
+      const items = await requestToPromise(req);
+      for (const item of items) {
+        store.delete(item.id);
+      }
+      await txToPromise(tx);
+    } finally {
+      db.close();
+    }
+  }
   var init_itemsRepo = __esm({
     "src/storage/repo/itemsRepo.ts"() {
       "use strict";
@@ -237,6 +265,17 @@
   }
   async function listProjects() {
     return getAllProjects();
+  }
+  async function deleteProjectCascade(projectId) {
+    if (projectId == null) {
+      throw new Error("project id is required (null/undefined)");
+    }
+    const trimmedProjectId = projectId.trim();
+    if (trimmedProjectId.length === 0) {
+      throw new Error("project id cannot be empty");
+    }
+    await deleteItemsByProjectId(trimmedProjectId);
+    await deleteProject(trimmedProjectId);
   }
   async function createItem(projectId, type, title, content, meta) {
     if (projectId == null) {
@@ -503,14 +542,22 @@
 
   // src/ui/features/projects/createProjectRow.ts
   function createProjectRow(project, selected) {
-    const rowEl = document.createElement("button");
-    rowEl.type = "button";
+    const rowEl = document.createElement("div");
     rowEl.className = "aiw-project-row";
-    rowEl.textContent = project.name;
+    const projectTextEl = document.createElement("span");
+    projectTextEl.className = "aiw-project-text";
+    projectTextEl.textContent = project.name;
+    rowEl.append(projectTextEl);
     rowEl.dataset.projectId = project.id;
     if (selected) {
       rowEl.classList.add("aiw-project-row--selected");
     }
+    const deleteButtonEl = document.createElement("button");
+    deleteButtonEl.type = "button";
+    deleteButtonEl.className = "aiw-project-delete";
+    deleteButtonEl.textContent = "\xD7";
+    deleteButtonEl.dataset.projectId = project.id;
+    rowEl.append(deleteButtonEl);
     return rowEl;
   }
   var init_createProjectRow = __esm({
@@ -888,10 +935,24 @@
         onStateChange();
       }
     }
+    async function deleteProject2(projectId) {
+      const selectedProjectId = getSelectedProjectId();
+      try {
+        await deleteProjectCascade(projectId);
+        if (selectedProjectId === projectId) {
+          setSelectedProjectId(null);
+          openPanel("projects");
+        }
+        await loadProjects();
+      } finally {
+        onStateChange();
+      }
+    }
     return {
       load,
       selectProject,
-      create
+      create,
+      deleteProject: deleteProject2
     };
   }
   var init_projectsController = __esm({
@@ -1020,6 +1081,7 @@
       if (!(target instanceof Element)) {
         return;
       }
+      if (target.closest(PROJECT_DELETE_SELECTOR)) return;
       const row = target.closest(PROJECT_ROW_SELECTOR);
       if (!(row instanceof HTMLElement)) {
         return;
@@ -1049,6 +1111,22 @@
       }
       await projectsController.create(trimmedNewProjectName);
       input.value = "";
+    }
+    async function handleDeleteProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
+      if (!(deleteButton instanceof HTMLElement)) {
+        return;
+      }
+      const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      if (!window.confirm("Delete this project and all its items?")) return;
+      await projectsController.deleteProject(projectId);
     }
     function handleItemSelect(event) {
       const target = event.target;
@@ -1105,6 +1183,7 @@
         return;
       }
       openPanel("projects");
+      setSelectedItemId(null);
       renderUi();
     }
     function renderUi() {
@@ -1123,6 +1202,7 @@
     dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
     dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
     dom.orbPanelsEl.addEventListener("click", handleCreateProject);
+    dom.orbPanelsEl.addEventListener("click", handleDeleteProject);
     dom.orbPanelsEl.addEventListener("click", handleItemSelect);
     dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
     dom.orbPanelsEl.addEventListener("click", handleCreateItem);
@@ -1131,13 +1211,14 @@
       dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
       dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
       dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
+      dom.orbPanelsEl.removeEventListener("click", handleDeleteProject);
       dom.orbPanelsEl.removeEventListener("click", handleItemSelect);
       dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
       dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1152,6 +1233,7 @@
       init_sessionState();
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
+      PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
       PROJECT_ID_DATASET_KEY = "projectId";
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
       ITEM_ROW_SELECTOR = ".aiw-item-row";

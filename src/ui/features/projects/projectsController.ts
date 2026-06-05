@@ -31,9 +31,12 @@
 // ------------------------------------------------------------
 
 import { openPanel } from "../../core/floatingUiState";
-import { setSelectedProjectId } from "../../core/sessionState";
+import {
+  getSelectedProjectId,
+  setSelectedProjectId,
+} from "../../core/sessionState";
 import { loadProjects } from "./loadProjects";
-import { createProject } from "../../../storage";
+import { createProject, deleteProjectCascade } from "../../../storage";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -54,6 +57,7 @@ type ProjectsController = {
   load: () => Promise<void>;
   selectProject: (projectId: string) => void;
   create: (name: string) => Promise<void>;
+  deleteProject: (projectId: string) => Promise<void>;
 };
 
 // ------------------------------------------------------------
@@ -125,6 +129,28 @@ export function createProjectsController(
   }
 
   // ----------------------------------------------------------
+  // DELETE PROJECT WORKFLOW
+  // ----------------------------------------------------------
+
+  async function deleteProject(projectId: string): Promise<void> {
+    const selectedProjectId = getSelectedProjectId();
+
+    // TODO: add error state for delete failures
+    try {
+      await deleteProjectCascade(projectId);
+
+      if (selectedProjectId === projectId) {
+        setSelectedProjectId(null);
+        openPanel("projects");
+      }
+
+      await loadProjects();
+    } finally {
+      onStateChange();
+    }
+  }
+
+  // ----------------------------------------------------------
   // PUBLIC API
   // ----------------------------------------------------------
 
@@ -132,5 +158,6 @@ export function createProjectsController(
     load,
     selectProject,
     create,
+    deleteProject,
   };
 }

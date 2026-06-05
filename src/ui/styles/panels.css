@@ -23,7 +23,7 @@
   border-radius: 24px;
 
   /* Glass surface — reduced opacity lets content show through */
-  background: rgba(0, 12, 30, 0.3);
+  background: rgba(0, 12, 30, 0.45);
 
   /* Blur + saturate is the core of the glass look */
   backdrop-filter: blur(32px) saturate(180%);
@@ -161,8 +161,8 @@
   border: none;
   width: 100%;
   display: flex;
+  justify-content: space-between;
   align-items: center;
-  padding: 14px 16px;
   border-radius: 16px;
   background: rgba(0, 48, 120, 0.02);
   border: 1px solid rgba(255, 255, 255, 0.15);
@@ -186,13 +186,22 @@
 }
 
 .aiw-project-row--selected {
-  background: rgba(255, 255, 255, 0.212);
+  background: rgba(0, 48, 120, 0.312);
   border-left: 2px solid var(--aiw-accent);
 }
 
 .aiw-project-row--selected:hover {
   background: rgba(255, 255, 255, 0.212);
   transform: translateY(-1px);
+}
+
+/* ------------------------------------------------------------
+   PROJECT TEXT
+------------------------------------------------------------ */
+
+.aiw-project-text {
+  padding: 14px 16px;
+  flex: 1;
 }
 
 /* ------------------------------------------------------------
@@ -272,6 +281,47 @@
 }
 
 /* ------------------------------------------------------------
+   PROJECT DELETE BUTTON
+------------------------------------------------------------ */
+
+.aiw-project-delete {
+  /* Full height of the row */
+  align-self: stretch;
+
+  /* Fixed width strip */
+  width: 40px;
+  flex-shrink: 0;
+
+  /* Round only the right side to match row border-radius */
+  border-radius: 0 14px 14px 0;
+
+  /* Subtle danger surface — matches glass aesthetic */
+  background: rgba(220, 60, 60, 0.12);
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+
+  /* Typography */
+  color: rgba(255, 100, 100, 0.72);
+  font-size: 16px;
+  line-height: 1;
+
+  cursor: pointer;
+
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.aiw-project-delete:hover {
+  background: rgba(220, 60, 60, 0.32);
+  color: rgba(255, 120, 120, 0.96);
+}
+
+.aiw-project-delete:active {
+  background: rgba(220, 60, 60, 0.48);
+}
+
+/* ------------------------------------------------------------
    ITEMS LIST
 ------------------------------------------------------------ */
 
@@ -328,7 +378,7 @@
 }
 
 .aiw-item-row--selected {
-  background: rgba(255, 255, 255, 0.212);
+  background: rgba(0, 48, 120, 0.312);
   border-left: 2px solid var(--aiw-accent);
 }
 
