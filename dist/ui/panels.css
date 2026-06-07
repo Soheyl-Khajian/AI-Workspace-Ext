@@ -498,6 +498,109 @@
 }
 
 /* ------------------------------------------------------------
+   ITEM DETAIL FORM
+------------------------------------------------------------ */
+/*
+  Pinned footer form outside the scrollable body.
+  Column layout to stack title input, content textarea,
+  and save button vertically.
+*/
+
+.aiw-item-detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex-shrink: 0;
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------
+   ITEM DETAIL TITLE INPUT
+------------------------------------------------------------ */
+
+.aiw-item-detail-title {
+  flex: 1;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 140ms ease;
+}
+
+.aiw-item-detail-title::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.aiw-item-detail-title:focus {
+  border-color: rgba(16, 163, 127, 0.48);
+}
+
+/* ------------------------------------------------------------
+   ITEM DETAIL CONTENT TEXTAREA
+------------------------------------------------------------ */
+
+.aiw-item-detail-content {
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  resize: none;
+  height: 120px;
+  transition: border-color 140ms ease;
+}
+
+.aiw-item-detail-content::placeholder {
+  color: rgba(255, 255, 255, 0.32);
+}
+
+.aiw-item-detail-content:focus {
+  border-color: rgba(16, 163, 127, 0.48);
+}
+
+/* ------------------------------------------------------------
+   ITEM DETAIL SAVE BUTTON
+------------------------------------------------------------ */
+
+.aiw-item-detail-save {
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: none;
+  background: var(--aiw-accent);
+  color: rgba(255, 255, 255, 0.96);
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.aiw-item-detail-save:hover {
+  background: rgba(12, 140, 110, 1);
+  transform: translateY(-1px);
+}
+
+.aiw-item-detail-save:active {
+  transform: scale(0.97);
+}
+
+.aiw-item-detail-save:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
+}
+
+/* ------------------------------------------------------------
    ITEM DELETE BUTTON
 ------------------------------------------------------------ */
 

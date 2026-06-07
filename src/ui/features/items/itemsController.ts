@@ -33,11 +33,20 @@
 // renderer re-reads state
 // ------------------------------------------------------------
 
-import type { ItemType } from "../../../models/item";
+import type { Item, ItemType } from "../../../models/item";
 import { setItemsLoading } from "./itemsState";
 import { loadItems } from "./loadItems";
-import { createItem, deleteItem as storageDeleteItem } from "../../../storage";
-import { getSelectedItemId, setSelectedItemId } from "../../core/sessionState";
+import {
+  createItem,
+  deleteItem as storageDeleteItem,
+  updateItem as storageUpdateItem,
+} from "../../../storage";
+import {
+  getSelectedItemId,
+  getSelectedProjectId,
+  setSelectedItemId,
+} from "../../core/sessionState";
+import { openPanel } from "../../core/floatingUiState";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -59,11 +68,17 @@ type ItemsControllerDependencies = {
 
 type ItemsController = {
   load: (projectId: string) => Promise<void>;
+  selectItem: (itemId: string) => void;
   create: (
     projectId: string,
     title: string,
     content: string,
     type?: ItemType,
+  ) => Promise<void>;
+  updateItem: (
+    itemId: string,
+    title?: string,
+    content?: string,
   ) => Promise<void>;
   deleteItem: (itemId: string, projectId: string) => Promise<void>;
 };
@@ -108,6 +123,18 @@ export function createItemsController(
   }
 
   // ----------------------------------------------------------
+  // SELECT ITEM WORKFLOW
+  // ----------------------------------------------------------
+
+  function selectItem(itemId: string): void {
+    setSelectedItemId(itemId);
+
+    openPanel("itemDetail");
+
+    onStateChange();
+  }
+
+  // ----------------------------------------------------------
   // CREATE ITEM WORKFLOW
   // ----------------------------------------------------------
 
@@ -130,7 +157,35 @@ export function createItemsController(
   }
 
   // ----------------------------------------------------------
-  // DELETE PROJECT WORKFLOW
+  // UPDATE ITEM WORKFLOW
+  // ----------------------------------------------------------
+
+  async function updateItem(
+    itemId: string,
+    title?: string,
+    content?: string,
+  ): Promise<void> {
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId === null) {
+      return;
+    }
+
+    // TODO: add error state for update failures
+    try {
+      const partialUpdate: Partial<Item> = {};
+      if (title !== undefined) partialUpdate.title = title;
+      if (content !== undefined) partialUpdate.content = content;
+
+      await storageUpdateItem(itemId, partialUpdate);
+
+      await loadItems(selectedProjectId);
+    } finally {
+      onStateChange();
+    }
+  }
+
+  // ----------------------------------------------------------
+  // DELETE ITEM WORKFLOW
   // ----------------------------------------------------------
 
   async function deleteItem(itemId: string, projectId: string): Promise<void> {
@@ -156,7 +211,9 @@ export function createItemsController(
 
   return {
     load,
+    selectItem,
     create,
+    updateItem,
     deleteItem,
   };
 }

@@ -24,6 +24,7 @@ import { renderProjectsPanel } from "../features/projects/renderProjectsPanel";
 import { renderCapturePanel } from "../features/capture/renderCapturePanel";
 import { renderSearchPanel } from "../features/search/renderSearchPanel";
 import { renderItemsPanel } from "../features/items/renderItemsPanel";
+import { renderItemDetailPanel } from "../features/items/renderItemDetailPanel";
 
 export function renderFloatingPanels(containerEl: HTMLElement): void {
   containerEl.textContent = "";
@@ -42,6 +43,10 @@ export function renderFloatingPanels(containerEl: HTMLElement): void {
 
     case "items":
       renderItemsPanel(containerEl);
+      break;
+
+    case "itemDetail":
+      renderItemDetailPanel(containerEl);
       break;
 
     case "capture":

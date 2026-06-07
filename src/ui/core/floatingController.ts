@@ -31,6 +31,7 @@ import { renderFloatingPanels } from "./renderFloatingPanels";
 import {
   collapseOrb,
   expandOrb,
+  getActivePanel,
   isOrbExpanded,
   openPanel,
   togglePanel,
@@ -54,6 +55,7 @@ const ITEM_ROW_SELECTOR = ".aiw-item-row";
 const ITEM_DELETE_SELECTOR = ".aiw-item-delete";
 const ITEM_ID_DATASET_KEY = "itemId";
 const ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
+const ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
 
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
@@ -215,7 +217,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // ITEM SELECTION HANDLER
   // ----------------------------------------------------------
 
-  function handleItemSelect(event: MouseEvent): void {
+  function handleSelectItem(event: MouseEvent): void {
     const target = event.target;
 
     if (!(target instanceof Element)) {
@@ -235,9 +237,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       return;
     }
 
-    setSelectedItemId(itemId);
-
-    renderUi();
+    itemsController.selectItem(itemId);
   }
 
   // ----------------------------------------------------------
@@ -272,15 +272,62 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     }
 
     const trimmedItemTitle = titleInput.value.trim();
-    const content = contentInput.value;
     if (trimmedItemTitle.length === 0) {
       return;
     }
 
-    await itemsController.create(selectedProjectId, trimmedItemTitle, content);
+    await itemsController.create(
+      selectedProjectId,
+      trimmedItemTitle,
+      contentInput.value,
+    );
 
     titleInput.value = "";
     contentInput.value = "";
+  }
+
+  // ----------------------------------------------------------
+  // ITEM UPDATE HANDLER
+  // ----------------------------------------------------------
+
+  async function handleUpdateItem(event: MouseEvent): Promise<void> {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const saveButton = target.closest(ITEM_DETAIL_SAVE_SELECTOR);
+    if (!(saveButton instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const itemId = saveButton.dataset[ITEM_ID_DATASET_KEY];
+    if (!itemId) {
+      return;
+    }
+
+    const titleInput = dom.orbPanelsEl.querySelector(".aiw-item-detail-title");
+    if (!(titleInput instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const contentInput = dom.orbPanelsEl.querySelector(
+      ".aiw-item-detail-content",
+    );
+    if (!(contentInput instanceof HTMLTextAreaElement)) {
+      return;
+    }
+
+    const trimmedItemTitle = titleInput.value.trim();
+    if (trimmedItemTitle.length === 0) {
+      return;
+    }
+
+    await itemsController.updateItem(
+      itemId,
+      trimmedItemTitle,
+      contentInput.value,
+    );
   }
 
   // ----------------------------------------------------------
@@ -331,7 +378,13 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       return;
     }
 
-    openPanel("projects");
+    const currentPanel = getActivePanel();
+    if (currentPanel === "itemDetail") {
+      openPanel("items");
+    } else {
+      openPanel("projects");
+    }
+
     setSelectedItemId(null);
     renderUi();
   }
@@ -365,9 +418,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
   dom.orbPanelsEl.addEventListener("click", handleCreateProject);
   dom.orbPanelsEl.addEventListener("click", handleDeleteProject);
-  dom.orbPanelsEl.addEventListener("click", handleItemSelect);
+  dom.orbPanelsEl.addEventListener("click", handleSelectItem);
   dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
   dom.orbPanelsEl.addEventListener("click", handleCreateItem);
+  dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
   dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
 
@@ -380,9 +434,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
     dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
     dom.orbPanelsEl.removeEventListener("click", handleDeleteProject);
-    dom.orbPanelsEl.removeEventListener("click", handleItemSelect);
+    dom.orbPanelsEl.removeEventListener("click", handleSelectItem);
     dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
     dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
+    dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
     dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
   };

@@ -5,4 +5,9 @@
 
 export type OrbActionId = "projects" | "capture" | "search";
 
-export type OrbPanelId = "projects" | "items" | "capture" | "search";
+export type OrbPanelId =
+  | "projects"
+  | "items"
+  | "itemDetail"
+  | "capture"
+  | "search";
