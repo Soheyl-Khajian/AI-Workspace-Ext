@@ -36,7 +36,11 @@ import {
   setSelectedProjectId,
 } from "../../core/sessionState";
 import { loadProjects } from "./loadProjects";
-import { createProject, deleteProjectCascade } from "../../../storage";
+import {
+  createProject,
+  deleteProjectCascade,
+  renameProject as storageRenameProject,
+} from "../../../storage";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -57,6 +61,7 @@ type ProjectsController = {
   load: () => Promise<void>;
   selectProject: (projectId: string) => void;
   create: (name: string) => Promise<void>;
+  renameProject: (projectId: string, name: string) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
 };
 
@@ -129,6 +134,21 @@ export function createProjectsController(
   }
 
   // ----------------------------------------------------------
+  // RENAME PROJECT WORKFLOW
+  // ----------------------------------------------------------
+
+  async function renameProject(projectId: string, name: string): Promise<void> {
+    // TODO: add error state for rename failures
+    try {
+      await storageRenameProject(projectId, name);
+
+      await loadProjects();
+    } finally {
+      onStateChange();
+    }
+  }
+
+  // ----------------------------------------------------------
   // DELETE PROJECT WORKFLOW
   // ----------------------------------------------------------
 
@@ -158,6 +178,7 @@ export function createProjectsController(
     load,
     selectProject,
     create,
+    renameProject,
     deleteProject,
   };
 }

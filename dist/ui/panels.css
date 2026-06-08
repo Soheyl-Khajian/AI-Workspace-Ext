@@ -161,6 +161,7 @@
   border: none;
   width: 100%;
   display: flex;
+  overflow: hidden;
   justify-content: space-between;
   align-items: center;
   border-radius: 16px;
@@ -278,6 +279,54 @@
 .aiw-create-project-submit:focus-visible {
   outline: none;
   box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
+}
+
+/* ------------------------------------------------------------
+   PROJECT RENAME BUTTON
+------------------------------------------------------------ */
+
+.aiw-project-rename {
+  align-self: stretch;
+  width: 36px;
+  flex-shrink: 0;
+  background: transparent;
+  border: none;
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.38);
+  font-size: 14px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    color 140ms ease;
+}
+
+.aiw-project-rename:hover {
+  background: rgba(255, 255, 255, 0.06);
+  color: rgba(255, 255, 255, 0.72);
+}
+
+.aiw-project-rename:active {
+  background: rgba(255, 255, 255, 0.1);
+}
+
+/* ------------------------------------------------------------
+   PROJECT RENAME INLINE INPUT
+------------------------------------------------------------ */
+
+.aiw-project-rename-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid rgba(16, 163, 127, 0.48);
+  border-radius: 0;
+  color: rgba(255, 255, 255, 0.92);
+  font-size: 14px;
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+  padding: 14px 16px;
+  min-width: 0;
 }
 
 /* ------------------------------------------------------------

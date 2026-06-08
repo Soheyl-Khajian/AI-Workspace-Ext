@@ -50,6 +50,7 @@ const PROJECT_ROW_SELECTOR = ".aiw-project-row";
 const PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
 const PROJECT_ID_DATASET_KEY = "projectId";
 const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
+const PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
 
 const ITEM_ROW_SELECTOR = ".aiw-item-row";
 const ITEM_DELETE_SELECTOR = ".aiw-item-delete";
@@ -77,6 +78,9 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // ----------------------------------------------------------
 
   function handleDocumentPointerDown(event: PointerEvent): void {
+    const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
+      ".aiw-project-rename-input",
+    );
     const target = event.target;
 
     if (!(target instanceof Node)) {
@@ -86,6 +90,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     const clickedInsideFloatingUi = rootEl.contains(target);
 
     if (clickedInsideFloatingUi) {
+      return;
+    }
+
+    if (activeProjectRenameInput instanceof HTMLInputElement) {
       return;
     }
 
@@ -133,14 +141,16 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // PROJECT SELECTION HANDLER
   // ----------------------------------------------------------
 
-  function handleProjectSelect(event: MouseEvent): void {
+  function handleSelectProject(event: MouseEvent): void {
     const target = event.target;
 
     if (!(target instanceof Element)) {
       return;
     }
 
+    if (target.closest(PROJECT_RENAME_SELECTOR)) return;
     if (target.closest(PROJECT_DELETE_SELECTOR)) return;
+    if (target.closest(".aiw-project-rename-input")) return;
 
     const row = target.closest(PROJECT_ROW_SELECTOR);
 
@@ -185,6 +195,77 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     await projectsController.create(trimmedNewProjectName);
 
     input.value = "";
+  }
+
+  // ----------------------------------------------------------
+  // PROJECT RENAME HANDLER
+  // ----------------------------------------------------------
+
+  function handleRenameProject(event: MouseEvent): void {
+    let committed = false;
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
+    if (!(renameButton instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
+    if (!projectId) {
+      return;
+    }
+
+    const row = renameButton.closest(PROJECT_ROW_SELECTOR);
+    if (!(row instanceof HTMLElement)) {
+      return;
+    }
+
+    const span = row.querySelector(".aiw-project-text");
+    if (!(span instanceof HTMLSpanElement)) {
+      return;
+    }
+
+    const currentName = span.textContent ?? "";
+
+    const renameInputEl = document.createElement("input");
+    renameInputEl.value = currentName;
+    renameInputEl.className = "aiw-project-rename-input";
+
+    span.replaceWith(renameInputEl);
+
+    renameInputEl.focus();
+    renameInputEl.select();
+
+    renameInputEl.addEventListener("keydown", async (event) => {
+      if (event.key === "Enter") {
+        committed = true;
+        const trimmedValue = renameInputEl.value.trim();
+        if (trimmedValue) {
+          await projectsController.renameProject(projectId, trimmedValue);
+        }
+
+        renderUi();
+      }
+
+      if (event.key === "Escape") {
+        committed = true;
+        renderUi();
+      }
+    });
+
+    renameInputEl.addEventListener("blur", async () => {
+      if (committed) return;
+      const trimmedValue = renameInputEl.value.trim();
+      if (trimmedValue && trimmedValue !== currentName) {
+        await projectsController.renameProject(projectId, trimmedValue);
+      } else {
+        renderUi();
+      }
+    });
   }
 
   // ----------------------------------------------------------
@@ -415,8 +496,9 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // ----------------------------------------------------------
 
   dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
-  dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
+  dom.orbPanelsEl.addEventListener("click", handleSelectProject);
   dom.orbPanelsEl.addEventListener("click", handleCreateProject);
+  dom.orbPanelsEl.addEventListener("click", handleRenameProject);
   dom.orbPanelsEl.addEventListener("click", handleDeleteProject);
   dom.orbPanelsEl.addEventListener("click", handleSelectItem);
   dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
@@ -431,8 +513,9 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   return function destroyFloatingController(): void {
     dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
-    dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
+    dom.orbPanelsEl.removeEventListener("click", handleSelectProject);
     dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
+    dom.orbPanelsEl.removeEventListener("click", handleRenameProject);
     dom.orbPanelsEl.removeEventListener("click", handleDeleteProject);
     dom.orbPanelsEl.removeEventListener("click", handleSelectItem);
     dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);

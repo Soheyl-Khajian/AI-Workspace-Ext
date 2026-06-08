@@ -42,6 +42,18 @@ export function createProjectRow(
   }
 
   // ----------------------------------------------------------
+  // RENAME BUTTON
+  // ----------------------------------------------------------
+
+  const renameButtonEl = document.createElement("button");
+  renameButtonEl.type = "button";
+  renameButtonEl.className = "aiw-project-rename";
+  renameButtonEl.textContent = "✎";
+
+  // Expose project identity to parent interaction systems
+  renameButtonEl.dataset.projectId = project.id;
+
+  // ----------------------------------------------------------
   // DELETE BUTTON
   // ----------------------------------------------------------
 
@@ -53,7 +65,7 @@ export function createProjectRow(
   // Expose project identity to parent interaction systems
   deleteButtonEl.dataset.projectId = project.id;
 
-  rowEl.append(deleteButtonEl);
+  rowEl.append(renameButtonEl, deleteButtonEl);
 
   return rowEl;
 }

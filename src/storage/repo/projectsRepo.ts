@@ -97,6 +97,40 @@ export async function getAllProjects(): Promise<Project[]> {
 }
 
 /**
+ * Retrieve a single Project record by primary key.
+ *
+ * Semantics:
+ * - Looks up the project directly by its `id` keyPath.
+ * - Returns undefined if no matching record exists.
+ * - Does NOT throw on missing records; caller decides behavior.
+ *
+ * Transaction model:
+ * - Single readonly transaction scoped to the projects store.
+ * - Resolves only after the transaction fully commits.
+ *
+ * Failure behavior:
+ * - Any IndexedDB error rejects the promise.
+ * - DB connection is always closed, even on failure.
+ */
+export async function getProjectById(id: string): Promise<Project | undefined> {
+  const db = await openDb();
+
+  try {
+    const tx = db.transaction(STORE_PROJECTS, "readonly");
+    const store = tx.objectStore(STORE_PROJECTS);
+
+    const req = store.get(id);
+    const project: Project | undefined = await requestToPromise(req);
+
+    await txToPromise(tx);
+
+    return project;
+  } finally {
+    db.close();
+  }
+}
+
+/**
  * Delete a single Project record by primary key.
  *
  * Semantics:

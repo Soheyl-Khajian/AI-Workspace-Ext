@@ -168,6 +168,19 @@
       db.close();
     }
   }
+  async function getProjectById(id) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_PROJECTS, "readonly");
+      const store = tx.objectStore(STORE_PROJECTS);
+      const req = store.get(id);
+      const project = await requestToPromise(req);
+      await txToPromise(tx);
+      return project;
+    } finally {
+      db.close();
+    }
+  }
   async function deleteProject(id) {
     const db = await openDb();
     try {
@@ -301,6 +314,35 @@
     }
     await deleteItemsByProjectId(trimmedProjectId);
     await deleteProject(trimmedProjectId);
+  }
+  async function renameProject(projectId, name) {
+    if (projectId == null) {
+      throw new Error("project id is required (null/undefined)");
+    }
+    const trimmedId = projectId.trim();
+    if (trimmedId.length === 0) {
+      throw new Error("project id cannot be empty");
+    }
+    if (name == null) {
+      throw new Error("Project name is required (received null/undefined)");
+    }
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      throw new Error("Project name cannot be empty");
+    }
+    const existing = await getProjectById(trimmedId);
+    if (existing === void 0) {
+      throw new Error(`Project not found: ${projectId}`);
+    }
+    const merged = {
+      ...existing,
+      name: trimmedName,
+      id: existing.id,
+      createdAt: existing.createdAt,
+      updatedAt: Date.now()
+    };
+    await insertProject(merged);
+    return merged;
   }
   async function createItem(projectId, type, title, content, meta) {
     if (projectId == null) {
@@ -610,12 +652,17 @@
     if (selected) {
       rowEl.classList.add("aiw-project-row--selected");
     }
+    const renameButtonEl = document.createElement("button");
+    renameButtonEl.type = "button";
+    renameButtonEl.className = "aiw-project-rename";
+    renameButtonEl.textContent = "\u270E";
+    renameButtonEl.dataset.projectId = project.id;
     const deleteButtonEl = document.createElement("button");
     deleteButtonEl.type = "button";
     deleteButtonEl.className = "aiw-project-delete";
     deleteButtonEl.textContent = "\xD7";
     deleteButtonEl.dataset.projectId = project.id;
-    rowEl.append(deleteButtonEl);
+    rowEl.append(renameButtonEl, deleteButtonEl);
     return rowEl;
   }
   var init_createProjectRow = __esm({
@@ -1053,6 +1100,14 @@
         onStateChange();
       }
     }
+    async function renameProject2(projectId, name) {
+      try {
+        await renameProject(projectId, name);
+        await loadProjects();
+      } finally {
+        onStateChange();
+      }
+    }
     async function deleteProject2(projectId) {
       const selectedProjectId = getSelectedProjectId();
       try {
@@ -1070,6 +1125,7 @@
       load,
       selectProject,
       create,
+      renameProject: renameProject2,
       deleteProject: deleteProject2
     };
   }
@@ -1195,12 +1251,18 @@
     renderUi();
     void projectsController.load();
     function handleDocumentPointerDown(event) {
+      const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
+        ".aiw-project-rename-input"
+      );
       const target = event.target;
       if (!(target instanceof Node)) {
         return;
       }
       const clickedInsideFloatingUi = rootEl.contains(target);
       if (clickedInsideFloatingUi) {
+        return;
+      }
+      if (activeProjectRenameInput instanceof HTMLInputElement) {
         return;
       }
       setOrbCollapsed();
@@ -1231,12 +1293,14 @@
     function handleOrbActionClick(actionId) {
       handleOrbAction(actionId, actionsContext);
     }
-    function handleProjectSelect(event) {
+    function handleSelectProject(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
         return;
       }
+      if (target.closest(PROJECT_RENAME_SELECTOR)) return;
       if (target.closest(PROJECT_DELETE_SELECTOR)) return;
+      if (target.closest(".aiw-project-rename-input")) return;
       const row = target.closest(PROJECT_ROW_SELECTOR);
       if (!(row instanceof HTMLElement)) {
         return;
@@ -1266,6 +1330,59 @@
       }
       await projectsController.create(trimmedNewProjectName);
       input.value = "";
+    }
+    function handleRenameProject(event) {
+      let committed = false;
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
+      if (!(renameButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      const row = renameButton.closest(PROJECT_ROW_SELECTOR);
+      if (!(row instanceof HTMLElement)) {
+        return;
+      }
+      const span = row.querySelector(".aiw-project-text");
+      if (!(span instanceof HTMLSpanElement)) {
+        return;
+      }
+      const currentName = span.textContent ?? "";
+      const renameInputEl = document.createElement("input");
+      renameInputEl.value = currentName;
+      renameInputEl.className = "aiw-project-rename-input";
+      span.replaceWith(renameInputEl);
+      renameInputEl.focus();
+      renameInputEl.select();
+      renameInputEl.addEventListener("keydown", async (event2) => {
+        if (event2.key === "Enter") {
+          committed = true;
+          const trimmedValue = renameInputEl.value.trim();
+          if (trimmedValue) {
+            await projectsController.renameProject(projectId, trimmedValue);
+          }
+          renderUi();
+        }
+        if (event2.key === "Escape") {
+          committed = true;
+          renderUi();
+        }
+      });
+      renameInputEl.addEventListener("blur", async () => {
+        if (committed) return;
+        const trimmedValue = renameInputEl.value.trim();
+        if (trimmedValue && trimmedValue !== currentName) {
+          await projectsController.renameProject(projectId, trimmedValue);
+        } else {
+          renderUi();
+        }
+      });
     }
     async function handleDeleteProject(event) {
       const target = event.target;
@@ -1416,8 +1533,9 @@
       renderFloatingPanels(dom.orbPanelsEl);
     }
     dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
-    dom.orbPanelsEl.addEventListener("click", handleProjectSelect);
+    dom.orbPanelsEl.addEventListener("click", handleSelectProject);
     dom.orbPanelsEl.addEventListener("click", handleCreateProject);
+    dom.orbPanelsEl.addEventListener("click", handleRenameProject);
     dom.orbPanelsEl.addEventListener("click", handleDeleteProject);
     dom.orbPanelsEl.addEventListener("click", handleSelectItem);
     dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
@@ -1427,8 +1545,9 @@
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     return function destroyFloatingController() {
       dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
-      dom.orbPanelsEl.removeEventListener("click", handleProjectSelect);
+      dom.orbPanelsEl.removeEventListener("click", handleSelectProject);
       dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
+      dom.orbPanelsEl.removeEventListener("click", handleRenameProject);
       dom.orbPanelsEl.removeEventListener("click", handleDeleteProject);
       dom.orbPanelsEl.removeEventListener("click", handleSelectItem);
       dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
@@ -1438,7 +1557,7 @@
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1456,6 +1575,7 @@
       PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
       PROJECT_ID_DATASET_KEY = "projectId";
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
+      PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_DELETE_SELECTOR = ".aiw-item-delete";
       ITEM_ID_DATASET_KEY = "itemId";

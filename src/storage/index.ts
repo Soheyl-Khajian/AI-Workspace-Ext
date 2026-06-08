@@ -3,6 +3,7 @@ import {
   insertProject,
   getAllProjects,
   deleteProject,
+  getProjectById,
 } from "./repo/projectsRepo";
 import {
   insertItem,
@@ -26,9 +27,7 @@ export async function createProject(
   if (name == null) {
     throw new Error("Project name is required (received null/undefined)");
   }
-
   const trimmedName = name.trim();
-
   if (trimmedName.length === 0) {
     throw new Error("Project name cannot be empty");
   }
@@ -66,6 +65,44 @@ export async function deleteProjectCascade(projectId: string): Promise<void> {
   await deleteItemsByProjectId(trimmedProjectId);
 
   await deleteProject(trimmedProjectId);
+}
+
+export async function renameProject(
+  projectId: string,
+  name: string,
+): Promise<Project> {
+  if (projectId == null) {
+    throw new Error("project id is required (null/undefined)");
+  }
+  const trimmedId = projectId.trim();
+  if (trimmedId.length === 0) {
+    throw new Error("project id cannot be empty");
+  }
+
+  if (name == null) {
+    throw new Error("Project name is required (received null/undefined)");
+  }
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    throw new Error("Project name cannot be empty");
+  }
+
+  const existing = await getProjectById(trimmedId);
+  if (existing === undefined) {
+    throw new Error(`Project not found: ${projectId}`);
+  }
+
+  const merged: Project = {
+    ...existing,
+    name: trimmedName,
+    id: existing.id,
+    createdAt: existing.createdAt,
+    updatedAt: Date.now(),
+  };
+
+  await insertProject(merged);
+
+  return merged;
 }
 
 /* -------------------------------------------------------
@@ -170,13 +207,11 @@ export async function updateItem(
   }
 
   const trimmedId = id.trim();
-
   if (trimmedId.length === 0) {
     throw new Error("item id cannot be empty");
   }
 
   const existing = await getItemById(trimmedId);
-
   if (existing === undefined) {
     throw new Error(`Item not found: ${id}`);
   }
