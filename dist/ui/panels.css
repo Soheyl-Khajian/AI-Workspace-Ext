@@ -681,11 +681,11 @@
     color 140ms ease;
 }
 
-.aiw-project-delete:hover {
+.aiw-item-delete:hover {
   background: rgba(220, 60, 60, 0.32);
   color: rgba(255, 120, 120, 0.96);
 }
 
-.aiw-project-delete:active {
+.aiw-item-delete:active {
   background: rgba(220, 60, 60, 0.48);
 }

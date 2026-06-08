@@ -1,919 +1,451 @@
-# AI Workspace (v0) — Technical Specification
+# AI Workspace — MVP Specification
 
-Version: `0.1`
-Target Platform: Chrome Extension (Manifest V3)
-Primary Host: `chatgpt.com`
-Architecture Style: Local-first, vertical-slice development
+Version: MVP
+Status: In Development
 
 ---
 
 # 1. Purpose
 
-AI Workspace is a local-first browser extension that injects a persistent workspace extension into ChatGPT.
+AI Workspace is a local-first Chrome extension that adds a persistent workspace layer on top of ChatGPT.
 
-The extension allows users to:
+The extension allows users to organize captured information into projects and items without leaving the ChatGPT interface.
 
-- organize work into Projects
-- store structured Items under Projects
-- capture selected text from pages
-- build reusable context packs for AI workflows
-- export/import local workspace data
+All data is stored locally.
 
-The system is intentionally minimal in v0.
-
-The goal is reliability, persistence, and workflow utility — not feature breadth.
+No backend services are used.
 
 ---
 
-# 2. Scope (v0)
+# 2. Core Goals
 
-## Included
+The MVP must provide:
 
-### Projects
+- Project management
+- Item management
+- Persistent local storage
+- Fast retrieval of saved information
+- Lightweight floating UI
+- Full operation inside ChatGPT
 
-- create
-- list
-- rename
-- delete
+The MVP does not include:
 
-### Items
-
-- create
-- list by project
-- update
-- delete
-
-### Capture
-
-- manual item creation
-- save current text selection into active project
-
-### Utility
-
-- context pack generation
-- clipboard copy
-- JSON export/import
-
-### Persistence
-
-- IndexedDB
-- local-only storage
+- Cloud sync
+- Authentication
+- Collaboration
+- AI-generated organization
+- Sharing
+- Export systems
+- Advanced search
 
 ---
 
-# 3. Non-Goals (v0)
+# 3. Product Model
 
-The following are explicitly out of scope:
+The workspace contains Projects.
 
-- cloud sync
-- authentication
-- collaboration
-- AI API integration
-- automatic conversation ingestion
-- semantic search
-- markdown editor
-- rich text editor
-- multi-device sync
-- encryption
-- chat history scraping
-- background sync
-- browser support outside Chrome MV3
+Projects contain Items.
+
+Relationship:
+
+Workspace
+└── Projects
+└── Items
+
+A Project acts as a container.
+
+An Item represents a saved piece of information.
 
 ---
 
-# 4. Architectural Principles
+# 4. Data Models
 
-## 4.1 Local-first
+## Project
 
-All user data is stored locally inside IndexedDB.
+Fields:
 
-No remote server exists in v0.
-
----
-
-## 4.2 Vertical Slice Development
-
-Features are implemented end-to-end in isolated slices.
-
-Example:
-
-- model
-- storage
-- state
-- rendering
-- interaction
-
-...for a single feature before moving to the next.
-
----
-
-## 4.3 Separation of Responsibilities
-
-### Storage Layer
-
-Responsible for:
-
-- IndexedDB access
-- persistence
-- schema upgrades
-
-Not responsible for:
-
-- DOM
-- rendering
-- UI state
-
----
-
-### State Layer
-
-Responsible for:
-
-- in-memory UI state
-- selected entities
-- cached data snapshots
-
-Not responsible for:
-
-- rendering
-- IndexedDB logic
-
----
-
-### Render Layer
-
-Responsible for:
-
-- DOM rendering
-- HTML generation
-- visual updates
-
-Not responsible for:
-
-- persistence
-- business logic
-
----
-
-### Controller Layer
-
-Responsible for:
-
-- orchestration
-- event wiring
-- coordinating state + storage + rendering
-
-Not responsible for:
-
-- direct DOM querying
-- HTML generation
-- IndexedDB implementation details
-
----
-
-# 5. Data Model
-
----
-
-# 5.1 General Conventions
-
-## IDs
-
-- all IDs are strings
-- IDs must be globally unique
-
-Recommended format:
-
-- `crypto.randomUUID()`
-
----
-
-## Timestamps
-
-All timestamps use:
-
-```ts
-number; // epoch milliseconds
-```
-
-````
-
-Example:
-
-```ts
-Date.now();
-```
-
----
-
-## Serialization
-
-All stored objects must be JSON-serializable.
-
-No functions, classes, Maps, Sets, or binary data.
-
----
-
-# 5.2 Project Model
-
-```ts
-type Project = {
-  id: string;
-  name: string;
-
-  createdAt: number;
-
-  updatedAt?: number;
-  description?: string;
-};
-```
-
----
-
-## Project Constraints
-
-### Required
-
-- `id`
-- `name`
-- `createdAt`
-
-### Optional
-
-- `updatedAt`
-- `description`
-
----
-
-## Validation Rules
-
-### `name`
-
-- trimmed before persistence
-- cannot be empty after trimming
-
----
-
-## Uniqueness
-
-Project name uniqueness is NOT enforced in v0.
-
-Duplicate names are allowed.
-
----
-
-# 5.3 Item Model
-
-```ts
-type ItemType = "note" | "snippet" | "task" | "link";
-
-type Item = {
-  id: string;
-
-  projectId: string;
-
-  type: ItemType;
-
-  title: string;
-  content: string;
-
-  createdAt: number;
-
-  updatedAt?: number;
-
-  meta?: ItemMeta;
-};
-```
-
----
-
-# 5.4 Item Metadata
-
-```ts
-type ItemMeta = {
-  sourceUrl?: string;
-
-  createdFrom?: "manual" | "selection";
-
-  language?: string;
-
-  selectionContext?: string;
-};
-```
-
----
-
-# 5.5 Item Constraints
-
-## Required
-
-- `id`
-- `projectId`
-- `type`
-- `title`
-- `content`
-- `createdAt`
-
----
-
-## Relationships
-
-Each Item belongs to exactly one Project.
-
-`projectId` must reference an existing Project.
-
----
-
-## Content Rules
-
-### `content`
-
-- must always be a string
-- binary data unsupported in v0
-
----
-
-## Type Rules
-
-Supported types:
-
-- `note`
-- `snippet`
-- `task`
-- `link`
-
-Type behavior:
-
-| Type    | Meaning           |
-| ------- | ----------------- |
-| note    | freeform text     |
-| snippet | code/text snippet |
-| task    | single task text  |
-| link    | URL content       |
-
----
-
-# 6. Persistence
-
----
-
-# 6.1 Storage Engine
-
-Persistence uses:
-
-- IndexedDB
-- directly inside the content script
-
-Service worker persistence is intentionally avoided in v0.
-
-Reason:
-
-- simpler architecture
-- avoids MV3 service worker lifecycle complexity
-
----
-
-# 6.2 Database Definition
-
-```ts
-dbName = "aiw_db";
-dbVersion = 1;
-```
-
----
-
-# 6.3 Object Stores
-
-## projects
-
-### Key Path
-
-```ts
-id;
-```
-
-### Stored Values
-
-```ts
-Project;
-```
-
----
-
-## items
-
-### Key Path
-
-```ts
-id;
-```
-
-### Stored Values
-
-```ts
-Item;
-```
-
-### Indexes
-
-#### byProjectId
-
-```ts
-projectId;
-```
-
-Non-unique.
-
-Used for:
-
-- filtering items by project
-
----
-
-# 6.4 Schema Upgrade Policy
-
-Schema changes require:
-
-- incrementing database version
-- implementing upgrade migration logic
-
-Migrations must ONLY:
-
-- create/remove stores
-- create/remove indexes
-- transform schema data
-
-Migrations must NOT:
-
-- contain UI logic
-- contain rendering logic
-
----
-
-# 7. Storage API Contract
-
----
-
-# 7.1 createProject
-
-## Inputs
-
-```ts
-name: string
-description?: string
-```
-
----
-
-## Behavior
-
-- trims name
-- validates non-empty
-- generates ID
-- creates timestamps
-- persists project
-
----
-
-## Returns
-
-```ts
-Promise<Project>;
-```
-
----
-
-## Errors
-
-Throws if:
-
-- IndexedDB write fails
-- validation fails
-
----
-
-# 7.2 listProjects
-
-## Inputs
-
-None.
-
----
-
-## Behavior
-
-Returns all stored projects.
-
-Sorting policy:
-
-```txt
-newest first
-```
-
-Sorted by:
-
-```txt
-createdAt DESC
-```
-
----
-
-## Returns
-
-```ts
-Promise<Project[]>;
-```
-
----
-
-## Errors
-
-Throws if IndexedDB read fails.
-
----
-
-# 7.3 deleteProject
-
-## Inputs
-
-```ts
-projectId: string;
-```
-
----
-
-## Behavior
-
-- deletes matching project
-- cascade deletes all items with matching `projectId`
-
-If project does not exist:
-
-```txt
-no-op
-```
-
----
-
-## Returns
-
-```ts
-Promise<void>;
-```
-
----
-
-# 7.4 createItem
-
-## Inputs
-
-```ts
-projectId
-type
-title
-content
-meta?
-```
-
----
-
-## Behavior
-
-- validates project existence
-- creates Item
-- persists Item
-
----
-
-## Returns
-
-```ts
-Promise<Item>;
-```
-
----
-
-# 7.5 listItemsByProject
-
-## Inputs
-
-```ts
-projectId: string;
-```
-
----
-
-## Behavior
-
-Uses IndexedDB index:
-
-```txt
-byProjectId
-```
-
-Sorting policy:
-
-```txt
-newest first
-```
-
-Sorted by:
-
-```txt
-createdAt DESC
-```
-
----
-
-## Returns
-
-```ts
-Promise<Item[]>;
-```
-
----
-
-# 7.6 updateItem
-
-## Inputs
-
-```ts
-itemId: string;
-partialUpdate: Partial<Item>;
-```
-
----
-
-## Behavior
-
-- loads existing item
-- merges mutable fields
-- updates `updatedAt`
-
-Immutable fields:
-
-- `id`
-- `projectId`
-- `createdAt`
-
----
-
-## Returns
-
-```ts
-Promise<Item>;
-```
-
----
-
-## Errors
-
-Throws if:
-
-- item does not exist
-- IndexedDB operation fails
-
----
-
-# 7.7 deleteItem
-
-## Inputs
-
-```ts
-itemId: string;
-```
-
----
-
-## Behavior
-
-Permanently deletes item.
-
-Missing item:
-
-```txt
-no-op
-```
-
----
-
-## Returns
-
-```ts
-Promise<void>;
-```
-
----
-
-# 8. UI Architecture
-
----
-
-# 8.1 UI Injection
-
-The extension injects a fixed-position orb button into ChatGPT pages.
+- id
+- name
+- createdAt
 
 Requirements:
 
-- idempotent injection
-- no duplicate orb button
-- no duplicate CSS injection
+- id must be unique
+- name must not be empty
 
 ---
 
-# 8.2 Sidebar Layout
+## Item
 
-Minimum v0 layout:
+Fields:
 
-```txt
-Header
-Projects Section
-Items Section
-Item Details Section
-Footer Actions
-```
+- id
+- projectId
+- title
+- content
+- createdAt
+- updatedAt
 
----
+Requirements:
 
-# 8.3 UI State
-
-```ts
-selectedProjectId: string | null
-selectedItemId: string | null
-
-projects: Project[]
-items: Item[]
-```
+- item belongs to exactly one project
+- title may be empty
+- content may be empty
 
 ---
 
-# 8.4 State Rules
+# 5. Storage
 
-UI state is ephemeral.
+Storage is fully local.
 
-IndexedDB is persistent.
+Implementation:
 
-Rendering must derive from:
+- IndexedDB
 
-```txt
-state + cached storage snapshot
-```
+Storage responsibilities:
 
-NOT from:
+- persist projects
+- persist items
+- support CRUD operations
 
-```txt
-live IndexedDB queries inside render functions
-```
+Storage must not:
 
----
-
-# 9. Rendering Rules
-
-Renderers must:
-
-- be pure
-- accept explicit inputs
-- avoid global state access
-- avoid persistence calls
-
-Renderers must NOT:
-
-- query IndexedDB
-- mutate application state
-- attach global listeners repeatedly
+- render UI
+- mutate runtime UI state
+- perform UI orchestration
 
 ---
 
-# 10. Capture Workflow
+# 6. Runtime State
+
+Runtime state exists only in memory.
+
+Purpose:
+
+- loading indicators
+- error indicators
+- render snapshots
+- selected entities
+
+Runtime state is separate from storage.
+
+Refreshing the page rebuilds runtime state from IndexedDB.
 
 ---
 
-# 10.1 Manual Creation
+# 7. UI Architecture
 
-User creates Item manually through sidebar controls.
+Architecture layers:
 
----
+Storage
+↓
+Controllers
+↓
+Runtime State
+↓
+Renderers
+↓
+DOM
 
-# 10.2 Selection Capture
+Responsibilities:
 
-Workflow:
+Storage:
 
-1. user selects page text
-2. user clicks "Save Selection"
-3. extension creates Item
+- persistence
 
-Stored values:
+Controllers:
 
-```ts
-content = selected text
-meta.sourceUrl = current URL
-meta.createdFrom = "selection"
-```
+- orchestration
 
----
+Runtime State:
 
-# 11. Context Pack Generator
+- current UI state
 
-User selects multiple Items.
+Renderers:
 
-The system generates deterministic grouped output.
+- DOM generation
 
-Output groups Items by type.
+Components:
 
-Generated text is copied to clipboard.
-
----
-
-# 12. Export / Import
+- reusable UI fragments
 
 ---
 
-# 12.1 Export
+# 8. Floating UI
 
-Export format:
+The extension injects a floating interface into ChatGPT.
 
-```ts
-{
-  schemaVersion: number;
-  exportedAt: number;
+The floating interface consists of:
 
-  projects: Project[];
-  items: Item[];
-}
-```
+- Orb
+- Action Buttons
+- Floating Panels
 
 ---
 
-# 12.2 Import
+# 9. Orb
 
-v0 policy:
+The Orb is the primary entry point.
 
-```txt
-replace-all
-```
+Responsibilities:
 
-Behavior:
+- open action menu
+- close action menu
 
-- validates schemaVersion
-- clears current DB
-- imports provided data
+The Orb does not:
 
-Unknown schema versions must be rejected.
+- render business data
+- perform storage operations
 
 ---
 
-# 13. Security & Privacy
+# 10. Actions
 
-## Guarantees
+Current actions:
 
-- no cloud storage
-- no telemetry
-- no user tracking
-- no AI data transmission
+- Projects
+- Capture
+- Search
 
----
+MVP requirement:
 
-## Restrictions
+Projects must be functional.
 
-The extension must never store:
-
-- API keys
-- auth tokens
-- cookies
-- credentials
+Capture and Search may initially exist as placeholders.
 
 ---
 
-# 14. MVP Completion Criteria
+# 11. Projects Feature
 
-The MVP is complete only when all are true:
+Projects panel displays:
 
-- Projects persist correctly
-- Items persist correctly
-- Item update/delete works
-- Selection capture works
-- Context pack generation works
-- Export/import works
-- UI injection is stable
-- No duplicate injection bugs remain
+- loading state
+- error state
+- empty state
+- project list
+
+Projects panel includes:
+
+- create project form
+
+Each project row supports:
+
+- selection
+- rename
+- delete
 
 ---
 
-# 15. Future Extensions (Out of Scope)
+# 12. Project Creation
 
-Potential future features:
+User enters a name.
 
-- task completion state
-- tags
-- full-text search
-- encrypted sync
-- multi-device sync
-- drag/drop ordering
-- markdown editor
-- chat ingestion
-- embeddings/vector search
-- AI summarization
-- workspace templates
+System:
 
-```
-````
+1. Creates project.
+2. Persists project.
+3. Reloads projects.
+4. Re-renders UI.
+
+Validation:
+
+- empty names rejected
+
+---
+
+# 13. Project Selection
+
+Selecting a project:
+
+1. Stores selected project id.
+2. Opens items panel.
+3. Loads items for project.
+
+---
+
+# 14. Project Rename
+
+User initiates rename.
+
+System:
+
+1. Displays inline rename input.
+2. Saves updated name.
+3. Reloads projects.
+4. Re-renders UI.
+
+Validation:
+
+- empty names rejected
+
+---
+
+# 15. Project Delete
+
+Deleting a project:
+
+1. Removes project.
+2. Removes associated items.
+3. Reloads projects.
+4. Returns user to Projects panel if deleted project was selected.
+
+Deletion is permanent.
+
+---
+
+# 16. Items Feature
+
+Items belong to a single project.
+
+Items panel displays:
+
+- loading state
+- error state
+- empty state
+- item list
+
+Items panel includes:
+
+- create item form
+
+Each item supports:
+
+- selection
+- update
+- delete
+
+---
+
+# 17. Item Creation
+
+User enters:
+
+- title
+- content
+
+System:
+
+1. Creates item.
+2. Persists item.
+3. Reloads item list.
+4. Re-renders UI.
+
+---
+
+# 18. Item Selection
+
+Selecting an item opens detail view.
+
+Detail view allows editing.
+
+---
+
+# 19. Item Update
+
+User edits:
+
+- title
+- content
+
+System:
+
+1. Saves item.
+2. Updates storage.
+3. Reloads item.
+4. Re-renders UI.
+
+---
+
+# 20. Item Delete
+
+Deleting an item:
+
+1. Removes item.
+2. Reloads list.
+3. Clears selection if necessary.
+
+Deletion is permanent.
+
+---
+
+# 21. Search (MVP)
+
+Search is scoped to local workspace data.
+
+Search may initially support:
+
+- project names
+- item titles
+- item content
+
+A simplified implementation is acceptable for MVP.
+
+---
+
+# 22. Capture (MVP)
+
+Capture creates items from current page context.
+
+Initial MVP requirement:
+
+- manual capture action
+- item creation from selected text
+
+Advanced capture workflows are out of scope.
+
+---
+
+# 23. Error Handling
+
+Every async workflow should support:
+
+- loading state
+- failure state
+- recovery through retry
+
+Errors should be converted into user-readable messages.
+
+---
+
+# 24. Non-Goals
+
+The MVP intentionally excludes:
+
+- remote APIs
+- user accounts
+- synchronization
+- sharing
+- team features
+- AI categorization
+- vector databases
+- browser-wide indexing
+
+---
+
+# 25. MVP Completion Criteria
+
+The MVP is complete when:
+
+✓ Projects can be created
+
+✓ Projects can be renamed
+
+✓ Projects can be deleted
+
+✓ Items can be created
+
+✓ Items can be edited
+
+✓ Items can be deleted
+
+✓ Data survives browser refresh
+
+✓ Data survives browser restart
+
+✓ Floating UI remains stable
+
+✓ Search works against local data
+
+✓ Capture can create items
+
+No additional features are required for MVP completion.
