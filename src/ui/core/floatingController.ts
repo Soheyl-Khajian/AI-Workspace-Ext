@@ -124,7 +124,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     }
   }
 
-  function toggleFloatingPanel(panelId: OrbPanelId): void {
+  function toggleFloatingPanel(panelId: OrbActionId): void {
     togglePanel(panelId);
     renderUi();
   }
@@ -193,8 +193,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     }
 
     await projectsController.create(trimmedNewProjectName);
-
-    input.value = "";
   }
 
   // ----------------------------------------------------------
@@ -246,9 +244,9 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
         const trimmedValue = renameInputEl.value.trim();
         if (trimmedValue) {
           await projectsController.renameProject(projectId, trimmedValue);
+        } else {
+          renderUi();
         }
-
-        renderUi();
       }
 
       if (event.key === "Escape") {
@@ -362,9 +360,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       trimmedItemTitle,
       contentInput.value,
     );
-
-    titleInput.value = "";
-    contentInput.value = "";
   }
 
   // ----------------------------------------------------------

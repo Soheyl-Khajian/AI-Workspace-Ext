@@ -1329,7 +1329,6 @@
         return;
       }
       await projectsController.create(trimmedNewProjectName);
-      input.value = "";
     }
     function handleRenameProject(event) {
       let committed = false;
@@ -1366,8 +1365,9 @@
           const trimmedValue = renameInputEl.value.trim();
           if (trimmedValue) {
             await projectsController.renameProject(projectId, trimmedValue);
+          } else {
+            renderUi();
           }
-          renderUi();
         }
         if (event2.key === "Escape") {
           committed = true;
@@ -1445,8 +1445,6 @@
         trimmedItemTitle,
         contentInput.value
       );
-      titleInput.value = "";
-      contentInput.value = "";
     }
     async function handleUpdateItem(event) {
       const target = event.target;

@@ -109,6 +109,7 @@ export async function renameProject(
    ITEMS
 ------------------------------------------------------- */
 
+// TODO: handle null state for title and content according to SPEC
 export async function createItem(
   projectId: string,
   type: ItemType,
