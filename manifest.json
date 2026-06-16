@@ -3,7 +3,7 @@
   "name": "AI Workspace (v0)",
   "version": "0.0.1",
   "description": "Local workspace extension for ChatGPT (personal build).",
-  "permissions": ["storage"],
+  "permissions": ["storage", "contextMenus"],
   "host_permissions": ["https://chatgpt.com/*"],
   "background": {
     "service_worker": "dist/background/serviceWorker.js"

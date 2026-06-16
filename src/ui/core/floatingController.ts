@@ -25,7 +25,6 @@ import { handleOrbAction } from "./orbActionRouter";
 import type { OrbActionContext } from "./orbActionRouter";
 import { getOrbActions } from "./orbActions";
 import type { OrbActionId } from "./types";
-import type { OrbPanelId } from "./types";
 import { renderOrbActions } from "./renderOrbActions";
 import { renderFloatingPanels } from "./renderFloatingPanels";
 import {
@@ -98,6 +97,19 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     }
 
     setOrbCollapsed();
+  }
+
+  // ----------------------------------------------------------
+  // PROJECTS UPDATED HANDLER (cross-context sync)
+  // ----------------------------------------------------------
+  //
+  // Fired by captureHandler after it syncs projects runtime state.
+  // Ensures the projects panel reflects changes (e.g. new Inbox project)
+  // without requiring a page refresh.
+  // ----------------------------------------------------------
+
+  function handleProjectsUpdated(): void {
+    renderUi();
   }
 
   // ----------------------------------------------------------
@@ -501,6 +513,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
   dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
+  document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
 
   // ----------------------------------------------------------
   // CLEANUP
@@ -518,5 +531,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
     dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
+    document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
   };
 }

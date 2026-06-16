@@ -5,7 +5,8 @@
 // Responsibilities:
 // 1. Inject floating assets (HTML + CSS) into host page (idempotent)
 // 2. Start floating controller (UI logic lives there)
-// 3. Optionally seed development data
+// 3. Register cross-context message listener
+// 4. Optionally seed development data
 //
 // IMPORTANT ARCHITECTURAL RULE:
 // This file MUST NOT contain UI state, rendering logic, or DOM queries
@@ -13,6 +14,8 @@
 
 import { createProject, createItem } from "../storage/index";
 import { initFloatingController } from "../ui/core/floatingController";
+import type { AiwMessage } from "../background/messages";
+import { handleCaptureSelection } from "../capture/captureHandler";
 
 /* ------------------------------------------------------------
    Asset Injection (CSS + HTML)
@@ -61,6 +64,22 @@ async function injectFloatingAssets(): Promise<HTMLElement> {
 }
 
 /* ------------------------------------------------------------
+   Message Listener
+------------------------------------------------------------ */
+
+function initMessageListener(): void {
+  chrome.runtime.onMessage.addListener((rawMessage) => {
+    const message = rawMessage as AiwMessage;
+
+    switch (message.type) {
+      case "CAPTURE_SELECTION":
+        handleCaptureSelection(message.selectionText, message.sourceUrl);
+        break;
+    }
+  });
+}
+
+/* ------------------------------------------------------------
    Development helper (optional seed data)
 ------------------------------------------------------------ */
 
@@ -70,7 +89,7 @@ async function seedDevDataOnce(): Promise<void> {
   if (flag.aiw_dev_seeded === true) return;
 
   try {
-    const emptyProject = await createProject("Empty Project");
+    await createProject("Empty Project");
 
     const singleItemProject = await createProject("Single Item Project");
 
@@ -119,7 +138,9 @@ async function seedDevDataOnce(): Promise<void> {
 
     await chrome.storage.local.set({ aiw_dev_seeded: true });
   } catch (error) {
-    throw error;
+    // Seed failure must never crash bootstrap.
+    // The extension is fully functional without seed data.
+    console.warn("[AIW] Dev seed failed (non-fatal):", error);
   }
 }
 
@@ -134,7 +155,10 @@ async function bootstrap(): Promise<void> {
   // Step 2: hand over control to UI controller
   initFloatingController(root);
 
-  // Step 3: optional dev initialization
+  // Step 3: register cross-context message listener
+  initMessageListener();
+
+  // Step 4: optional dev initialization
   await seedDevDataOnce();
 }
 

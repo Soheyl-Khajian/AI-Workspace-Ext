@@ -1267,6 +1267,9 @@
       }
       setOrbCollapsed();
     }
+    function handleProjectsUpdated() {
+      renderUi();
+    }
     function setOrbExpanded() {
       expandOrb();
       renderUi();
@@ -1541,6 +1544,7 @@
     dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
     dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
+    document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
     return function destroyFloatingController() {
       dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
       dom.orbPanelsEl.removeEventListener("click", handleSelectProject);
@@ -1553,6 +1557,7 @@
       dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
       dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
+      document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
     };
   }
   var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR;
@@ -1582,11 +1587,95 @@
     }
   });
 
+  // src/ui/shared/showToast.ts
+  function showToast(message) {
+    const rootEl = document.getElementById("aiw-floating-root");
+    if (!rootEl) return;
+    if (activeToastEl !== null) {
+      activeToastEl.remove();
+      activeToastEl = null;
+    }
+    if (activeTimeoutId !== null) {
+      clearTimeout(activeTimeoutId);
+      activeTimeoutId = null;
+    }
+    const toastEl = document.createElement("div");
+    toastEl.className = "aiw-toast";
+    toastEl.textContent = message;
+    rootEl.append(toastEl);
+    activeToastEl = toastEl;
+    activeTimeoutId = setTimeout(() => {
+      toastEl.remove();
+      activeToastEl = null;
+      activeTimeoutId = null;
+    }, TOAST_DURATION_MS);
+  }
+  var TOAST_DURATION_MS, activeToastEl, activeTimeoutId;
+  var init_showToast = __esm({
+    "src/ui/shared/showToast.ts"() {
+      "use strict";
+      TOAST_DURATION_MS = 2e3;
+      activeToastEl = null;
+      activeTimeoutId = null;
+    }
+  });
+
+  // src/capture/captureHandler.ts
+  async function findOrCreateInbox() {
+    const projects = await listProjects();
+    const existing = projects.find((p) => p.name === INBOX_PROJECT_NAME);
+    if (existing !== void 0) return existing;
+    return createProject(INBOX_PROJECT_NAME);
+  }
+  function buildTitle(selectionText) {
+    const trimmed = selectionText.trim();
+    if (trimmed.length <= TITLE_MAX_LENGTH) return trimmed;
+    return trimmed.slice(0, TITLE_MAX_LENGTH) + "...";
+  }
+  async function capture(selectionText, sourceUrl) {
+    if (!selectionText.trim()) return;
+    let targetProject;
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId !== null) {
+      targetProject = getProjects().find((p) => p.id === selectedProjectId);
+    }
+    if (targetProject === void 0) {
+      targetProject = await findOrCreateInbox();
+    }
+    const title = buildTitle(selectionText);
+    await createItem(targetProject.id, "note", title, selectionText, {
+      createdFrom: "selection",
+      sourceUrl
+    });
+    showToast(`Saved to ${targetProject.name}`);
+    await loadProjects();
+    document.dispatchEvent(new CustomEvent("aiw:projects-updated"));
+  }
+  function handleCaptureSelection(selectionText, sourceUrl) {
+    capture(selectionText, sourceUrl).catch((error) => {
+      console.error("[AIW] Capture failed:", error);
+    });
+  }
+  var INBOX_PROJECT_NAME, TITLE_MAX_LENGTH;
+  var init_captureHandler = __esm({
+    "src/capture/captureHandler.ts"() {
+      "use strict";
+      init_storage();
+      init_sessionState();
+      init_loadProjects();
+      init_projectsState();
+      init_showToast();
+      INBOX_PROJECT_NAME = "Inbox";
+      TITLE_MAX_LENGTH = 60;
+    }
+  });
+
   // src/content/injectFloatingUi.ts
   var require_injectFloatingUi = __commonJS({
     "src/content/injectFloatingUi.ts"() {
       init_storage();
       init_floatingController();
+      init_captureHandler();
       async function injectFloatingAssets() {
         const existingStyle = document.getElementById("aiw-floating-style");
         if (!existingStyle) {
@@ -1616,11 +1705,21 @@
         }
         return existingRoot;
       }
+      function initMessageListener() {
+        chrome.runtime.onMessage.addListener((rawMessage) => {
+          const message = rawMessage;
+          switch (message.type) {
+            case "CAPTURE_SELECTION":
+              handleCaptureSelection(message.selectionText, message.sourceUrl);
+              break;
+          }
+        });
+      }
       async function seedDevDataOnce() {
         const flag = await chrome.storage.local.get("aiw_dev_seeded");
         if (flag.aiw_dev_seeded === true) return;
         try {
-          const emptyProject = await createProject("Empty Project");
+          await createProject("Empty Project");
           const singleItemProject = await createProject("Single Item Project");
           await createItem(
             singleItemProject.id,
@@ -1662,12 +1761,13 @@
           );
           await chrome.storage.local.set({ aiw_dev_seeded: true });
         } catch (error) {
-          throw error;
+          console.warn("[AIW] Dev seed failed (non-fatal):", error);
         }
       }
       async function bootstrap() {
         const root = await injectFloatingAssets();
         initFloatingController(root);
+        initMessageListener();
         await seedDevDataOnce();
       }
       bootstrap().catch((err) => {
