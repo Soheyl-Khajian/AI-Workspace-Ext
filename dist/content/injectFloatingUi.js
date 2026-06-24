@@ -455,7 +455,6 @@
   function handleOrbAction(actionId, context) {
     switch (actionId) {
       case "projects":
-      case "capture":
       case "search":
         context.togglePanel(actionId);
         break;
@@ -484,10 +483,6 @@
         {
           id: "projects",
           label: "Projects"
-        },
-        {
-          id: "capture",
-          label: "Capture"
         },
         {
           id: "search",
@@ -781,24 +776,6 @@
     }
   });
 
-  // src/ui/features/capture/renderCapturePanel.ts
-  function renderCapturePanel(containerEl) {
-    const shell = createFloatingPanelShell("Capture");
-    const panelStateEl = createPanelState({
-      variant: "placeholder",
-      message: "Nothing here yet"
-    });
-    shell.bodyEl.append(panelStateEl);
-    containerEl.append(shell.panelEl);
-  }
-  var init_renderCapturePanel = __esm({
-    "src/ui/features/capture/renderCapturePanel.ts"() {
-      "use strict";
-      init_createFloatingPanelShell();
-      init_createPanelState();
-    }
-  });
-
   // src/ui/features/search/renderSearchPanel.ts
   function renderSearchPanel(containerEl) {
     const shell = createFloatingPanelShell("Search");
@@ -1024,9 +1001,6 @@
       case "itemDetail":
         renderItemDetailPanel(containerEl);
         break;
-      case "capture":
-        renderCapturePanel(containerEl);
-        break;
       case "search":
         renderSearchPanel(containerEl);
         break;
@@ -1042,7 +1016,6 @@
       "use strict";
       init_floatingUiState();
       init_renderProjectsPanel();
-      init_renderCapturePanel();
       init_renderSearchPanel();
       init_renderItemsPanel();
       init_renderItemDetailPanel();

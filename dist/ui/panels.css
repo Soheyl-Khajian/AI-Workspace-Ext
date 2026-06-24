@@ -5,8 +5,8 @@
 
 #aiw-orb-panels {
   position: absolute;
-  right: 235px;
-  bottom: 110px;
+  right: 255px;
+  bottom: 150px;
   overflow: visible;
   pointer-events: none;
 }

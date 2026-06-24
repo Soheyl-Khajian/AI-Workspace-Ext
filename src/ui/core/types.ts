@@ -3,11 +3,6 @@
 // TYPES
 // ------------------------------------------------------------
 
-export type OrbActionId = "projects" | "capture" | "search";
+export type OrbActionId = "projects" | "search";
 
-export type OrbPanelId =
-  | "projects"
-  | "items"
-  | "itemDetail"
-  | "capture"
-  | "search";
+export type OrbPanelId = "projects" | "items" | "itemDetail" | "search";

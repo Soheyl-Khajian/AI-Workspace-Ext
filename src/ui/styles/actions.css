@@ -91,34 +91,21 @@ Expanded state moves them outward.
    PROJECTS ACTION POSITION
 ------------------------------------------------------------ */
 /*
-  Left + slightly upward.
+  Lower arm of the arc — mostly left, slightly up.
 */
-
 #aiw-floating-root[data-orb-expanded="true"]
   .aiw-orb-action[data-action-id="projects"] {
-  transform: translate(-140px, 10px) scale(1);
-}
-
-/* ------------------------------------------------------------
-   CAPTURE ACTION POSITION
------------------------------------------------------------- */
-/*
-  Upper-left diagonal.
-*/
-
-#aiw-floating-root[data-orb-expanded="true"]
-  .aiw-orb-action[data-action-id="capture"] {
-  transform: translate(-90px, -65px) scale(1);
+  transform: translate(-140px, -52px) scale(1);
 }
 
 /* ------------------------------------------------------------
    SEARCH ACTION POSITION
 ------------------------------------------------------------ */
 /*
-  Directly upward.
+  Upper arm of the arc — mostly up, slightly left.
+  Mirrors Projects across the diagonal for a balanced two-button fan.
 */
-
 #aiw-floating-root[data-orb-expanded="true"]
   .aiw-orb-action[data-action-id="search"] {
-  transform: translate(-20px, -140px) scale(1);
+  transform: translate(-52px, -140px) scale(1);
 }
