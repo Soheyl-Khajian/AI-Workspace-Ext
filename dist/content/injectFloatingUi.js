@@ -355,29 +355,17 @@
     if (!type) {
       throw new Error("Item type is required");
     }
-    if (title == null) {
-      throw new Error("Item title is required (null/undefined)");
-    }
-    const trimmedTitle = title.trim();
-    if (trimmedTitle.length === 0) {
-      throw new Error("Item title cannot be empty");
-    }
-    if (content == null) {
-      throw new Error("Item content is required (null/undefined)");
-    }
-    const trimmedContent = content.trim();
-    if (trimmedContent.length === 0) {
-      throw new Error("Item content cannot be empty");
-    }
     if (!meta) {
       throw new Error("Item meta is required");
     }
+    const normalizedTitle = (title ?? "").trim();
+    const normalizedContent = content ?? "";
     const item = {
       id: crypto.randomUUID(),
       projectId: trimmedProjectId,
       type,
-      title: trimmedTitle,
-      content: trimmedContent,
+      title: normalizedTitle,
+      content: normalizedContent,
       createdAt: Date.now(),
       meta
     };
@@ -414,6 +402,12 @@
       createdAt: existing.createdAt,
       updatedAt: Date.now()
     };
+    if (partialUpdate.title !== void 0) {
+      merged.title = (partialUpdate.title ?? "").trim();
+    }
+    if (partialUpdate.content !== void 0) {
+      merged.content = partialUpdate.content ?? "";
+    }
     await insertItem(merged);
     return merged;
   }
@@ -825,11 +819,15 @@
 
   // src/ui/features/items/createItemRow.ts
   function createItemRow(item, selected) {
+    const hasTitle = item.title.trim().length > 0;
     const rowEl = document.createElement("div");
     rowEl.className = "aiw-item-row";
     const itemTextEl = document.createElement("span");
     itemTextEl.className = "aiw-item-text";
-    itemTextEl.textContent = item.title;
+    itemTextEl.textContent = hasTitle ? item.title : "Untitled";
+    if (!hasTitle) {
+      itemTextEl.classList.add("aiw-item-text--untitled");
+    }
     rowEl.append(itemTextEl);
     rowEl.dataset.itemId = item.id;
     if (selected) {
@@ -1077,9 +1075,22 @@
     }
   });
 
+  // src/ui/shared/toErrorMessage.ts
+  function toErrorMessage(error, fallback) {
+    if (error instanceof Error && error.message.trim().length > 0) {
+      return error.message;
+    }
+    return fallback;
+  }
+  var init_toErrorMessage = __esm({
+    "src/ui/shared/toErrorMessage.ts"() {
+      "use strict";
+    }
+  });
+
   // src/ui/features/projects/projectsController.ts
   function createProjectsController(dependencies) {
-    const { onStateChange, itemsController } = dependencies;
+    const { onStateChange, notify, itemsController } = dependencies;
     async function load() {
       try {
         await loadProjects();
@@ -1095,31 +1106,37 @@
     async function create(name) {
       try {
         await createProject(name);
-        await loadProjects();
-      } finally {
-        onStateChange();
+      } catch (error) {
+        notify(toErrorMessage(error, "Couldn't create project."));
+        return;
       }
+      await loadProjects();
+      onStateChange();
     }
     async function renameProject2(projectId, name) {
       try {
         await renameProject(projectId, name);
-        await loadProjects();
-      } finally {
-        onStateChange();
+      } catch (error) {
+        notify(toErrorMessage(error, "Couldn't rename project."));
+        return;
       }
+      await loadProjects();
+      onStateChange();
     }
     async function deleteProject2(projectId) {
       const selectedProjectId = getSelectedProjectId();
       try {
         await deleteProjectCascade(projectId);
-        if (selectedProjectId === projectId) {
-          setSelectedProjectId(null);
-          openPanel("projects");
-        }
-        await loadProjects();
-      } finally {
-        onStateChange();
+      } catch (error) {
+        notify(toErrorMessage(error, "Couldn't delete project."));
+        return;
       }
+      if (selectedProjectId === projectId) {
+        setSelectedProjectId(null);
+        openPanel("projects");
+      }
+      await loadProjects();
+      onStateChange();
     }
     return {
       load,
@@ -1136,6 +1153,7 @@
       init_sessionState();
       init_loadProjects();
       init_storage();
+      init_toErrorMessage();
     }
   });
 
@@ -1168,7 +1186,7 @@
 
   // src/ui/features/items/itemsController.ts
   function createItemsController(dependencies) {
-    const { onStateChange } = dependencies;
+    const { onStateChange, notify } = dependencies;
     async function load(projectId) {
       setItemsLoading(true);
       onStateChange();
@@ -1188,37 +1206,43 @@
         await createItem(projectId, type, title, content, {
           createdFrom: "manual"
         });
-        await loadItems(projectId);
-      } finally {
-        onStateChange();
+      } catch (error) {
+        notify(toErrorMessage(error, "Couldn't create item."));
+        return;
       }
+      await loadItems(projectId);
+      onStateChange();
     }
     async function updateItem2(itemId, title, content) {
       const selectedProjectId = getSelectedProjectId();
       if (selectedProjectId === null) {
         return;
       }
+      const partialUpdate = {};
+      if (title !== void 0) partialUpdate.title = title;
+      if (content !== void 0) partialUpdate.content = content;
       try {
-        const partialUpdate = {};
-        if (title !== void 0) partialUpdate.title = title;
-        if (content !== void 0) partialUpdate.content = content;
         await updateItem(itemId, partialUpdate);
-        await loadItems(selectedProjectId);
-      } finally {
-        onStateChange();
+      } catch (error) {
+        notify(toErrorMessage(error, "Couldn't save item."));
+        return;
       }
+      await loadItems(selectedProjectId);
+      onStateChange();
     }
     async function deleteItem2(itemId, projectId) {
       const selectedItemId = getSelectedItemId();
       try {
         await deleteItem(itemId);
-        if (selectedItemId === itemId) {
-          setSelectedItemId(null);
-        }
-        await loadItems(projectId);
-      } finally {
-        onStateChange();
+      } catch (error) {
+        notify(toErrorMessage(error, "Couldn't delete item."));
+        return;
       }
+      if (selectedItemId === itemId) {
+        setSelectedItemId(null);
+      }
+      await loadItems(projectId);
+      onStateChange();
     }
     return {
       load,
@@ -1236,15 +1260,53 @@
       init_storage();
       init_sessionState();
       init_floatingUiState();
+      init_toErrorMessage();
+    }
+  });
+
+  // src/ui/shared/showToast.ts
+  function showToast(message) {
+    const rootEl = document.getElementById("aiw-floating-root");
+    if (!rootEl) return;
+    if (activeToastEl !== null) {
+      activeToastEl.remove();
+      activeToastEl = null;
+    }
+    if (activeTimeoutId !== null) {
+      clearTimeout(activeTimeoutId);
+      activeTimeoutId = null;
+    }
+    const toastEl = document.createElement("div");
+    toastEl.className = "aiw-toast";
+    toastEl.textContent = message;
+    rootEl.append(toastEl);
+    activeToastEl = toastEl;
+    activeTimeoutId = setTimeout(() => {
+      toastEl.remove();
+      activeToastEl = null;
+      activeTimeoutId = null;
+    }, TOAST_DURATION_MS);
+  }
+  var TOAST_DURATION_MS, activeToastEl, activeTimeoutId;
+  var init_showToast = __esm({
+    "src/ui/shared/showToast.ts"() {
+      "use strict";
+      TOAST_DURATION_MS = 2e3;
+      activeToastEl = null;
+      activeTimeoutId = null;
     }
   });
 
   // src/ui/core/floatingController.ts
   function initFloatingController(rootEl) {
     const dom = createFloatingDom(rootEl);
-    const itemsController = createItemsController({ onStateChange: renderUi });
+    const itemsController = createItemsController({
+      onStateChange: renderUi,
+      notify: showToast
+    });
     const projectsController = createProjectsController({
       onStateChange: renderUi,
+      notify: showToast,
       itemsController
     });
     const actionsContext = createOrbActionContext();
@@ -1329,6 +1391,7 @@
       }
       const trimmedNewProjectName = input.value.trim();
       if (trimmedNewProjectName.length === 0) {
+        showToast("Project name can't be empty");
         return;
       }
       await projectsController.create(trimmedNewProjectName);
@@ -1440,13 +1503,15 @@
         return;
       }
       const trimmedItemTitle = titleInput.value.trim();
-      if (trimmedItemTitle.length === 0) {
+      const itemContent = contentInput.value;
+      if (trimmedItemTitle.length === 0 && itemContent.trim().length === 0) {
+        showToast("Add a title or some content");
         return;
       }
       await itemsController.create(
         selectedProjectId,
         trimmedItemTitle,
-        contentInput.value
+        itemContent
       );
     }
     async function handleUpdateItem(event) {
@@ -1473,14 +1538,12 @@
         return;
       }
       const trimmedItemTitle = titleInput.value.trim();
-      if (trimmedItemTitle.length === 0) {
+      const itemContent = contentInput.value;
+      if (trimmedItemTitle.length === 0 && itemContent.trim().length === 0) {
+        showToast("Add a title or some content");
         return;
       }
-      await itemsController.updateItem(
-        itemId,
-        trimmedItemTitle,
-        contentInput.value
-      );
+      await itemsController.updateItem(itemId, trimmedItemTitle, itemContent);
     }
     async function handleDeleteItem(event) {
       const selectedProjectId = getSelectedProjectId();
@@ -1521,7 +1584,6 @@
       renderUi();
     }
     function renderUi() {
-      console.count("renderUi");
       const expanded = isOrbExpanded();
       const orbActions2 = getOrbActions();
       dom.rootEl.dataset.orbExpanded = String(expanded);
@@ -1573,6 +1635,7 @@
       init_projectsController();
       init_itemsController();
       init_sessionState();
+      init_showToast();
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
       PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
@@ -1584,39 +1647,6 @@
       ITEM_ID_DATASET_KEY = "itemId";
       ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
       ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
-    }
-  });
-
-  // src/ui/shared/showToast.ts
-  function showToast(message) {
-    const rootEl = document.getElementById("aiw-floating-root");
-    if (!rootEl) return;
-    if (activeToastEl !== null) {
-      activeToastEl.remove();
-      activeToastEl = null;
-    }
-    if (activeTimeoutId !== null) {
-      clearTimeout(activeTimeoutId);
-      activeTimeoutId = null;
-    }
-    const toastEl = document.createElement("div");
-    toastEl.className = "aiw-toast";
-    toastEl.textContent = message;
-    rootEl.append(toastEl);
-    activeToastEl = toastEl;
-    activeTimeoutId = setTimeout(() => {
-      toastEl.remove();
-      activeToastEl = null;
-      activeTimeoutId = null;
-    }, TOAST_DURATION_MS);
-  }
-  var TOAST_DURATION_MS, activeToastEl, activeTimeoutId;
-  var init_showToast = __esm({
-    "src/ui/shared/showToast.ts"() {
-      "use strict";
-      TOAST_DURATION_MS = 2e3;
-      activeToastEl = null;
-      activeTimeoutId = null;
     }
   });
 
@@ -1654,6 +1684,7 @@
   function handleCaptureSelection(selectionText, sourceUrl) {
     capture(selectionText, sourceUrl).catch((error) => {
       console.error("[AIW] Capture failed:", error);
+      showToast("Couldn't save to workspace");
     });
   }
   var INBOX_PROJECT_NAME, TITLE_MAX_LENGTH;

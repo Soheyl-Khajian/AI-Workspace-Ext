@@ -47,19 +47,15 @@ import {
   setSelectedItemId,
 } from "../../core/sessionState";
 import { openPanel } from "../../core/floatingUiState";
+import { toErrorMessage } from "../../shared/toErrorMessage";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
 // ------------------------------------------------------------
 
 type ItemsControllerDependencies = {
-  /*
-    Callback provided by parent UI controller.
-
-    Used to trigger a complete UI render cycle
-    after runtime state changes.
-  */
   onStateChange: () => void;
+  notify: (message: string) => void;
 };
 
 // ------------------------------------------------------------
@@ -90,7 +86,7 @@ type ItemsController = {
 export function createItemsController(
   dependencies: ItemsControllerDependencies,
 ): ItemsController {
-  const { onStateChange } = dependencies;
+  const { onStateChange, notify } = dependencies;
 
   // ----------------------------------------------------------
   // LOAD ITEMS WORKFLOW
@@ -144,16 +140,16 @@ export function createItemsController(
     content: string,
     type: ItemType = "note",
   ): Promise<void> {
-    // TODO: add error state for creation failures
     try {
       await createItem(projectId, type, title, content, {
         createdFrom: "manual",
       });
-
-      await loadItems(projectId);
-    } finally {
-      onStateChange();
+    } catch (error) {
+      notify(toErrorMessage(error, "Couldn't create item."));
+      return;
     }
+    await loadItems(projectId);
+    onStateChange();
   }
 
   // ----------------------------------------------------------
@@ -169,19 +165,17 @@ export function createItemsController(
     if (selectedProjectId === null) {
       return;
     }
-
-    // TODO: add error state for update failures
+    const partialUpdate: Partial<Item> = {};
+    if (title !== undefined) partialUpdate.title = title;
+    if (content !== undefined) partialUpdate.content = content;
     try {
-      const partialUpdate: Partial<Item> = {};
-      if (title !== undefined) partialUpdate.title = title;
-      if (content !== undefined) partialUpdate.content = content;
-
       await storageUpdateItem(itemId, partialUpdate);
-
-      await loadItems(selectedProjectId);
-    } finally {
-      onStateChange();
+    } catch (error) {
+      notify(toErrorMessage(error, "Couldn't save item."));
+      return;
     }
+    await loadItems(selectedProjectId);
+    onStateChange();
   }
 
   // ----------------------------------------------------------
@@ -190,19 +184,17 @@ export function createItemsController(
 
   async function deleteItem(itemId: string, projectId: string): Promise<void> {
     const selectedItemId = getSelectedItemId();
-
-    // TODO: add error state for delete failures
     try {
       await storageDeleteItem(itemId);
-
-      if (selectedItemId === itemId) {
-        setSelectedItemId(null);
-      }
-
-      await loadItems(projectId);
-    } finally {
-      onStateChange();
+    } catch (error) {
+      notify(toErrorMessage(error, "Couldn't delete item."));
+      return;
     }
+    if (selectedItemId === itemId) {
+      setSelectedItemId(null);
+    }
+    await loadItems(projectId);
+    onStateChange();
   }
 
   // ----------------------------------------------------------

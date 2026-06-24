@@ -109,7 +109,6 @@ export async function renameProject(
    ITEMS
 ------------------------------------------------------- */
 
-// TODO: handle null state for title and content according to SPEC
 export async function createItem(
   projectId: string,
   type: ItemType,
@@ -130,34 +129,20 @@ export async function createItem(
     throw new Error("Item type is required");
   }
 
-  if (title == null) {
-    throw new Error("Item title is required (null/undefined)");
-  }
-
-  const trimmedTitle = title.trim();
-  if (trimmedTitle.length === 0) {
-    throw new Error("Item title cannot be empty");
-  }
-
-  if (content == null) {
-    throw new Error("Item content is required (null/undefined)");
-  }
-
-  const trimmedContent = content.trim();
-  if (trimmedContent.length === 0) {
-    throw new Error("Item content cannot be empty");
-  }
-
   if (!meta) {
     throw new Error("Item meta is required");
   }
+
+  const normalizedTitle = (title ?? "").trim();
+
+  const normalizedContent = content ?? "";
 
   const item: Item = {
     id: crypto.randomUUID(),
     projectId: trimmedProjectId,
     type,
-    title: trimmedTitle,
-    content: trimmedContent,
+    title: normalizedTitle,
+    content: normalizedContent,
     createdAt: Date.now(),
     meta,
   };
@@ -228,6 +213,13 @@ export async function updateItem(
     createdAt: existing.createdAt,
     updatedAt: Date.now(),
   };
+
+  if (partialUpdate.title !== undefined) {
+    merged.title = (partialUpdate.title ?? "").trim();
+  }
+  if (partialUpdate.content !== undefined) {
+    merged.content = partialUpdate.content ?? "";
+  }
 
   await insertItem(merged);
 

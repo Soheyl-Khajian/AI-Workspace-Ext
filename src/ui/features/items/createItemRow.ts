@@ -20,6 +20,8 @@
 import type { Item } from "../../../models/item";
 
 export function createItemRow(item: Item, selected: boolean): HTMLDivElement {
+  const hasTitle = item.title.trim().length > 0;
+
   // ------------------------------------------------------------
   // ITEM ROW
   // ------------------------------------------------------------
@@ -29,7 +31,11 @@ export function createItemRow(item: Item, selected: boolean): HTMLDivElement {
 
   const itemTextEl = document.createElement("span");
   itemTextEl.className = "aiw-item-text";
-  itemTextEl.textContent = item.title;
+  itemTextEl.textContent = hasTitle ? item.title : "Untitled";
+  if (!hasTitle) {
+    itemTextEl.classList.add("aiw-item-text--untitled");
+  }
+
   rowEl.append(itemTextEl);
 
   // Expose item identity to parent interaction systems

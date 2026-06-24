@@ -115,5 +115,6 @@ export function handleCaptureSelection(
 ): void {
   capture(selectionText, sourceUrl).catch((error) => {
     console.error("[AIW] Capture failed:", error);
+    showToast("Couldn't save to workspace");
   });
 }

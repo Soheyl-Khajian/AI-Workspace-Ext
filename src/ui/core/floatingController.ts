@@ -38,6 +38,7 @@ import {
 import { createProjectsController } from "../features/projects/projectsController";
 import { createItemsController } from "../features/items/itemsController";
 import { setSelectedItemId, getSelectedProjectId } from "./sessionState";
+import { showToast } from "../shared/showToast";
 
 // ------------------------------------------------------------
 // SHARED CONSTANTS (temporary scope; can later relocate)
@@ -60,10 +61,14 @@ const ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
 
-  const itemsController = createItemsController({ onStateChange: renderUi });
+  const itemsController = createItemsController({
+    onStateChange: renderUi,
+    notify: showToast,
+  });
 
   const projectsController = createProjectsController({
     onStateChange: renderUi,
+    notify: showToast,
     itemsController,
   });
 
@@ -201,6 +206,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
     const trimmedNewProjectName = input.value.trim();
     if (trimmedNewProjectName.length === 0) {
+      showToast("Project name can't be empty");
       return;
     }
 
@@ -363,14 +369,16 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     }
 
     const trimmedItemTitle = titleInput.value.trim();
-    if (trimmedItemTitle.length === 0) {
+    const itemContent = contentInput.value;
+    if (trimmedItemTitle.length === 0 && itemContent.trim().length === 0) {
+      showToast("Add a title or some content");
       return;
     }
 
     await itemsController.create(
       selectedProjectId,
       trimmedItemTitle,
-      contentInput.value,
+      itemContent,
     );
   }
 
@@ -407,15 +415,13 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     }
 
     const trimmedItemTitle = titleInput.value.trim();
-    if (trimmedItemTitle.length === 0) {
+    const itemContent = contentInput.value;
+    if (trimmedItemTitle.length === 0 && itemContent.trim().length === 0) {
+      showToast("Add a title or some content");
       return;
     }
 
-    await itemsController.updateItem(
-      itemId,
-      trimmedItemTitle,
-      contentInput.value,
-    );
+    await itemsController.updateItem(itemId, trimmedItemTitle, itemContent);
   }
 
   // ----------------------------------------------------------
@@ -482,7 +488,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // ----------------------------------------------------------
 
   function renderUi(): void {
-    console.count("renderUi");
     const expanded = isOrbExpanded();
     const orbActions = getOrbActions();
 

@@ -41,6 +41,7 @@ import {
   deleteProjectCascade,
   renameProject as storageRenameProject,
 } from "../../../storage";
+import { toErrorMessage } from "../../shared/toErrorMessage";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -48,6 +49,7 @@ import {
 
 type ProjectsControllerDependencies = {
   onStateChange: () => void;
+  notify: (message: string) => void;
   itemsController: {
     load: (projectId: string) => Promise<void>;
   };
@@ -72,7 +74,7 @@ type ProjectsController = {
 export function createProjectsController(
   dependencies: ProjectsControllerDependencies,
 ): ProjectsController {
-  const { onStateChange, itemsController } = dependencies;
+  const { onStateChange, notify, itemsController } = dependencies;
 
   // ----------------------------------------------------------
   // LOAD PROJECTS WORKFLOW
@@ -123,14 +125,15 @@ export function createProjectsController(
   // ----------------------------------------------------------
 
   async function create(name: string): Promise<void> {
-    // TODO: add error state for creation failures
     try {
       await createProject(name);
-
-      await loadProjects();
-    } finally {
-      onStateChange();
+    } catch (error) {
+      // Surface the failure and keep the form input so the user can retry.
+      notify(toErrorMessage(error, "Couldn't create project."));
+      return;
     }
+    await loadProjects();
+    onStateChange();
   }
 
   // ----------------------------------------------------------
@@ -138,14 +141,14 @@ export function createProjectsController(
   // ----------------------------------------------------------
 
   async function renameProject(projectId: string, name: string): Promise<void> {
-    // TODO: add error state for rename failures
     try {
       await storageRenameProject(projectId, name);
-
-      await loadProjects();
-    } finally {
-      onStateChange();
+    } catch (error) {
+      notify(toErrorMessage(error, "Couldn't rename project."));
+      return;
     }
+    await loadProjects();
+    onStateChange();
   }
 
   // ----------------------------------------------------------
@@ -154,20 +157,19 @@ export function createProjectsController(
 
   async function deleteProject(projectId: string): Promise<void> {
     const selectedProjectId = getSelectedProjectId();
-
-    // TODO: add error state for delete failures
     try {
       await deleteProjectCascade(projectId);
-
-      if (selectedProjectId === projectId) {
-        setSelectedProjectId(null);
-        openPanel("projects");
-      }
-
-      await loadProjects();
-    } finally {
-      onStateChange();
+    } catch (error) {
+      // Deletion failed → leave selection/panel untouched (project still exists).
+      notify(toErrorMessage(error, "Couldn't delete project."));
+      return;
     }
+    if (selectedProjectId === projectId) {
+      setSelectedProjectId(null);
+      openPanel("projects");
+    }
+    await loadProjects();
+    onStateChange();
   }
 
   // ----------------------------------------------------------
