@@ -53,6 +53,7 @@ const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
 const PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
 
 const ITEM_ROW_SELECTOR = ".aiw-item-row";
+const ITEM_SELECT_SELECTOR = ".aiw-item-select";
 const ITEM_DELETE_SELECTOR = ".aiw-item-delete";
 const ITEM_ID_DATASET_KEY = "itemId";
 const ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
@@ -316,11 +317,11 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   function handleSelectItem(event: MouseEvent): void {
     const target = event.target;
-
     if (!(target instanceof Element)) {
       return;
     }
 
+    if (target.closest(ITEM_SELECT_SELECTOR)) return;
     if (target.closest(ITEM_DELETE_SELECTOR)) return;
 
     const row = target.closest(ITEM_ROW_SELECTOR);
@@ -329,12 +330,30 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     }
 
     const itemId = row.dataset[ITEM_ID_DATASET_KEY];
-
     if (!itemId) {
       return;
     }
 
     itemsController.selectItem(itemId);
+  }
+
+  function handleToggleItemSelection(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const checkBox = target.closest(ITEM_SELECT_SELECTOR);
+    if (!(checkBox instanceof HTMLInputElement)) {
+      return;
+    }
+
+    const itemId = checkBox.dataset[ITEM_ID_DATASET_KEY];
+    if (!itemId) {
+      return;
+    }
+
+    itemsController.toggleSelection(itemId);
   }
 
   // ----------------------------------------------------------
@@ -513,6 +532,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   dom.orbPanelsEl.addEventListener("click", handleRenameProject);
   dom.orbPanelsEl.addEventListener("click", handleDeleteProject);
   dom.orbPanelsEl.addEventListener("click", handleSelectItem);
+  dom.orbPanelsEl.addEventListener("click", handleToggleItemSelection);
   dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
   dom.orbPanelsEl.addEventListener("click", handleCreateItem);
   dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
@@ -531,6 +551,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     dom.orbPanelsEl.removeEventListener("click", handleRenameProject);
     dom.orbPanelsEl.removeEventListener("click", handleDeleteProject);
     dom.orbPanelsEl.removeEventListener("click", handleSelectItem);
+    dom.orbPanelsEl.removeEventListener("click", handleToggleItemSelection);
     dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
     dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
     dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);

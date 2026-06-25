@@ -48,6 +48,7 @@ import {
 } from "../../core/sessionState";
 import { openPanel } from "../../core/floatingUiState";
 import { toErrorMessage } from "../../shared/toErrorMessage";
+import { clearItemSelection, toggleItemSelection } from "./itemSelectionState";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -65,6 +66,8 @@ type ItemsControllerDependencies = {
 type ItemsController = {
   load: (projectId: string) => Promise<void>;
   selectItem: (itemId: string) => void;
+  toggleSelection: (itemId: string) => void;
+  clearSelection: () => void;
   create: (
     projectId: string,
     title: string,
@@ -128,6 +131,24 @@ export function createItemsController(
     openPanel("itemDetail");
 
     onStateChange();
+  }
+
+  // ----------------------------------------------------------
+  // TOGGLE ITEM SELECTION WORKFLOW
+  // ----------------------------------------------------------
+
+  function toggleSelection(itemId: string): void {
+    toggleItemSelection(itemId);
+
+    onStateChange();
+  }
+
+  // ----------------------------------------------------------
+  // CLEAR ITEM SELECTION WORKFLOW
+  // ----------------------------------------------------------
+
+  function clearSelection(): void {
+    clearItemSelection();
   }
 
   // ----------------------------------------------------------
@@ -204,6 +225,8 @@ export function createItemsController(
   return {
     load,
     selectItem,
+    toggleSelection,
+    clearSelection,
     create,
     updateItem,
     deleteItem,

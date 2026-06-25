@@ -52,6 +52,7 @@ type ProjectsControllerDependencies = {
   notify: (message: string) => void;
   itemsController: {
     load: (projectId: string) => Promise<void>;
+    clearSelection: () => void;
   };
 };
 
@@ -82,28 +83,8 @@ export function createProjectsController(
 
   async function load(): Promise<void> {
     try {
-      /*
-        Execute projects loading workflow.
-
-        loadProjects() is responsible for:
-        - loading state mutation
-        - error state mutation
-        - projects state mutation
-      */
       await loadProjects();
     } finally {
-      /*
-        Always trigger UI refresh after async lifecycle ends.
-
-        UI may now reflect:
-        - loaded projects
-        - loading completion
-        - empty state
-        - error state
-
-        finally() guarantees render consistency even if
-        loading fails internally.
-      */
       onStateChange();
     }
   }
@@ -117,6 +98,7 @@ export function createProjectsController(
 
     openPanel("items");
 
+    itemsController.clearSelection();
     itemsController.load(projectId);
   }
 

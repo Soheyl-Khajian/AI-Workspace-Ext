@@ -436,6 +436,23 @@
 }
 
 /* ------------------------------------------------------------
+   ITEM SELECT CHECKBOX (CONTEXT PACK)
+------------------------------------------------------------ */
+.aiw-item-select {
+  /* Fixed-size leading control — never grow or shrink with the row */
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  /* Left breathing room so it isn't jammed against the row border;
+     the title's own left padding handles spacing on the other side */
+  margin: 0 0 0 14px;
+  cursor: pointer;
+
+  /* Brand the native checkbox tick/fill */
+  accent-color: var(--aiw-accent);
+}
+
+/* ------------------------------------------------------------
    ITEM TEXT
 ------------------------------------------------------------ */
 

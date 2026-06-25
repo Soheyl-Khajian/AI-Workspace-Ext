@@ -19,7 +19,11 @@
 
 import type { Item } from "../../../models/item";
 
-export function createItemRow(item: Item, selected: boolean): HTMLDivElement {
+export function createItemRow(
+  item: Item,
+  selected: boolean,
+  checkboxChecked: boolean,
+): HTMLDivElement {
   const hasTitle = item.title.trim().length > 0;
 
   // ------------------------------------------------------------
@@ -28,6 +32,14 @@ export function createItemRow(item: Item, selected: boolean): HTMLDivElement {
 
   const rowEl = document.createElement("div");
   rowEl.className = "aiw-item-row";
+
+  const checkBoxEl = document.createElement("input");
+  checkBoxEl.type = "checkbox";
+  checkBoxEl.checked = checkboxChecked;
+  checkBoxEl.className = "aiw-item-select";
+  checkBoxEl.dataset.itemId = item.id;
+
+  rowEl.prepend(checkBoxEl);
 
   const itemTextEl = document.createElement("span");
   itemTextEl.className = "aiw-item-text";

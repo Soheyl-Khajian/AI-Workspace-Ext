@@ -26,6 +26,7 @@ import { createItemRow } from "./createItemRow";
 import { createPanelState } from "../../shared/createPanelState";
 
 import { getItems, getItemsError, isItemsLoading } from "./itemsState";
+import { isItemSelected } from "./itemSelectionState";
 
 import {
   getSelectedProjectId,
@@ -70,7 +71,7 @@ export function renderItemsPanel(containerEl: HTMLElement): void {
 
     for (const item of itemsList) {
       const selectedItem = item.id === selectedItemId;
-      const rowEl = createItemRow(item, selectedItem);
+      const rowEl = createItemRow(item, selectedItem, isItemSelected(item.id));
 
       listEl.append(rowEl);
     }

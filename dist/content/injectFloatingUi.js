@@ -795,10 +795,16 @@
   });
 
   // src/ui/features/items/createItemRow.ts
-  function createItemRow(item, selected) {
+  function createItemRow(item, selected, checkboxChecked) {
     const hasTitle = item.title.trim().length > 0;
     const rowEl = document.createElement("div");
     rowEl.className = "aiw-item-row";
+    const checkBoxEl = document.createElement("input");
+    checkBoxEl.type = "checkbox";
+    checkBoxEl.checked = checkboxChecked;
+    checkBoxEl.className = "aiw-item-select";
+    checkBoxEl.dataset.itemId = item.id;
+    rowEl.prepend(checkBoxEl);
     const itemTextEl = document.createElement("span");
     itemTextEl.className = "aiw-item-text";
     itemTextEl.textContent = hasTitle ? item.title : "Untitled";
@@ -855,6 +861,28 @@
     }
   });
 
+  // src/ui/features/items/itemSelectionState.ts
+  function toggleItemSelection(id) {
+    if (selectedItemIds.has(id)) {
+      selectedItemIds.delete(id);
+    } else {
+      selectedItemIds.add(id);
+    }
+  }
+  function isItemSelected(id) {
+    return selectedItemIds.has(id);
+  }
+  function clearItemSelection() {
+    selectedItemIds.clear();
+  }
+  var selectedItemIds;
+  var init_itemSelectionState = __esm({
+    "src/ui/features/items/itemSelectionState.ts"() {
+      "use strict";
+      selectedItemIds = /* @__PURE__ */ new Set();
+    }
+  });
+
   // src/ui/features/items/renderItemsPanel.ts
   function renderItemsPanel(containerEl) {
     const shell = createFloatingPanelShell("Items");
@@ -874,7 +902,7 @@
       listEl.className = "aiw-items-list";
       for (const item of itemsList) {
         const selectedItem = item.id === selectedItemId;
-        const rowEl = createItemRow(item, selectedItem);
+        const rowEl = createItemRow(item, selectedItem, isItemSelected(item.id));
         listEl.append(rowEl);
       }
       shell.bodyEl.append(listEl);
@@ -932,6 +960,7 @@
       init_createItemRow();
       init_createPanelState();
       init_itemsState();
+      init_itemSelectionState();
       init_sessionState();
     }
   });
@@ -1074,6 +1103,7 @@
     function selectProject(projectId) {
       setSelectedProjectId(projectId);
       openPanel("items");
+      itemsController.clearSelection();
       itemsController.load(projectId);
     }
     async function create(name) {
@@ -1174,6 +1204,13 @@
       openPanel("itemDetail");
       onStateChange();
     }
+    function toggleSelection(itemId) {
+      toggleItemSelection(itemId);
+      onStateChange();
+    }
+    function clearSelection() {
+      clearItemSelection();
+    }
     async function create(projectId, title, content, type = "note") {
       try {
         await createItem(projectId, type, title, content, {
@@ -1220,6 +1257,8 @@
     return {
       load,
       selectItem,
+      toggleSelection,
+      clearSelection,
       create,
       updateItem: updateItem2,
       deleteItem: deleteItem2
@@ -1234,6 +1273,7 @@
       init_sessionState();
       init_floatingUiState();
       init_toErrorMessage();
+      init_itemSelectionState();
     }
   });
 
@@ -1444,6 +1484,7 @@
       if (!(target instanceof Element)) {
         return;
       }
+      if (target.closest(ITEM_SELECT_SELECTOR)) return;
       if (target.closest(ITEM_DELETE_SELECTOR)) return;
       const row = target.closest(ITEM_ROW_SELECTOR);
       if (!(row instanceof HTMLElement)) {
@@ -1454,6 +1495,21 @@
         return;
       }
       itemsController.selectItem(itemId);
+    }
+    function handleToggleItemSelection(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const checkBox = target.closest(ITEM_SELECT_SELECTOR);
+      if (!(checkBox instanceof HTMLInputElement)) {
+        return;
+      }
+      const itemId = checkBox.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      itemsController.toggleSelection(itemId);
     }
     async function handleCreateItem(event) {
       const selectedProjectId = getSelectedProjectId();
@@ -1574,6 +1630,7 @@
     dom.orbPanelsEl.addEventListener("click", handleRenameProject);
     dom.orbPanelsEl.addEventListener("click", handleDeleteProject);
     dom.orbPanelsEl.addEventListener("click", handleSelectItem);
+    dom.orbPanelsEl.addEventListener("click", handleToggleItemSelection);
     dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
     dom.orbPanelsEl.addEventListener("click", handleCreateItem);
     dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
@@ -1587,6 +1644,7 @@
       dom.orbPanelsEl.removeEventListener("click", handleRenameProject);
       dom.orbPanelsEl.removeEventListener("click", handleDeleteProject);
       dom.orbPanelsEl.removeEventListener("click", handleSelectItem);
+      dom.orbPanelsEl.removeEventListener("click", handleToggleItemSelection);
       dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
       dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
       dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
@@ -1595,7 +1653,7 @@
       document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1616,6 +1674,7 @@
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
       PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
       ITEM_ROW_SELECTOR = ".aiw-item-row";
+      ITEM_SELECT_SELECTOR = ".aiw-item-select";
       ITEM_DELETE_SELECTOR = ".aiw-item-delete";
       ITEM_ID_DATASET_KEY = "itemId";
       ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
