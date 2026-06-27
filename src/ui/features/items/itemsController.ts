@@ -34,7 +34,7 @@
 // ------------------------------------------------------------
 
 import type { Item, ItemType } from "../../../models/item";
-import { setItemsLoading } from "./itemsState";
+import { getItems, setItemsLoading } from "./itemsState";
 import { loadItems } from "./loadItems";
 import {
   createItem,
@@ -48,7 +48,12 @@ import {
 } from "../../core/sessionState";
 import { openPanel } from "../../core/floatingUiState";
 import { toErrorMessage } from "../../shared/toErrorMessage";
-import { clearItemSelection, toggleItemSelection } from "./itemSelectionState";
+import {
+  clearItemSelection,
+  getSelectedItemIds,
+  toggleItemSelection,
+} from "./itemSelectionState";
+import { buildContextPack } from "./buildContextPack";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -79,6 +84,7 @@ type ItemsController = {
     title?: string,
     content?: string,
   ) => Promise<void>;
+  copyContextPack: (projectName: string) => Promise<void>;
   deleteItem: (itemId: string, projectId: string) => Promise<void>;
 };
 
@@ -200,6 +206,34 @@ export function createItemsController(
   }
 
   // ----------------------------------------------------------
+  // BUILD CONTEXT PACK WORKFLOW
+  // ----------------------------------------------------------
+  async function copyContextPack(projectName: string): Promise<void> {
+    const selectedIds = getSelectedItemIds();
+    if (selectedIds.length === 0) {
+      notify("Select at least one item");
+      return;
+    }
+
+    // Resolve IDs against the loaded items; this also drops any stale
+    // selected IDs that are no longer present.
+    const selectedIdSet = new Set(selectedIds);
+    const selectedItems = getItems().filter((item) =>
+      selectedIdSet.has(item.id),
+    );
+
+    if (selectedItems.length === 0) {
+      notify("Select at least one item");
+      return;
+    }
+
+    const contextPack = buildContextPack(projectName, selectedItems);
+
+    // 3a: log only. Clipboard write + success toast arrive in 3b.
+    console.log(contextPack);
+  }
+
+  // ----------------------------------------------------------
   // DELETE ITEM WORKFLOW
   // ----------------------------------------------------------
 
@@ -229,6 +263,7 @@ export function createItemsController(
     clearSelection,
     create,
     updateItem,
+    copyContextPack,
     deleteItem,
   };
 }

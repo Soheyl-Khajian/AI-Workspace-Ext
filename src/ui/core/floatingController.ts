@@ -37,6 +37,7 @@ import {
 } from "./floatingUiState";
 import { createProjectsController } from "../features/projects/projectsController";
 import { createItemsController } from "../features/items/itemsController";
+import { getProjects } from "../features/projects/projectsState";
 import { setSelectedItemId, getSelectedProjectId } from "./sessionState";
 import { showToast } from "../shared/showToast";
 
@@ -58,6 +59,7 @@ const ITEM_DELETE_SELECTOR = ".aiw-item-delete";
 const ITEM_ID_DATASET_KEY = "itemId";
 const ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
 const ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
+const ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
 
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
@@ -444,6 +446,33 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
+  // BUILD CONTEXT HANDLER
+  // ----------------------------------------------------------
+  async function handleBuildContext(event: MouseEvent): Promise<void> {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    const buildButton = target.closest(ITEM_BUILD_CONTEXT_SELECTOR);
+    if (!(buildButton instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId === null) {
+      return;
+    }
+
+    // Supply the project name the controller needs (keeps items decoupled).
+    const project = getProjects().find(
+      (candidate) => candidate.id === selectedProjectId,
+    );
+    const projectName = project ? project.name : "Untitled project";
+
+    await itemsController.copyContextPack(projectName);
+  }
+
+  // ----------------------------------------------------------
   // ITEM DELETE HANDLER
   // ----------------------------------------------------------
 
@@ -536,6 +565,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
   dom.orbPanelsEl.addEventListener("click", handleCreateItem);
   dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
+  dom.orbPanelsEl.addEventListener("click", handleBuildContext);
   dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
   document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
@@ -555,6 +585,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
     dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
     dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
+    dom.orbPanelsEl.removeEventListener("click", handleBuildContext);
     dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
     document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);

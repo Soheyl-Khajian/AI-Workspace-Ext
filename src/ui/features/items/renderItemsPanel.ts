@@ -26,7 +26,7 @@ import { createItemRow } from "./createItemRow";
 import { createPanelState } from "../../shared/createPanelState";
 
 import { getItems, getItemsError, isItemsLoading } from "./itemsState";
-import { isItemSelected } from "./itemSelectionState";
+import { isItemSelected, getSelectedItemsCount } from "./itemSelectionState";
 
 import {
   getSelectedProjectId,
@@ -119,6 +119,24 @@ export function renderItemsPanel(containerEl: HTMLElement): void {
     shell.bodyEl.append(emptyStateEl);
   } else {
     renderItemsList(items);
+  }
+
+  // ------------------------------------------------------------
+  // BUILD CONTEXT ACTION
+  // ------------------------------------------------------------
+  if (selectedProjectId !== null) {
+    const buildContextBarEl = document.createElement("div");
+    buildContextBarEl.className = "aiw-build-context-bar";
+
+    const selectedCount = getSelectedItemsCount();
+
+    const buildContextButtonEl = document.createElement("button");
+    buildContextButtonEl.type = "button";
+    buildContextButtonEl.className = "aiw-build-context";
+    buildContextButtonEl.textContent = `Build context (${selectedCount})`;
+
+    buildContextBarEl.append(buildContextButtonEl);
+    shell.panelEl.append(buildContextBarEl);
   }
 
   // ------------------------------------------------------------

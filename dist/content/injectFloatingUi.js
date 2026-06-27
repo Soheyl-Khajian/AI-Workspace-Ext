@@ -872,6 +872,12 @@
   function isItemSelected(id) {
     return selectedItemIds.has(id);
   }
+  function getSelectedItemIds() {
+    return [...selectedItemIds];
+  }
+  function getSelectedItemsCount() {
+    return selectedItemIds.size;
+  }
   function clearItemSelection() {
     selectedItemIds.clear();
   }
@@ -933,6 +939,17 @@
       shell.bodyEl.append(emptyStateEl);
     } else {
       renderItemsList(items);
+    }
+    if (selectedProjectId !== null) {
+      const buildContextBarEl = document.createElement("div");
+      buildContextBarEl.className = "aiw-build-context-bar";
+      const selectedCount = getSelectedItemsCount();
+      const buildContextButtonEl = document.createElement("button");
+      buildContextButtonEl.type = "button";
+      buildContextButtonEl.className = "aiw-build-context";
+      buildContextButtonEl.textContent = `Build context (${selectedCount})`;
+      buildContextBarEl.append(buildContextButtonEl);
+      shell.panelEl.append(buildContextBarEl);
     }
     if (selectedProjectId !== null) {
       const formEl = document.createElement("div");
@@ -1187,6 +1204,44 @@
     }
   });
 
+  // src/ui/features/items/buildContextPack.ts
+  function buildContextPack(projectName, items) {
+    const lines = [];
+    lines.push(`# Context Pack \u2014 ${projectName}`);
+    lines.push("");
+    for (const group of GROUPS) {
+      const groupItems = items.filter((item) => item.type === group.type).slice().sort((a, b) => {
+        const createdAtDiff = a.createdAt - b.createdAt;
+        if (createdAtDiff !== 0) return createdAtDiff;
+        return a.id.localeCompare(b.id);
+      });
+      if (groupItems.length === 0) continue;
+      lines.push(`## ${group.label}`);
+      lines.push("");
+      for (const item of groupItems) {
+        const title = item.title.trim().length > 0 ? item.title : "Untitled";
+        lines.push(`### ${title}`);
+        if (item.content.trim().length > 0) {
+          lines.push(item.content);
+        }
+        lines.push("");
+      }
+    }
+    return lines.join("\n").trim();
+  }
+  var GROUPS;
+  var init_buildContextPack = __esm({
+    "src/ui/features/items/buildContextPack.ts"() {
+      "use strict";
+      GROUPS = [
+        { type: "note", label: "Notes" },
+        { type: "snippet", label: "Snippets" },
+        { type: "task", label: "Tasks" },
+        { type: "link", label: "Links" }
+      ];
+    }
+  });
+
   // src/ui/features/items/itemsController.ts
   function createItemsController(dependencies) {
     const { onStateChange, notify } = dependencies;
@@ -1240,6 +1295,23 @@
       await loadItems(selectedProjectId);
       onStateChange();
     }
+    async function copyContextPack(projectName) {
+      const selectedIds = getSelectedItemIds();
+      if (selectedIds.length === 0) {
+        notify("Select at least one item");
+        return;
+      }
+      const selectedIdSet = new Set(selectedIds);
+      const selectedItems = getItems().filter(
+        (item) => selectedIdSet.has(item.id)
+      );
+      if (selectedItems.length === 0) {
+        notify("Select at least one item");
+        return;
+      }
+      const contextPack = buildContextPack(projectName, selectedItems);
+      console.log(contextPack);
+    }
     async function deleteItem2(itemId, projectId) {
       const selectedItemId = getSelectedItemId();
       try {
@@ -1261,6 +1333,7 @@
       clearSelection,
       create,
       updateItem: updateItem2,
+      copyContextPack,
       deleteItem: deleteItem2
     };
   }
@@ -1274,6 +1347,7 @@
       init_floatingUiState();
       init_toErrorMessage();
       init_itemSelectionState();
+      init_buildContextPack();
     }
   });
 
@@ -1574,6 +1648,25 @@
       }
       await itemsController.updateItem(itemId, trimmedItemTitle, itemContent);
     }
+    async function handleBuildContext(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const buildButton = target.closest(ITEM_BUILD_CONTEXT_SELECTOR);
+      if (!(buildButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const selectedProjectId = getSelectedProjectId();
+      if (selectedProjectId === null) {
+        return;
+      }
+      const project = getProjects().find(
+        (candidate) => candidate.id === selectedProjectId
+      );
+      const projectName = project ? project.name : "Untitled project";
+      await itemsController.copyContextPack(projectName);
+    }
     async function handleDeleteItem(event) {
       const selectedProjectId = getSelectedProjectId();
       if (selectedProjectId === null) {
@@ -1634,6 +1727,7 @@
     dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
     dom.orbPanelsEl.addEventListener("click", handleCreateItem);
     dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
+    dom.orbPanelsEl.addEventListener("click", handleBuildContext);
     dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
@@ -1648,12 +1742,13 @@
       dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
       dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
       dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
+      dom.orbPanelsEl.removeEventListener("click", handleBuildContext);
       dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
       document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1665,6 +1760,7 @@
       init_floatingUiState();
       init_projectsController();
       init_itemsController();
+      init_projectsState();
       init_sessionState();
       init_showToast();
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
@@ -1679,6 +1775,7 @@
       ITEM_ID_DATASET_KEY = "itemId";
       ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
       ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
+      ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
     }
   });
 
