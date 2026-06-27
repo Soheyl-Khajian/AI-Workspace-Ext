@@ -53,7 +53,9 @@ import {
   getSelectedItemIds,
   toggleItemSelection,
 } from "./itemSelectionState";
+
 import { buildContextPack } from "./buildContextPack";
+import { copyToClipboard } from "../../shared/copyToClipboard";
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -229,8 +231,13 @@ export function createItemsController(
 
     const contextPack = buildContextPack(projectName, selectedItems);
 
-    // 3a: log only. Clipboard write + success toast arrive in 3b.
-    console.log(contextPack);
+    const copied = await copyToClipboard(contextPack);
+
+    notify(
+      copied
+        ? "Context pack copied to clipboard"
+        : "Couldn't copy to clipboard",
+    );
   }
 
   // ----------------------------------------------------------

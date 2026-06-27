@@ -1242,6 +1242,38 @@
     }
   });
 
+  // src/ui/shared/copyToClipboard.ts
+  async function copyToClipboard(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      let textareaEl = null;
+      try {
+        textareaEl = document.createElement("textarea");
+        textareaEl.value = text;
+        textareaEl.style.position = "fixed";
+        textareaEl.style.top = "0";
+        textareaEl.style.opacity = "0";
+        textareaEl.style.pointerEvents = "none";
+        document.body.appendChild(textareaEl);
+        textareaEl.focus();
+        textareaEl.select();
+        textareaEl.setSelectionRange(0, text.length);
+        return document.execCommand("copy");
+      } catch {
+        return false;
+      } finally {
+        textareaEl?.remove();
+      }
+    }
+  }
+  var init_copyToClipboard = __esm({
+    "src/ui/shared/copyToClipboard.ts"() {
+      "use strict";
+    }
+  });
+
   // src/ui/features/items/itemsController.ts
   function createItemsController(dependencies) {
     const { onStateChange, notify } = dependencies;
@@ -1310,7 +1342,10 @@
         return;
       }
       const contextPack = buildContextPack(projectName, selectedItems);
-      console.log(contextPack);
+      const copied = await copyToClipboard(contextPack);
+      notify(
+        copied ? "Context pack copied to clipboard" : "Couldn't copy to clipboard"
+      );
     }
     async function deleteItem2(itemId, projectId) {
       const selectedItemId = getSelectedItemId();
@@ -1348,6 +1383,7 @@
       init_toErrorMessage();
       init_itemSelectionState();
       init_buildContextPack();
+      init_copyToClipboard();
     }
   });
 
