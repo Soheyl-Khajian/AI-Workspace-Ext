@@ -467,6 +467,58 @@
 }
 
 /* ------------------------------------------------------------
+   BUILD CONTEXT BAR (CONTEXT PACK)
+------------------------------------------------------------ */
+/*
+  Pinned action section above the create form. Holds the
+  build-context button; separated from the list above by a
+  top border, never shrinks.
+*/
+.aiw-build-context-bar {
+  display: flex;
+  flex-shrink: 0;
+  padding: 14px 16px;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+/* ------------------------------------------------------------
+   BUILD CONTEXT BUTTON
+------------------------------------------------------------ */
+.aiw-build-context {
+  /* Full-width primary action for the items panel */
+  flex: 1;
+  padding: 10px 16px;
+  border-radius: 12px;
+
+  /* Accent-tinted glass — distinct from the solid-green Add button */
+  background: rgba(16, 163, 127, 0.14);
+  border: 1px solid rgba(16, 163, 127, 0.4);
+  color: rgba(255, 255, 255, 0.92);
+
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.aiw-build-context:hover {
+  background: rgba(16, 163, 127, 0.24);
+  transform: translateY(-1px);
+}
+
+.aiw-build-context:active {
+  transform: scale(0.97);
+}
+
+.aiw-build-context:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
+}
+
+/* ------------------------------------------------------------
    CREATE ITEM FORM
 ------------------------------------------------------------ */
 /*
