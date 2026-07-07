@@ -1,4 +1,15 @@
 // src/storage/index.ts
+//
+// Responsibility:
+// Public storage API (facade) for the extension.
+//
+// - Validates and normalizes input before delegating to the repo layer.
+// - Owns domain rules (required fields, trimming, immutable-field protection).
+// - Never talks to IndexedDB directly; all persistence goes through repos.
+//
+// Layering: UI / controllers → storage (this file) → repo → idb
+//
+
 import {
   insertProject,
   getAllProjects,
@@ -11,10 +22,26 @@ import {
   deleteItemById,
   deleteItemsByProjectId,
   getItemById,
+  getAllItems,
 } from "./repo/itemsRepo";
+import { replaceAllData as repoReplaceAllData } from "./repo/backupRepo";
 
 import type { Project } from "../models/project";
 import type { Item, ItemMeta, ItemType } from "../models/item";
+
+/* -------------------------------------------------------
+   TYPES
+------------------------------------------------------- */
+
+/**
+ * A raw, format-free snapshot of the entire dataset.
+ * Used by export/import; wrapping it into a versioned backup
+ * document (schemaVersion, etc.) is the caller's responsibility.
+ */
+export type WorkspaceSnapshot = {
+  projects: Project[];
+  items: Item[];
+};
 
 /* -------------------------------------------------------
    PROJECTS
@@ -62,8 +89,8 @@ export async function deleteProjectCascade(projectId: string): Promise<void> {
     throw new Error("project id cannot be empty");
   }
 
+  // Delete children first, then the project, so no items are orphaned.
   await deleteItemsByProjectId(trimmedProjectId);
-
   await deleteProject(trimmedProjectId);
 }
 
@@ -92,6 +119,7 @@ export async function renameProject(
     throw new Error(`Project not found: ${projectId}`);
   }
 
+  // Re-assert immutable fields after the spread to prevent accidental drift.
   const merged: Project = {
     ...existing,
     name: trimmedName,
@@ -238,4 +266,39 @@ export async function deleteItem(id: string): Promise<void> {
   }
 
   await deleteItemById(trimmedId);
+}
+
+/* -------------------------------------------------------
+   BACKUP (export / import)
+------------------------------------------------------- */
+
+/**
+ * Read the entire dataset as a raw snapshot (all projects + all items).
+ *
+ * - Returns raw records only — no schemaVersion / format metadata.
+ *   Wrapping this into a versioned backup document is the caller's job
+ *   (see buildBackup), keeping storage free of format concerns.
+ */
+export async function exportAllData(): Promise<WorkspaceSnapshot> {
+  const projects = await listProjects();
+  const items = await getAllItems();
+  return { projects, items };
+}
+
+/**
+ * Replace the entire dataset with the provided projects and items.
+ *
+ * - Destructive: delegates to an atomic, all-or-nothing repo transaction.
+ * - Only shallow-guards that inputs are arrays here; structural/shape
+ *   validation of untrusted backup files belongs to parseBackup.
+ */
+export async function replaceAllData(
+  projects: Project[],
+  items: Item[],
+): Promise<void> {
+  if (!Array.isArray(projects) || !Array.isArray(items)) {
+    throw new Error("replaceAllData requires both projects and items arrays");
+  }
+
+  await repoReplaceAllData(projects, items);
 }

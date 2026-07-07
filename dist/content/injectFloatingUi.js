@@ -280,6 +280,16 @@
     }
   });
 
+  // src/storage/repo/backupRepo.ts
+  var init_backupRepo = __esm({
+    "src/storage/repo/backupRepo.ts"() {
+      "use strict";
+      init_openDb();
+      init_promisify();
+      init_schema();
+    }
+  });
+
   // src/storage/index.ts
   async function createProject(name, description) {
     if (name == null) {
@@ -426,6 +436,7 @@
       "use strict";
       init_projectsRepo();
       init_itemsRepo();
+      init_backupRepo();
     }
   });
 

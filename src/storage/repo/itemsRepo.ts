@@ -54,6 +54,38 @@ export async function insertItem(item: Item): Promise<void> {
 }
 
 /**
+ * Retrieve every Item record across all projects.
+ *
+ * Query model:
+ * - Reads the entire items store directly (no index, no key range).
+ * - Order is not guaranteed; callers needing order must sort themselves.
+ *
+ * Transaction model:
+ * - Single readonly transaction scoped to the items store.
+ * - Resolves only after the transaction fully commits.
+ *
+ * Intended use:
+ * - Full-data export / backup snapshots.
+ */
+export async function getAllItems(): Promise<Item[]> {
+  const db = await openDb();
+
+  try {
+    const tx = db.transaction(STORE_ITEMS, "readonly");
+    const store = tx.objectStore(STORE_ITEMS);
+
+    const req = store.getAll();
+    const rows: Item[] = await requestToPromise(req);
+
+    await txToPromise(tx);
+
+    return rows;
+  } finally {
+    db.close();
+  }
+}
+
+/**
  * Retrieve all items belonging to a specific project.
  *
  * Query model:
