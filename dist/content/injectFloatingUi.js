@@ -215,6 +215,19 @@
       db.close();
     }
   }
+  async function getAllItems() {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_ITEMS, "readonly");
+      const store = tx.objectStore(STORE_ITEMS);
+      const req = store.getAll();
+      const rows = await requestToPromise(req);
+      await txToPromise(tx);
+      return rows;
+    } finally {
+      db.close();
+    }
+  }
   async function getItemsByProjectId(projectId) {
     const db = await openDb();
     try {
@@ -431,6 +444,11 @@
     }
     await deleteItemById(trimmedId);
   }
+  async function exportAllData() {
+    const projects = await listProjects();
+    const items = await getAllItems();
+    return { projects, items };
+  }
   var init_storage = __esm({
     "src/storage/index.ts"() {
       "use strict";
@@ -466,6 +484,7 @@
   function handleOrbAction(actionId, context) {
     switch (actionId) {
       case "projects":
+      case "backup":
       case "search":
         context.togglePanel(actionId);
         break;
@@ -494,6 +513,10 @@
         {
           id: "projects",
           label: "Projects"
+        },
+        {
+          id: "backup",
+          label: "Backup"
         },
         {
           id: "search",
@@ -1041,6 +1064,29 @@
     }
   });
 
+  // src/ui/features/backup/renderBackupPanel.ts
+  function renderBackupPanel(containerEl) {
+    const shell = createFloatingPanelShell("Backup");
+    const sectionEl = document.createElement("div");
+    sectionEl.className = "aiw-backup-section";
+    const descriptionParagraphEl = document.createElement("p");
+    descriptionParagraphEl.textContent = "Download all projects and items as a JSON file.";
+    sectionEl.append(descriptionParagraphEl);
+    const exportButtonEl = document.createElement("button");
+    exportButtonEl.type = "button";
+    exportButtonEl.className = "aiw-backup-export";
+    exportButtonEl.textContent = "Export backup";
+    sectionEl.append(exportButtonEl);
+    shell.panelEl.append(sectionEl);
+    containerEl.append(shell.panelEl);
+  }
+  var init_renderBackupPanel = __esm({
+    "src/ui/features/backup/renderBackupPanel.ts"() {
+      "use strict";
+      init_createFloatingPanelShell();
+    }
+  });
+
   // src/ui/core/renderFloatingPanels.ts
   function renderFloatingPanels(containerEl) {
     containerEl.textContent = "";
@@ -1057,6 +1103,9 @@
         break;
       case "itemDetail":
         renderItemDetailPanel(containerEl);
+        break;
+      case "backup":
+        renderBackupPanel(containerEl);
         break;
       case "search":
         renderSearchPanel(containerEl);
@@ -1076,6 +1125,7 @@
       init_renderSearchPanel();
       init_renderItemsPanel();
       init_renderItemDetailPanel();
+      init_renderBackupPanel();
     }
   });
 
@@ -1431,6 +1481,69 @@
     }
   });
 
+  // src/ui/features/backup/buildBackup.ts
+  function buildBackup(snapshot, exportedAt) {
+    return {
+      schemaVersion: BACKUP_SCHEMA_VERSION,
+      exportedAt,
+      projects: snapshot.projects,
+      items: snapshot.items
+    };
+  }
+  var BACKUP_SCHEMA_VERSION;
+  var init_buildBackup = __esm({
+    "src/ui/features/backup/buildBackup.ts"() {
+      "use strict";
+      BACKUP_SCHEMA_VERSION = 1;
+    }
+  });
+
+  // src/ui/shared/downloadJson.ts
+  function downloadJson(data, filename) {
+    const json = JSON.stringify(data, null, 2);
+    const blob = new Blob([json], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  }
+  var init_downloadJson = __esm({
+    "src/ui/shared/downloadJson.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/features/backup/backupController.ts
+  function createBackupController(dependencies) {
+    async function exportBackup() {
+      try {
+        const snapshot = await exportAllData();
+        const exportedAt = (/* @__PURE__ */ new Date()).toISOString();
+        const backup = buildBackup(snapshot, exportedAt);
+        const safeStamp = exportedAt.replace(/[:.]/g, "-");
+        const filename = `ai-workspace-backup-${safeStamp}.json`;
+        downloadJson(backup, filename);
+        dependencies.notify("Backup exported");
+      } catch (error) {
+        dependencies.notify(toErrorMessage(error, "Couldn't export backup."));
+      }
+    }
+    return { exportBackup };
+  }
+  var init_backupController = __esm({
+    "src/ui/features/backup/backupController.ts"() {
+      "use strict";
+      init_storage();
+      init_buildBackup();
+      init_downloadJson();
+      init_toErrorMessage();
+    }
+  });
+
   // src/ui/core/floatingController.ts
   function initFloatingController(rootEl) {
     const dom = createFloatingDom(rootEl);
@@ -1443,6 +1556,7 @@
       notify: showToast,
       itemsController
     });
+    const backupController = createBackupController({ notify: showToast });
     const actionsContext = createOrbActionContext();
     renderUi();
     void projectsController.load();
@@ -1734,6 +1848,17 @@
       if (!window.confirm("Delete this item?")) return;
       await itemsController.deleteItem(itemId, selectedProjectId);
     }
+    async function handleExportBackup(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const exportButton = target.closest(BACKUP_EXPORT_SELECTOR);
+      if (!(exportButton instanceof HTMLElement)) {
+        return;
+      }
+      await backupController.exportBackup();
+    }
     function handleBackButtonClick(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -1776,6 +1901,7 @@
     dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
     dom.orbPanelsEl.addEventListener("click", handleBuildContext);
     dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
+    dom.orbPanelsEl.addEventListener("click", handleExportBackup);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
     return function destroyFloatingController() {
@@ -1791,11 +1917,12 @@
       dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
       dom.orbPanelsEl.removeEventListener("click", handleBuildContext);
       dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
+      dom.orbPanelsEl.removeEventListener("click", handleExportBackup);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
       document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, BACKUP_EXPORT_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1810,6 +1937,7 @@
       init_projectsState();
       init_sessionState();
       init_showToast();
+      init_backupController();
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
       PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
@@ -1823,6 +1951,7 @@
       ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
       ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
       ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
+      BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
     }
   });
 

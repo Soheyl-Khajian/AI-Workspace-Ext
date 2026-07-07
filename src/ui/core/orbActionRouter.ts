@@ -26,6 +26,7 @@ export function handleOrbAction(
 ): void {
   switch (actionId) {
     case "projects":
+    case "backup":
     case "search":
       context.togglePanel(actionId);
       break;

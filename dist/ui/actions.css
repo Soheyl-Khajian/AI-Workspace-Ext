@@ -90,22 +90,27 @@ Expanded state moves them outward.
 /* ------------------------------------------------------------
    PROJECTS ACTION POSITION
 ------------------------------------------------------------ */
-/*
-  Lower arm of the arc — mostly left, slightly up.
-*/
+/* Bottom of the diagonal fan — closest to the orb. */
 #aiw-floating-root[data-orb-expanded="true"]
   .aiw-orb-action[data-action-id="projects"] {
-  transform: translate(-140px, -52px) scale(1);
+  transform: translate(-128px, -32px) scale(1);
+}
+
+/* ------------------------------------------------------------
+   BACKUP ACTION POSITION
+------------------------------------------------------------ */
+/* Middle of the fan — evenly spaced between Projects and Search. */
+#aiw-floating-root[data-orb-expanded="true"]
+  .aiw-orb-action[data-action-id="backup"] {
+  transform: translate(-80px, -98px) scale(1);
 }
 
 /* ------------------------------------------------------------
    SEARCH ACTION POSITION
 ------------------------------------------------------------ */
-/*
-  Upper arm of the arc — mostly up, slightly left.
-  Mirrors Projects across the diagonal for a balanced two-button fan.
-*/
+/* Top of the fan — furthest up. Even 66px vertical / 48px
+   horizontal steps keep the three wide pills from overlapping. */
 #aiw-floating-root[data-orb-expanded="true"]
   .aiw-orb-action[data-action-id="search"] {
-  transform: translate(-52px, -140px) scale(1);
+  transform: translate(-32px, -164px) scale(1);
 }

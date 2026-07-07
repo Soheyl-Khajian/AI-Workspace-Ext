@@ -40,6 +40,7 @@ import { createItemsController } from "../features/items/itemsController";
 import { getProjects } from "../features/projects/projectsState";
 import { setSelectedItemId, getSelectedProjectId } from "./sessionState";
 import { showToast } from "../shared/showToast";
+import { createBackupController } from "../features/backup/backupController";
 
 // ------------------------------------------------------------
 // SHARED CONSTANTS (temporary scope; can later relocate)
@@ -61,6 +62,8 @@ const ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
 const ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
 const ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
 
+const BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
+
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
 
@@ -74,6 +77,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     notify: showToast,
     itemsController,
   });
+
+  const backupController = createBackupController({ notify: showToast });
 
   const actionsContext = createOrbActionContext();
 
@@ -504,6 +509,25 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
+  // EXPORT BACKUP HANDLER
+  // ----------------------------------------------------------
+
+  async function handleExportBackup(event: MouseEvent): Promise<void> {
+    const target = event.target;
+
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const exportButton = target.closest(BACKUP_EXPORT_SELECTOR);
+    if (!(exportButton instanceof HTMLElement)) {
+      return;
+    }
+
+    await backupController.exportBackup();
+  }
+
+  // ----------------------------------------------------------
   // BACK BUTTON HANDLER
   // ----------------------------------------------------------
 
@@ -567,6 +591,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
   dom.orbPanelsEl.addEventListener("click", handleBuildContext);
   dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
+  dom.orbPanelsEl.addEventListener("click", handleExportBackup);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
   document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
 
@@ -587,6 +612,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
     dom.orbPanelsEl.removeEventListener("click", handleBuildContext);
     dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
+    dom.orbPanelsEl.removeEventListener("click", handleExportBackup);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
     document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
   };

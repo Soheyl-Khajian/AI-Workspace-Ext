@@ -18,6 +18,10 @@ const orbActions: OrbAction[] = [
     label: "Projects",
   },
   {
+    id: "backup",
+    label: "Backup",
+  },
+  {
     id: "search",
     label: "Search",
   },
