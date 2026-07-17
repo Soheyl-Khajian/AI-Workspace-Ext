@@ -294,6 +294,25 @@
   });
 
   // src/storage/repo/backupRepo.ts
+  async function replaceAllData(projects, items) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction([STORE_PROJECTS, STORE_ITEMS], "readwrite");
+      const projectsStore = tx.objectStore(STORE_PROJECTS);
+      const itemsStore = tx.objectStore(STORE_ITEMS);
+      projectsStore.clear();
+      itemsStore.clear();
+      for (const project of projects) {
+        projectsStore.put(project);
+      }
+      for (const item of items) {
+        itemsStore.put(item);
+      }
+      await txToPromise(tx);
+    } finally {
+      db.close();
+    }
+  }
   var init_backupRepo = __esm({
     "src/storage/repo/backupRepo.ts"() {
       "use strict";
@@ -448,6 +467,12 @@
     const projects = await listProjects();
     const items = await getAllItems();
     return { projects, items };
+  }
+  async function replaceAllData2(projects, items) {
+    if (!Array.isArray(projects) || !Array.isArray(items)) {
+      throw new Error("replaceAllData requires both projects and items arrays");
+    }
+    await replaceAllData(projects, items);
   }
   var init_storage = __esm({
     "src/storage/index.ts"() {
@@ -1070,13 +1095,21 @@
     const sectionEl = document.createElement("div");
     sectionEl.className = "aiw-backup-section";
     const descriptionParagraphEl = document.createElement("p");
-    descriptionParagraphEl.textContent = "Download all projects and items as a JSON file.";
+    descriptionParagraphEl.textContent = "Export all projects and items to a JSON file, or import a backup to replace everything.";
     sectionEl.append(descriptionParagraphEl);
+    const actionsEl = document.createElement("div");
+    actionsEl.className = "aiw-backup-actions";
     const exportButtonEl = document.createElement("button");
     exportButtonEl.type = "button";
     exportButtonEl.className = "aiw-backup-export";
     exportButtonEl.textContent = "Export backup";
-    sectionEl.append(exportButtonEl);
+    actionsEl.append(exportButtonEl);
+    const importButtonEl = document.createElement("button");
+    importButtonEl.type = "button";
+    importButtonEl.className = "aiw-backup-import";
+    importButtonEl.textContent = "Import backup";
+    actionsEl.append(importButtonEl);
+    sectionEl.append(actionsEl);
     shell.panelEl.append(sectionEl);
     containerEl.append(shell.panelEl);
   }
@@ -1498,6 +1531,76 @@
     }
   });
 
+  // src/models/item.ts
+  var ITEM_TYPES;
+  var init_item = __esm({
+    "src/models/item.ts"() {
+      "use strict";
+      ITEM_TYPES = ["note", "snippet", "task", "link"];
+    }
+  });
+
+  // src/ui/features/backup/parseBackup.ts
+  function assertValidProjects(projects) {
+    for (const project of projects) {
+      if (typeof project !== "object" || project === null) {
+        throw new Error("Each project must be an object.");
+      }
+      const candidate = project;
+      if (typeof candidate.id !== "string") {
+        throw new Error("Each project needs a string id.");
+      }
+      if (typeof candidate.name !== "string") {
+        throw new Error("Each project needs a string name.");
+      }
+    }
+  }
+  function assertValidItems(items) {
+    for (const item of items) {
+      if (typeof item !== "object" || item === null) {
+        throw new Error("Each item must be an object.");
+      }
+      const candidate = item;
+      if (typeof candidate.id !== "string") {
+        throw new Error("Each item needs a string id.");
+      }
+      if (typeof candidate.projectId !== "string") {
+        throw new Error("Each item needs a string projectId.");
+      }
+      if (!ITEM_TYPES.includes(candidate.type)) {
+        throw new Error(`Unknown item type: ${String(candidate.type)}`);
+      }
+    }
+  }
+  function parseBackup(jsonText) {
+    let parsed;
+    try {
+      parsed = JSON.parse(jsonText);
+    } catch {
+      throw new Error("This file isn't valid JSON.");
+    }
+    if (typeof parsed !== "object" || parsed === null) {
+      throw new Error("This backup file is malformed.");
+    }
+    const doc = parsed;
+    if (doc.schemaVersion !== BACKUP_SCHEMA_VERSION) {
+      throw new Error("Unsupported backup version.");
+    }
+    if (!Array.isArray(doc.projects) || !Array.isArray(doc.items)) {
+      throw new Error("This backup file is missing its projects or items.");
+    }
+    assertValidProjects(doc.projects);
+    assertValidItems(doc.items);
+    return doc;
+  }
+  var init_parseBackup = __esm({
+    "src/ui/features/backup/parseBackup.ts"() {
+      "use strict";
+      init_item();
+      init_buildBackup();
+    }
+  });
+
   // src/ui/shared/downloadJson.ts
   function downloadJson(data, filename) {
     const json = JSON.stringify(data, null, 2);
@@ -1517,6 +1620,37 @@
     }
   });
 
+  // src/ui/shared/pickJsonFile.ts
+  function pickJsonFile() {
+    return new Promise((resolve, reject) => {
+      const input = document.createElement("input");
+      input.type = "file";
+      input.accept = "application/json,.json";
+      input.addEventListener("cancel", () => {
+        resolve(null);
+      });
+      input.addEventListener("change", async () => {
+        const file = input.files?.[0];
+        if (!file) {
+          resolve(null);
+          return;
+        }
+        try {
+          const text = await file.text();
+          resolve(text);
+        } catch {
+          reject(new Error("Couldn't read the selected file."));
+        }
+      });
+      input.click();
+    });
+  }
+  var init_pickJsonFile = __esm({
+    "src/ui/shared/pickJsonFile.ts"() {
+      "use strict";
+    }
+  });
+
   // src/ui/features/backup/backupController.ts
   function createBackupController(dependencies) {
     async function exportBackup() {
@@ -1532,14 +1666,53 @@
         dependencies.notify(toErrorMessage(error, "Couldn't export backup."));
       }
     }
-    return { exportBackup };
+    async function importBackup() {
+      let jsonText;
+      try {
+        jsonText = await pickJsonFile();
+      } catch (error) {
+        dependencies.notify(
+          toErrorMessage(error, "Couldn't read the selected file.")
+        );
+        return;
+      }
+      if (jsonText === null) {
+        return;
+      }
+      let backup;
+      try {
+        backup = parseBackup(jsonText);
+      } catch (error) {
+        dependencies.notify(
+          toErrorMessage(error, "Couldn't read that backup file.")
+        );
+        return;
+      }
+      const confirmed = window.confirm(
+        "Importing will REPLACE all current projects and items with this backup. This can't be undone. Continue?"
+      );
+      if (!confirmed) {
+        return;
+      }
+      try {
+        await replaceAllData2(backup.projects, backup.items);
+      } catch (error) {
+        dependencies.notify(toErrorMessage(error, "Couldn't import backup."));
+        return;
+      }
+      dependencies.notify("Backup imported");
+      await dependencies.onImported();
+    }
+    return { exportBackup, importBackup };
   }
   var init_backupController = __esm({
     "src/ui/features/backup/backupController.ts"() {
       "use strict";
       init_storage();
       init_buildBackup();
+      init_parseBackup();
       init_downloadJson();
+      init_pickJsonFile();
       init_toErrorMessage();
     }
   });
@@ -1556,7 +1729,10 @@
       notify: showToast,
       itemsController
     });
-    const backupController = createBackupController({ notify: showToast });
+    const backupController = createBackupController({
+      notify: showToast,
+      onImported: reloadAfterImport
+    });
     const actionsContext = createOrbActionContext();
     renderUi();
     void projectsController.load();
@@ -1859,6 +2035,24 @@
       }
       await backupController.exportBackup();
     }
+    async function handleImportBackup(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const importButton = target.closest(BACKUP_IMPORT_SELECTOR);
+      if (!(importButton instanceof HTMLElement)) {
+        return;
+      }
+      await backupController.importBackup();
+    }
+    async function reloadAfterImport() {
+      itemsController.clearSelection();
+      setSelectedItemId(null);
+      setSelectedProjectId(null);
+      openPanel("projects");
+      await projectsController.load();
+    }
     function handleBackButtonClick(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -1902,6 +2096,7 @@
     dom.orbPanelsEl.addEventListener("click", handleBuildContext);
     dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
     dom.orbPanelsEl.addEventListener("click", handleExportBackup);
+    dom.orbPanelsEl.addEventListener("click", handleImportBackup);
     document.addEventListener("pointerdown", handleDocumentPointerDown);
     document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
     return function destroyFloatingController() {
@@ -1918,11 +2113,12 @@
       dom.orbPanelsEl.removeEventListener("click", handleBuildContext);
       dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
       dom.orbPanelsEl.removeEventListener("click", handleExportBackup);
+      dom.orbPanelsEl.removeEventListener("click", handleImportBackup);
       document.removeEventListener("pointerdown", handleDocumentPointerDown);
       document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, BACKUP_EXPORT_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -1952,6 +2148,7 @@
       ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
       ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
       BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
+      BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
     }
   });
 

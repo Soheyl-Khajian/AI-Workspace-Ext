@@ -817,6 +817,41 @@
 }
 
 /* ------------------------------------------------------------
+   IMPORT BUTTON (DESTRUCTIVE)
+------------------------------------------------------------ */
+.aiw-backup-import {
+  padding: 10px 18px;
+  border-radius: 12px;
+
+  /* Danger-tinted glass — signals this replaces ALL data */
+  background: rgba(220, 60, 60, 0.14);
+  border: 1px solid rgba(220, 60, 60, 0.4);
+  color: rgba(255, 255, 255, 0.92);
+
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+  transition:
+    background-color 140ms ease,
+    transform 140ms ease;
+}
+
+.aiw-backup-import:hover {
+  background: rgba(220, 60, 60, 0.24);
+  transform: translateY(-1px);
+}
+
+.aiw-backup-import:active {
+  transform: scale(0.97);
+}
+
+.aiw-backup-import:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 4px rgba(220, 60, 60, 0.24);
+}
+
+/* ------------------------------------------------------------
    TOAST NOTIFICATION
 ------------------------------------------------------------ */
 /*

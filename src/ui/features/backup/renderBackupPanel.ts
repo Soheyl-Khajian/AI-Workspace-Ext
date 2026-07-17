@@ -5,14 +5,13 @@
 //
 // Responsibility:
 //
-// - build the Backup panel DOM: an Export control
-//   (Import is added in a later slice)
+// - build the Backup panel DOM: Export and Import controls
 //
 // IMPORTANT:
 //
 // - PRESENTATION ONLY — builds and appends DOM
-// - NO behavior wiring; the Export click is handled centrally
-//   via event delegation in floatingController
+// - NO behavior wiring; clicks are handled centrally via event
+//   delegation in floatingController
 // - NO state / storage access
 // ------------------------------------------------------------
 
@@ -26,20 +25,29 @@ export function renderBackupPanel(containerEl: HTMLElement): void {
 
   const descriptionParagraphEl = document.createElement("p");
   descriptionParagraphEl.textContent =
-    "Download all projects and items as a JSON file.";
+    "Export all projects and items to a JSON file, or import a backup to replace everything.";
   sectionEl.append(descriptionParagraphEl);
+
+  const actionsEl = document.createElement("div");
+  actionsEl.className = "aiw-backup-actions";
 
   const exportButtonEl = document.createElement("button");
   exportButtonEl.type = "button";
   exportButtonEl.className = "aiw-backup-export";
   exportButtonEl.textContent = "Export backup";
-  sectionEl.append(exportButtonEl);
+  actionsEl.append(exportButtonEl);
 
+  const importButtonEl = document.createElement("button");
+  importButtonEl.type = "button";
+  importButtonEl.className = "aiw-backup-import";
+  importButtonEl.textContent = "Import backup";
+  actionsEl.append(importButtonEl);
+
+  sectionEl.append(actionsEl);
   shell.panelEl.append(sectionEl);
 
   // ------------------------------------------------------------
   // FINAL ASSEMBLY
   // ------------------------------------------------------------
-
   containerEl.append(shell.panelEl);
 }

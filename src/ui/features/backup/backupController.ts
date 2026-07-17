@@ -5,24 +5,27 @@
 //
 // Responsibility:
 //
-// - orchestrate the export-backup workflow
-// - pull a raw snapshot from storage, stamp it into a versioned
-//   backup document, and hand it to the download utility
+// - orchestrate the export workflow (snapshot -> document -> download)
+// - orchestrate the import workflow (pick -> parse -> confirm ->
+//   replace-all -> refresh)
 // - surface success / failure to the user via notify
 //
 // IMPORTANT ARCHITECTURE RULES:
 //
-// - NO DOM access
-// - NO rendering logic
-// - NO storage / IndexedDB implementation details
-// - NO format ownership (buildBackup owns the document shape)
+// - NO DOM access (file picking lives in a shared utility)
+// - NO rendering logic (the post-import refresh is delegated
+//   to onImported, owned by the caller)
+// - NO format ownership (buildBackup / parseBackup own the shape)
 //
 // This layer ONLY coordinates systems.
 // ------------------------------------------------------------
 
-import { exportAllData } from "../../../storage";
+import { exportAllData, replaceAllData } from "../../../storage";
 import { buildBackup } from "./buildBackup";
+import type { BackupDocument } from "./buildBackup";
+import { parseBackup } from "./parseBackup";
 import { downloadJson } from "../../shared/downloadJson";
+import { pickJsonFile } from "../../shared/pickJsonFile";
 import { toErrorMessage } from "../../shared/toErrorMessage";
 
 // ------------------------------------------------------------
@@ -31,6 +34,9 @@ import { toErrorMessage } from "../../shared/toErrorMessage";
 
 type BackupControllerDependencies = {
   notify: (message: string) => void;
+  // Called after a successful import so the caller can reload runtime
+  // state and re-render (the DB was fully replaced underneath us).
+  onImported: () => Promise<void> | void;
 };
 
 // ------------------------------------------------------------
@@ -39,6 +45,7 @@ type BackupControllerDependencies = {
 
 export type BackupController = {
   exportBackup: () => Promise<void>;
+  importBackup: () => Promise<void>;
 };
 
 // ------------------------------------------------------------
@@ -69,5 +76,61 @@ export function createBackupController(
     }
   }
 
-  return { exportBackup };
+  // ----------------------------------------------------------
+  // IMPORT BACKUP WORKFLOW
+  //
+  // pick -> parse -> confirm -> replace-all -> refresh.
+  // Each stage can abort cleanly (cancel, invalid file, declined
+  // confirm) without touching stored data.
+  // ----------------------------------------------------------
+  async function importBackup(): Promise<void> {
+    // 1) Pick + read a file. null => user cancelled the dialog.
+    let jsonText: string | null;
+    try {
+      jsonText = await pickJsonFile();
+    } catch (error) {
+      dependencies.notify(
+        toErrorMessage(error, "Couldn't read the selected file."),
+      );
+      return;
+    }
+    if (jsonText === null) {
+      return;
+    }
+
+    // 2) Validate BEFORE we threaten any data. Parse failures are an
+    //    expected outcome (wrong/edited file), so toast and abort.
+    let backup: BackupDocument;
+    try {
+      backup = parseBackup(jsonText);
+    } catch (error) {
+      dependencies.notify(
+        toErrorMessage(error, "Couldn't read that backup file."),
+      );
+      return;
+    }
+
+    // 3) Destructive guard — only now that we know the file is good.
+    const confirmed = window.confirm(
+      "Importing will REPLACE all current projects and items with this " +
+        "backup. This can't be undone. Continue?",
+    );
+    if (!confirmed) {
+      return;
+    }
+
+    // 4) Atomic replace-all.
+    try {
+      await replaceAllData(backup.projects, backup.items);
+    } catch (error) {
+      dependencies.notify(toErrorMessage(error, "Couldn't import backup."));
+      return;
+    }
+
+    // 5) Success — notify, then let the caller rehydrate the UI.
+    dependencies.notify("Backup imported");
+    await dependencies.onImported();
+  }
+
+  return { exportBackup, importBackup };
 }

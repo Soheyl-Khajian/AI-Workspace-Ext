@@ -1,5 +1,6 @@
 // src/models/item.ts
-export type ItemType = "note" | "snippet" | "task" | "link";
+export const ITEM_TYPES = ["note", "snippet", "task", "link"] as const;
+export type ItemType = (typeof ITEM_TYPES)[number];
 
 export type ItemMeta = {
   sourceUrl?: string;

@@ -38,7 +38,11 @@ import {
 import { createProjectsController } from "../features/projects/projectsController";
 import { createItemsController } from "../features/items/itemsController";
 import { getProjects } from "../features/projects/projectsState";
-import { setSelectedItemId, getSelectedProjectId } from "./sessionState";
+import {
+  setSelectedItemId,
+  setSelectedProjectId,
+  getSelectedProjectId,
+} from "./sessionState";
 import { showToast } from "../shared/showToast";
 import { createBackupController } from "../features/backup/backupController";
 
@@ -63,6 +67,7 @@ const ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
 const ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
 
 const BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
+const BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
 
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
@@ -78,7 +83,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     itemsController,
   });
 
-  const backupController = createBackupController({ notify: showToast });
+  const backupController = createBackupController({
+    notify: showToast,
+    onImported: reloadAfterImport,
+  });
 
   const actionsContext = createOrbActionContext();
 
@@ -528,6 +536,37 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
+  // IMPORT BACKUP HANDLER
+  // ----------------------------------------------------------
+
+  async function handleImportBackup(event: MouseEvent): Promise<void> {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+    const importButton = target.closest(BACKUP_IMPORT_SELECTOR);
+    if (!(importButton instanceof HTMLElement)) {
+      return;
+    }
+    await backupController.importBackup();
+  }
+
+  // ----------------------------------------------------------
+  // POST-IMPORT REFRESH
+  //
+  // The database was fully replaced, so all transient state is stale.
+  // Reset selection + panel, then reload projects from storage
+  // (projectsController.load re-renders via its onStateChange).
+  // ----------------------------------------------------------
+  async function reloadAfterImport(): Promise<void> {
+    itemsController.clearSelection();
+    setSelectedItemId(null);
+    setSelectedProjectId(null);
+    openPanel("projects");
+    await projectsController.load();
+  }
+
+  // ----------------------------------------------------------
   // BACK BUTTON HANDLER
   // ----------------------------------------------------------
 
@@ -592,6 +631,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   dom.orbPanelsEl.addEventListener("click", handleBuildContext);
   dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
   dom.orbPanelsEl.addEventListener("click", handleExportBackup);
+  dom.orbPanelsEl.addEventListener("click", handleImportBackup);
   document.addEventListener("pointerdown", handleDocumentPointerDown);
   document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
 
@@ -613,6 +653,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     dom.orbPanelsEl.removeEventListener("click", handleBuildContext);
     dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
     dom.orbPanelsEl.removeEventListener("click", handleExportBackup);
+    dom.orbPanelsEl.removeEventListener("click", handleImportBackup);
     document.removeEventListener("pointerdown", handleDocumentPointerDown);
     document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
   };
