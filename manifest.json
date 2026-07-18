@@ -11,7 +11,7 @@
   "content_scripts": [
     {
       "matches": ["https://chatgpt.com/*"],
-      "js": ["dist/content/injectFloatingUi.js"],
+      "js": ["dist/content/bootstrap.js"],
       "run_at": "document_end"
     }
   ],

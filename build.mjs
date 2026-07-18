@@ -17,7 +17,7 @@ const watch = process.argv.includes("--watch");
 
 // Set paths for input and output
 const entryPoints = [
-  "src/content/injectFloatingUi.ts",
+  "src/content/bootstrap.ts",
   "src/background/serviceWorker.ts",
 ];
 const outdir = "dist";

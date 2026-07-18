@@ -2204,40 +2204,48 @@
   });
 
   // src/content/injectFloatingUi.ts
-  var require_injectFloatingUi = __commonJS({
+  async function injectFloatingAssets() {
+    const existingStyle = document.getElementById("aiw-floating-style");
+    if (!existingStyle) {
+      const link = document.createElement("link");
+      link.id = "aiw-floating-style";
+      link.rel = "stylesheet";
+      link.href = chrome.runtime.getURL("dist/ui/floatingShell.css");
+      (document.head ?? document.documentElement).append(link);
+    }
+    let existingRoot = document.getElementById("aiw-floating-root");
+    if (!existingRoot) {
+      const response = await fetch(
+        chrome.runtime.getURL("dist/ui/floatingShell.html")
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to load floating HTML (${response.status})`);
+      }
+      const html = await response.text();
+      (document.body ?? document.documentElement).insertAdjacentHTML(
+        "beforeend",
+        html
+      );
+      existingRoot = document.getElementById("aiw-floating-root");
+    }
+    if (!existingRoot) {
+      throw new Error("floating UI root not found after injection");
+    }
+    return existingRoot;
+  }
+  var init_injectFloatingUi = __esm({
     "src/content/injectFloatingUi.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/content/bootstrap.ts
+  var require_bootstrap = __commonJS({
+    "src/content/bootstrap.ts"() {
       init_storage();
       init_floatingController();
       init_captureHandler();
-      async function injectFloatingAssets() {
-        const existingStyle = document.getElementById("aiw-floating-style");
-        if (!existingStyle) {
-          const link = document.createElement("link");
-          link.id = "aiw-floating-style";
-          link.rel = "stylesheet";
-          link.href = chrome.runtime.getURL("dist/ui/floatingShell.css");
-          (document.head ?? document.documentElement).append(link);
-        }
-        let existingRoot = document.getElementById("aiw-floating-root");
-        if (!existingRoot) {
-          const response = await fetch(
-            chrome.runtime.getURL("dist/ui/floatingShell.html")
-          );
-          if (!response.ok) {
-            throw new Error(`Failed to load floating HTML (${response.status})`);
-          }
-          const html = await response.text();
-          (document.body ?? document.documentElement).insertAdjacentHTML(
-            "beforeend",
-            html
-          );
-          existingRoot = document.getElementById("aiw-floating-root");
-        }
-        if (!existingRoot) {
-          throw new Error("floating UI root not found after injection");
-        }
-        return existingRoot;
-      }
+      init_injectFloatingUi();
       function initMessageListener() {
         chrome.runtime.onMessage.addListener((rawMessage) => {
           const message = rawMessage;
@@ -2308,6 +2316,6 @@
       });
     }
   });
-  require_injectFloatingUi();
+  require_bootstrap();
 })();
-//# sourceMappingURL=injectFloatingUi.js.map
+//# sourceMappingURL=bootstrap.js.map
