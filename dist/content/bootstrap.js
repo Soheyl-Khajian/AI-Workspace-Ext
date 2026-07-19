@@ -2083,39 +2083,32 @@
       );
       renderFloatingPanels(dom.orbPanelsEl);
     }
-    dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
-    dom.orbPanelsEl.addEventListener("click", handleSelectProject);
-    dom.orbPanelsEl.addEventListener("click", handleCreateProject);
-    dom.orbPanelsEl.addEventListener("click", handleRenameProject);
-    dom.orbPanelsEl.addEventListener("click", handleDeleteProject);
-    dom.orbPanelsEl.addEventListener("click", handleSelectItem);
-    dom.orbPanelsEl.addEventListener("click", handleToggleItemSelection);
-    dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
-    dom.orbPanelsEl.addEventListener("click", handleCreateItem);
-    dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
-    dom.orbPanelsEl.addEventListener("click", handleBuildContext);
-    dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
-    dom.orbPanelsEl.addEventListener("click", handleExportBackup);
-    dom.orbPanelsEl.addEventListener("click", handleImportBackup);
-    document.addEventListener("pointerdown", handleDocumentPointerDown);
-    document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
+    const asListener = (handler) => handler;
+    const eventBindings = [
+      [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
+      [dom.orbPanelsEl, "click", asListener(handleSelectProject)],
+      [dom.orbPanelsEl, "click", asListener(handleCreateProject)],
+      [dom.orbPanelsEl, "click", asListener(handleRenameProject)],
+      [dom.orbPanelsEl, "click", asListener(handleDeleteProject)],
+      [dom.orbPanelsEl, "click", asListener(handleSelectItem)],
+      [dom.orbPanelsEl, "click", asListener(handleToggleItemSelection)],
+      [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
+      [dom.orbPanelsEl, "click", asListener(handleCreateItem)],
+      [dom.orbPanelsEl, "click", asListener(handleUpdateItem)],
+      [dom.orbPanelsEl, "click", asListener(handleBuildContext)],
+      [dom.orbPanelsEl, "click", asListener(handleDeleteItem)],
+      [dom.orbPanelsEl, "click", asListener(handleExportBackup)],
+      [dom.orbPanelsEl, "click", asListener(handleImportBackup)],
+      [document, "pointerdown", asListener(handleDocumentPointerDown)],
+      [document, "aiw:projects-updated", asListener(handleProjectsUpdated)]
+    ];
+    for (const [target, type, listener] of eventBindings) {
+      target.addEventListener(type, listener);
+    }
     return function destroyFloatingController() {
-      dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
-      dom.orbPanelsEl.removeEventListener("click", handleSelectProject);
-      dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
-      dom.orbPanelsEl.removeEventListener("click", handleRenameProject);
-      dom.orbPanelsEl.removeEventListener("click", handleDeleteProject);
-      dom.orbPanelsEl.removeEventListener("click", handleSelectItem);
-      dom.orbPanelsEl.removeEventListener("click", handleToggleItemSelection);
-      dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
-      dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
-      dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
-      dom.orbPanelsEl.removeEventListener("click", handleBuildContext);
-      dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
-      dom.orbPanelsEl.removeEventListener("click", handleExportBackup);
-      dom.orbPanelsEl.removeEventListener("click", handleImportBackup);
-      document.removeEventListener("pointerdown", handleDocumentPointerDown);
-      document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
+      for (const [target, type, listener] of eventBindings) {
+        target.removeEventListener(type, listener);
+      }
     };
   }
   var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;

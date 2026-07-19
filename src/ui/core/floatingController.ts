@@ -615,46 +615,50 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
-  // EVENT REGISTRATION
+  // EVENT BINDINGS (single source of truth for add + remove)
+  //
+  // One declarative table drives BOTH registration and teardown, so the two
+  // can never drift. This matters because the mount manager may init and
+  // destroy this controller repeatedly across ChatGPT SPA navigations — any
+  // asymmetry would leak a listener on every re-mount.
   // ----------------------------------------------------------
 
-  dom.orbButtonEl.addEventListener("click", toggleOrbVisibility);
-  dom.orbPanelsEl.addEventListener("click", handleSelectProject);
-  dom.orbPanelsEl.addEventListener("click", handleCreateProject);
-  dom.orbPanelsEl.addEventListener("click", handleRenameProject);
-  dom.orbPanelsEl.addEventListener("click", handleDeleteProject);
-  dom.orbPanelsEl.addEventListener("click", handleSelectItem);
-  dom.orbPanelsEl.addEventListener("click", handleToggleItemSelection);
-  dom.orbPanelsEl.addEventListener("click", handleBackButtonClick);
-  dom.orbPanelsEl.addEventListener("click", handleCreateItem);
-  dom.orbPanelsEl.addEventListener("click", handleUpdateItem);
-  dom.orbPanelsEl.addEventListener("click", handleBuildContext);
-  dom.orbPanelsEl.addEventListener("click", handleDeleteItem);
-  dom.orbPanelsEl.addEventListener("click", handleExportBackup);
-  dom.orbPanelsEl.addEventListener("click", handleImportBackup);
-  document.addEventListener("pointerdown", handleDocumentPointerDown);
-  document.addEventListener("aiw:projects-updated", handleProjectsUpdated);
+  /*Handlers are typed to their specific event (MouseEvent/PointerEvent), but
+  the DOM addEventListener contract is the generic EventListener. asListener
+  bridges that mismatch in ONE place. Safe: each handler is only ever
+  registered on an event type that actually delivers the event it expects.*/
+  const asListener = (handler: (event: never) => unknown): EventListener =>
+    handler as EventListener;
+
+  const eventBindings: Array<[EventTarget, string, EventListener]> = [
+    [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
+    [dom.orbPanelsEl, "click", asListener(handleSelectProject)],
+    [dom.orbPanelsEl, "click", asListener(handleCreateProject)],
+    [dom.orbPanelsEl, "click", asListener(handleRenameProject)],
+    [dom.orbPanelsEl, "click", asListener(handleDeleteProject)],
+    [dom.orbPanelsEl, "click", asListener(handleSelectItem)],
+    [dom.orbPanelsEl, "click", asListener(handleToggleItemSelection)],
+    [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
+    [dom.orbPanelsEl, "click", asListener(handleCreateItem)],
+    [dom.orbPanelsEl, "click", asListener(handleUpdateItem)],
+    [dom.orbPanelsEl, "click", asListener(handleBuildContext)],
+    [dom.orbPanelsEl, "click", asListener(handleDeleteItem)],
+    [dom.orbPanelsEl, "click", asListener(handleExportBackup)],
+    [dom.orbPanelsEl, "click", asListener(handleImportBackup)],
+    [document, "pointerdown", asListener(handleDocumentPointerDown)],
+    [document, "aiw:projects-updated", asListener(handleProjectsUpdated)],
+  ];
+
+  for (const [target, type, listener] of eventBindings) {
+    target.addEventListener(type, listener);
+  }
 
   // ----------------------------------------------------------
   // CLEANUP
   // ----------------------------------------------------------
-
   return function destroyFloatingController(): void {
-    dom.orbButtonEl.removeEventListener("click", toggleOrbVisibility);
-    dom.orbPanelsEl.removeEventListener("click", handleSelectProject);
-    dom.orbPanelsEl.removeEventListener("click", handleCreateProject);
-    dom.orbPanelsEl.removeEventListener("click", handleRenameProject);
-    dom.orbPanelsEl.removeEventListener("click", handleDeleteProject);
-    dom.orbPanelsEl.removeEventListener("click", handleSelectItem);
-    dom.orbPanelsEl.removeEventListener("click", handleToggleItemSelection);
-    dom.orbPanelsEl.removeEventListener("click", handleBackButtonClick);
-    dom.orbPanelsEl.removeEventListener("click", handleCreateItem);
-    dom.orbPanelsEl.removeEventListener("click", handleUpdateItem);
-    dom.orbPanelsEl.removeEventListener("click", handleBuildContext);
-    dom.orbPanelsEl.removeEventListener("click", handleDeleteItem);
-    dom.orbPanelsEl.removeEventListener("click", handleExportBackup);
-    dom.orbPanelsEl.removeEventListener("click", handleImportBackup);
-    document.removeEventListener("pointerdown", handleDocumentPointerDown);
-    document.removeEventListener("aiw:projects-updated", handleProjectsUpdated);
+    for (const [target, type, listener] of eventBindings) {
+      target.removeEventListener(type, listener);
+    }
   };
 }
