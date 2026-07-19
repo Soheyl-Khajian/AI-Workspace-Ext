@@ -111,8 +111,20 @@ async function bootstrap(): Promise<void> {
 }
 
 /* ------------------------------------------------------------
-   Safe startup (fail-safe entrypoint)
+   Run-once guard + safe startup (fail-safe entrypoint)
 ------------------------------------------------------------ */
-bootstrap().catch((err) => {
-  console.error("[AIW] floating UI bootstrap failed:", err);
-});
+const AIW_GLOBAL = globalThis as typeof globalThis & {
+  __aiwContentBooted?: boolean;
+};
+
+if (AIW_GLOBAL.__aiwContentBooted) {
+  console.debug(
+    "[AIW] content script already booted in this document — skipping duplicate bootstrap.",
+  );
+} else {
+  AIW_GLOBAL.__aiwContentBooted = true;
+
+  bootstrap().catch((err) => {
+    console.error("[AIW] floating UI bootstrap failed:", err);
+  });
+}

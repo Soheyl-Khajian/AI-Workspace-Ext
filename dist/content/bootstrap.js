@@ -2311,9 +2311,17 @@
         initMessageListener();
         await seedDevDataOnce();
       }
-      bootstrap().catch((err) => {
-        console.error("[AIW] floating UI bootstrap failed:", err);
-      });
+      var AIW_GLOBAL = globalThis;
+      if (AIW_GLOBAL.__aiwContentBooted) {
+        console.debug(
+          "[AIW] content script already booted in this document \u2014 skipping duplicate bootstrap."
+        );
+      } else {
+        AIW_GLOBAL.__aiwContentBooted = true;
+        bootstrap().catch((err) => {
+          console.error("[AIW] floating UI bootstrap failed:", err);
+        });
+      }
     }
   });
   require_bootstrap();
