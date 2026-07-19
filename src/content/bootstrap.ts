@@ -20,6 +20,16 @@ import type { AiwMessage } from "../background/messages";
 import { handleCaptureSelection } from "../capture/captureHandler";
 import { injectFloatingAssets } from "./injectFloatingUi";
 
+// Dev-only: auto-seed sample data on first run. OFF by default.
+// ------------------------------------------------------------
+// This is a development convenience, NOT a product feature. It stays off
+// during normal use because the seed flag (chrome.storage.local, wiped on
+// uninstall) and the seeded data (page-origin IndexedDB, NOT wiped on
+// uninstall) have different lifetimes — so re-enabling against an existing
+// DB creates duplicate seed projects. Only flip this to true against an
+// empty aiw_db when you deliberately want sample data.
+const ENABLE_DEV_SEED = false;
+
 /* ------------------------------------------------------------
    Message Listener
 ------------------------------------------------------------ */
@@ -106,8 +116,10 @@ async function bootstrap(): Promise<void> {
   // Step 3: register cross-context message listener
   initMessageListener();
 
-  // Step 4: optional dev initialization
-  await seedDevDataOnce();
+  // Step 4: optional dev initialization (disabled by default — see flag)
+  if (ENABLE_DEV_SEED) {
+    await seedDevDataOnce();
+  }
 }
 
 /* ------------------------------------------------------------

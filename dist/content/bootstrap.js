@@ -2246,6 +2246,7 @@
       init_floatingController();
       init_captureHandler();
       init_injectFloatingUi();
+      var ENABLE_DEV_SEED = false;
       function initMessageListener() {
         chrome.runtime.onMessage.addListener((rawMessage) => {
           const message = rawMessage;
@@ -2309,7 +2310,9 @@
         const root = await injectFloatingAssets();
         initFloatingController(root);
         initMessageListener();
-        await seedDevDataOnce();
+        if (ENABLE_DEV_SEED) {
+          await seedDevDataOnce();
+        }
       }
       var AIW_GLOBAL = globalThis;
       if (AIW_GLOBAL.__aiwContentBooted) {
