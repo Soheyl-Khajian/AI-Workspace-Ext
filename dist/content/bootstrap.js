@@ -483,6 +483,207 @@
     }
   });
 
+  // src/ui/core/sessionState.ts
+  function getSelectedProjectId() {
+    return state.selectedProjectId;
+  }
+  function getSelectedItemId() {
+    return state.selectedItemId;
+  }
+  function setSelectedProjectId(id) {
+    state.selectedProjectId = id;
+  }
+  function setSelectedItemId(id) {
+    state.selectedItemId = id;
+  }
+  var state;
+  var init_sessionState = __esm({
+    "src/ui/core/sessionState.ts"() {
+      "use strict";
+      state = {
+        selectedProjectId: null,
+        selectedItemId: null
+      };
+    }
+  });
+
+  // src/ui/features/projects/projectsState.ts
+  function getProjects() {
+    return [...state2.projects];
+  }
+  function isProjectsLoading() {
+    return state2.loading;
+  }
+  function getProjectsError() {
+    return state2.error;
+  }
+  function setProjects(projectsList) {
+    state2.projects = [...projectsList];
+  }
+  function setLoading(loading) {
+    state2.loading = loading;
+  }
+  function setError(error) {
+    state2.error = error;
+  }
+  var state2;
+  var init_projectsState = __esm({
+    "src/ui/features/projects/projectsState.ts"() {
+      "use strict";
+      state2 = {
+        projects: [],
+        loading: false,
+        error: null
+      };
+    }
+  });
+
+  // src/ui/features/projects/loadProjects.ts
+  async function loadProjects() {
+    setLoading(true);
+    setError(null);
+    try {
+      const projects = await listProjects();
+      setProjects(projects);
+    } catch (error) {
+      setProjects([]);
+      if (error instanceof Error) {
+        setError(error.message);
+      } else {
+        setError("Failed to load projects.");
+      }
+    } finally {
+      setLoading(false);
+    }
+  }
+  var init_loadProjects = __esm({
+    "src/ui/features/projects/loadProjects.ts"() {
+      "use strict";
+      init_storage();
+      init_projectsState();
+    }
+  });
+
+  // src/ui/shared/showToast.ts
+  function showToast(message) {
+    const rootEl = document.getElementById("aiw-floating-root");
+    if (!rootEl) return;
+    if (activeToastEl !== null) {
+      activeToastEl.remove();
+      activeToastEl = null;
+    }
+    if (activeTimeoutId !== null) {
+      clearTimeout(activeTimeoutId);
+      activeTimeoutId = null;
+    }
+    const toastEl = document.createElement("div");
+    toastEl.className = "aiw-toast";
+    toastEl.textContent = message;
+    rootEl.append(toastEl);
+    activeToastEl = toastEl;
+    activeTimeoutId = setTimeout(() => {
+      toastEl.remove();
+      activeToastEl = null;
+      activeTimeoutId = null;
+    }, TOAST_DURATION_MS);
+  }
+  var TOAST_DURATION_MS, activeToastEl, activeTimeoutId;
+  var init_showToast = __esm({
+    "src/ui/shared/showToast.ts"() {
+      "use strict";
+      TOAST_DURATION_MS = 2e3;
+      activeToastEl = null;
+      activeTimeoutId = null;
+    }
+  });
+
+  // src/capture/captureHandler.ts
+  async function findOrCreateInbox() {
+    const projects = await listProjects();
+    const existing = projects.find((p) => p.name === INBOX_PROJECT_NAME);
+    if (existing !== void 0) return existing;
+    return createProject(INBOX_PROJECT_NAME);
+  }
+  function buildTitle(selectionText) {
+    const trimmed = selectionText.trim();
+    if (trimmed.length <= TITLE_MAX_LENGTH) return trimmed;
+    return trimmed.slice(0, TITLE_MAX_LENGTH) + "...";
+  }
+  async function capture(selectionText, sourceUrl) {
+    if (!selectionText.trim()) return;
+    let targetProject;
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId !== null) {
+      targetProject = getProjects().find((p) => p.id === selectedProjectId);
+    }
+    if (targetProject === void 0) {
+      targetProject = await findOrCreateInbox();
+    }
+    const title = buildTitle(selectionText);
+    await createItem(targetProject.id, "note", title, selectionText, {
+      createdFrom: "selection",
+      sourceUrl
+    });
+    showToast(`Saved to ${targetProject.name}`);
+    await loadProjects();
+    document.dispatchEvent(new CustomEvent("aiw:projects-updated"));
+  }
+  function handleCaptureSelection(selectionText, sourceUrl) {
+    capture(selectionText, sourceUrl).catch((error) => {
+      console.error("[AIW] Capture failed:", error);
+      showToast("Couldn't save to workspace");
+    });
+  }
+  var INBOX_PROJECT_NAME, TITLE_MAX_LENGTH;
+  var init_captureHandler = __esm({
+    "src/capture/captureHandler.ts"() {
+      "use strict";
+      init_storage();
+      init_sessionState();
+      init_loadProjects();
+      init_projectsState();
+      init_showToast();
+      INBOX_PROJECT_NAME = "Inbox";
+      TITLE_MAX_LENGTH = 60;
+    }
+  });
+
+  // src/content/injectFloatingUi.ts
+  async function injectFloatingAssets() {
+    const existingStyle = document.getElementById("aiw-floating-style");
+    if (!existingStyle) {
+      const link = document.createElement("link");
+      link.id = "aiw-floating-style";
+      link.rel = "stylesheet";
+      link.href = chrome.runtime.getURL("dist/ui/floatingShell.css");
+      (document.head ?? document.documentElement).append(link);
+    }
+    let existingRoot = document.getElementById("aiw-floating-root");
+    if (!existingRoot) {
+      const response = await fetch(
+        chrome.runtime.getURL("dist/ui/floatingShell.html")
+      );
+      if (!response.ok) {
+        throw new Error(`Failed to load floating HTML (${response.status})`);
+      }
+      const html = await response.text();
+      (document.body ?? document.documentElement).insertAdjacentHTML(
+        "beforeend",
+        html
+      );
+      existingRoot = document.getElementById("aiw-floating-root");
+    }
+    if (!existingRoot) {
+      throw new Error("floating UI root not found after injection");
+    }
+    return existingRoot;
+  }
+  var init_injectFloatingUi = __esm({
+    "src/content/injectFloatingUi.ts"() {
+      "use strict";
+    }
+  });
+
   // src/ui/core/floatingDom.ts
   function mustQuery(root, selector) {
     const el = root.querySelector(selector);
@@ -593,36 +794,36 @@
 
   // src/ui/core/floatingUiState.ts
   function isOrbExpanded() {
-    return state.orbExpanded;
+    return state3.orbExpanded;
   }
   function getActivePanel() {
-    return state.activePanel;
+    return state3.activePanel;
   }
   function expandOrb() {
-    state.orbExpanded = true;
+    state3.orbExpanded = true;
   }
   function collapseOrb() {
-    state.orbExpanded = false;
-    state.activePanel = null;
+    state3.orbExpanded = false;
+    state3.activePanel = null;
   }
   function openPanel(panel) {
-    state.activePanel = panel;
-    state.orbExpanded = true;
+    state3.activePanel = panel;
+    state3.orbExpanded = true;
   }
   function togglePanel(panel) {
-    const current = state.activePanel;
+    const current = state3.activePanel;
     if (current === panel) {
-      state.activePanel = null;
+      state3.activePanel = null;
     } else {
-      state.activePanel = panel;
-      state.orbExpanded = true;
+      state3.activePanel = panel;
+      state3.orbExpanded = true;
     }
   }
-  var state;
+  var state3;
   var init_floatingUiState = __esm({
     "src/ui/core/floatingUiState.ts"() {
       "use strict";
-      state = {
+      state3 = {
         orbExpanded: false,
         activePanel: null
       };
@@ -716,61 +917,6 @@
   var init_createProjectRow = __esm({
     "src/ui/features/projects/createProjectRow.ts"() {
       "use strict";
-    }
-  });
-
-  // src/ui/features/projects/projectsState.ts
-  function getProjects() {
-    return [...state2.projects];
-  }
-  function isProjectsLoading() {
-    return state2.loading;
-  }
-  function getProjectsError() {
-    return state2.error;
-  }
-  function setProjects(projectsList) {
-    state2.projects = [...projectsList];
-  }
-  function setLoading(loading) {
-    state2.loading = loading;
-  }
-  function setError(error) {
-    state2.error = error;
-  }
-  var state2;
-  var init_projectsState = __esm({
-    "src/ui/features/projects/projectsState.ts"() {
-      "use strict";
-      state2 = {
-        projects: [],
-        loading: false,
-        error: null
-      };
-    }
-  });
-
-  // src/ui/core/sessionState.ts
-  function getSelectedProjectId() {
-    return state3.selectedProjectId;
-  }
-  function getSelectedItemId() {
-    return state3.selectedItemId;
-  }
-  function setSelectedProjectId(id) {
-    state3.selectedProjectId = id;
-  }
-  function setSelectedItemId(id) {
-    state3.selectedItemId = id;
-  }
-  var state3;
-  var init_sessionState = __esm({
-    "src/ui/core/sessionState.ts"() {
-      "use strict";
-      state3 = {
-        selectedProjectId: null,
-        selectedItemId: null
-      };
     }
   });
 
@@ -1162,32 +1308,6 @@
     }
   });
 
-  // src/ui/features/projects/loadProjects.ts
-  async function loadProjects() {
-    setLoading(true);
-    setError(null);
-    try {
-      const projects = await listProjects();
-      setProjects(projects);
-    } catch (error) {
-      setProjects([]);
-      if (error instanceof Error) {
-        setError(error.message);
-      } else {
-        setError("Failed to load projects.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  }
-  var init_loadProjects = __esm({
-    "src/ui/features/projects/loadProjects.ts"() {
-      "use strict";
-      init_storage();
-      init_projectsState();
-    }
-  });
-
   // src/ui/shared/toErrorMessage.ts
   function toErrorMessage(error, fallback) {
     if (error instanceof Error && error.message.trim().length > 0) {
@@ -1478,39 +1598,6 @@
       init_itemSelectionState();
       init_buildContextPack();
       init_copyToClipboard();
-    }
-  });
-
-  // src/ui/shared/showToast.ts
-  function showToast(message) {
-    const rootEl = document.getElementById("aiw-floating-root");
-    if (!rootEl) return;
-    if (activeToastEl !== null) {
-      activeToastEl.remove();
-      activeToastEl = null;
-    }
-    if (activeTimeoutId !== null) {
-      clearTimeout(activeTimeoutId);
-      activeTimeoutId = null;
-    }
-    const toastEl = document.createElement("div");
-    toastEl.className = "aiw-toast";
-    toastEl.textContent = message;
-    rootEl.append(toastEl);
-    activeToastEl = toastEl;
-    activeTimeoutId = setTimeout(() => {
-      toastEl.remove();
-      activeToastEl = null;
-      activeTimeoutId = null;
-    }, TOAST_DURATION_MS);
-  }
-  var TOAST_DURATION_MS, activeToastEl, activeTimeoutId;
-  var init_showToast = __esm({
-    "src/ui/shared/showToast.ts"() {
-      "use strict";
-      TOAST_DURATION_MS = 2e3;
-      activeToastEl = null;
-      activeTimeoutId = null;
     }
   });
 
@@ -2145,90 +2232,48 @@
     }
   });
 
-  // src/capture/captureHandler.ts
-  async function findOrCreateInbox() {
-    const projects = await listProjects();
-    const existing = projects.find((p) => p.name === INBOX_PROJECT_NAME);
-    if (existing !== void 0) return existing;
-    return createProject(INBOX_PROJECT_NAME);
-  }
-  function buildTitle(selectionText) {
-    const trimmed = selectionText.trim();
-    if (trimmed.length <= TITLE_MAX_LENGTH) return trimmed;
-    return trimmed.slice(0, TITLE_MAX_LENGTH) + "...";
-  }
-  async function capture(selectionText, sourceUrl) {
-    if (!selectionText.trim()) return;
-    let targetProject;
-    const selectedProjectId = getSelectedProjectId();
-    if (selectedProjectId !== null) {
-      targetProject = getProjects().find((p) => p.id === selectedProjectId);
-    }
-    if (targetProject === void 0) {
-      targetProject = await findOrCreateInbox();
-    }
-    const title = buildTitle(selectionText);
-    await createItem(targetProject.id, "note", title, selectionText, {
-      createdFrom: "selection",
-      sourceUrl
-    });
-    showToast(`Saved to ${targetProject.name}`);
-    await loadProjects();
-    document.dispatchEvent(new CustomEvent("aiw:projects-updated"));
-  }
-  function handleCaptureSelection(selectionText, sourceUrl) {
-    capture(selectionText, sourceUrl).catch((error) => {
-      console.error("[AIW] Capture failed:", error);
-      showToast("Couldn't save to workspace");
-    });
-  }
-  var INBOX_PROJECT_NAME, TITLE_MAX_LENGTH;
-  var init_captureHandler = __esm({
-    "src/capture/captureHandler.ts"() {
-      "use strict";
-      init_storage();
-      init_sessionState();
-      init_loadProjects();
-      init_projectsState();
-      init_showToast();
-      INBOX_PROJECT_NAME = "Inbox";
-      TITLE_MAX_LENGTH = 60;
-    }
-  });
-
-  // src/content/injectFloatingUi.ts
-  async function injectFloatingAssets() {
-    const existingStyle = document.getElementById("aiw-floating-style");
-    if (!existingStyle) {
-      const link = document.createElement("link");
-      link.id = "aiw-floating-style";
-      link.rel = "stylesheet";
-      link.href = chrome.runtime.getURL("dist/ui/floatingShell.css");
-      (document.head ?? document.documentElement).append(link);
-    }
-    let existingRoot = document.getElementById("aiw-floating-root");
-    if (!existingRoot) {
-      const response = await fetch(
-        chrome.runtime.getURL("dist/ui/floatingShell.html")
-      );
-      if (!response.ok) {
-        throw new Error(`Failed to load floating HTML (${response.status})`);
+  // src/ui/core/mountManager.ts
+  async function mountFloatingUi() {
+    if (isMounting) return;
+    if (document.getElementById(FLOATING_ROOT_ID)) return;
+    if (!injectAssets) return;
+    isMounting = true;
+    try {
+      if (destroyController) {
+        destroyController();
+        destroyController = null;
       }
-      const html = await response.text();
-      (document.body ?? document.documentElement).insertAdjacentHTML(
-        "beforeend",
-        html
-      );
-      existingRoot = document.getElementById("aiw-floating-root");
+      const root = await injectAssets();
+      destroyController = initFloatingController(root);
+    } catch (error) {
+      console.error("[AIW] floating UI mount failed:", error);
+    } finally {
+      isMounting = false;
     }
-    if (!existingRoot) {
-      throw new Error("floating UI root not found after injection");
-    }
-    return existingRoot;
   }
-  var init_injectFloatingUi = __esm({
-    "src/content/injectFloatingUi.ts"() {
+  async function startFloatingUi(inject) {
+    injectAssets = inject;
+    await mountFloatingUi();
+    if (!rootObserver) {
+      rootObserver = new MutationObserver(() => {
+        if (!document.getElementById(FLOATING_ROOT_ID)) {
+          void mountFloatingUi();
+        }
+      });
+    }
+    const observeTarget = document.body ?? document.documentElement;
+    rootObserver.observe(observeTarget, { childList: true });
+  }
+  var FLOATING_ROOT_ID, injectAssets, destroyController, isMounting, rootObserver;
+  var init_mountManager = __esm({
+    "src/ui/core/mountManager.ts"() {
       "use strict";
+      init_floatingController();
+      FLOATING_ROOT_ID = "aiw-floating-root";
+      injectAssets = null;
+      destroyController = null;
+      isMounting = false;
+      rootObserver = null;
     }
   });
 
@@ -2236,9 +2281,9 @@
   var require_bootstrap = __commonJS({
     "src/content/bootstrap.ts"() {
       init_storage();
-      init_floatingController();
       init_captureHandler();
       init_injectFloatingUi();
+      init_mountManager();
       var ENABLE_DEV_SEED = false;
       function initMessageListener() {
         chrome.runtime.onMessage.addListener((rawMessage) => {
@@ -2300,8 +2345,7 @@
         }
       }
       async function bootstrap() {
-        const root = await injectFloatingAssets();
-        initFloatingController(root);
+        await startFloatingUi(injectFloatingAssets);
         initMessageListener();
         if (ENABLE_DEV_SEED) {
           await seedDevDataOnce();

@@ -15,10 +15,10 @@
 //   This is the SINGLE content-script entrypoint (see manifest + build.mjs).
 
 import { createProject, createItem } from "../storage/index";
-import { initFloatingController } from "../ui/core/floatingController";
 import type { AiwMessage } from "../background/messages";
 import { handleCaptureSelection } from "../capture/captureHandler";
 import { injectFloatingAssets } from "./injectFloatingUi";
+import { startFloatingUi } from "../ui/core/mountManager";
 
 // Dev-only: auto-seed sample data on first run. OFF by default.
 // ------------------------------------------------------------
@@ -107,16 +107,13 @@ async function seedDevDataOnce(): Promise<void> {
    Bootstrap entrypoint
 ------------------------------------------------------------ */
 async function bootstrap(): Promise<void> {
-  // Step 1: inject UI assets into host page
-  const root = await injectFloatingAssets();
+  // Step 1: mount the floating UI and keep it mounted across SPA navigation
+  await startFloatingUi(injectFloatingAssets);
 
-  // Step 2: hand over control to UI controller
-  initFloatingController(root);
-
-  // Step 3: register cross-context message listener
+  // Step 2: register cross-context message listener
   initMessageListener();
 
-  // Step 4: optional dev initialization (disabled by default — see flag)
+  // Step 3: optional dev initialization (disabled by default — see flag)
   if (ENABLE_DEV_SEED) {
     await seedDevDataOnce();
   }
