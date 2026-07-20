@@ -2,7 +2,7 @@
   "name": "AI Workspace",
   "version": "0.1.0",
   "description": "Your local AI Workspace",
-  "license": "ISC",
+  "license": "UNLICENSED",
   "author": "",
   "type": "commonjs",
   "scripts": {

@@ -1,6 +1,22 @@
 #.gitignore
+
+# Dependencies
 node_modules/
 
+# Docs
 AI Workspace MVP Specification.pdf
+DOCS-README.md
 structure.txt
 release.txt
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.log
+
+# Env / secrets
+.env
+.env.local
+
+# NOTE: dist/ is intentionally committed for v0.1.0 so the release archive is
+# loadable without a build step. We'll gitignore it once CI/CD builds the zip.
