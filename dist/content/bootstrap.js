@@ -181,6 +181,26 @@
       db.close();
     }
   }
+  async function getOrInsertProjectByName(name, candidate) {
+    const db = await openDb();
+    try {
+      const tx = db.transaction(STORE_PROJECTS, "readwrite");
+      const store = tx.objectStore(STORE_PROJECTS);
+      const existing = await requestToPromise(store.getAll());
+      const match = existing.find((p) => p.name === name);
+      let result;
+      if (match !== void 0) {
+        result = match;
+      } else {
+        await requestToPromise(store.put(candidate));
+        result = candidate;
+      }
+      await txToPromise(tx);
+      return result;
+    } finally {
+      db.close();
+    }
+  }
   async function deleteProject(id) {
     const db = await openDb();
     try {
@@ -345,6 +365,21 @@
   }
   async function listProjects() {
     return getAllProjects();
+  }
+  async function getOrCreateProjectByName(name) {
+    if (name == null) {
+      throw new Error("Project name is required (received null/undefined)");
+    }
+    const trimmedName = name.trim();
+    if (trimmedName.length === 0) {
+      throw new Error("Project name cannot be empty");
+    }
+    const candidate = {
+      id: crypto.randomUUID(),
+      name: trimmedName,
+      createdAt: Date.now()
+    };
+    return getOrInsertProjectByName(trimmedName, candidate);
   }
   async function deleteProjectCascade(projectId) {
     if (projectId == null) {
@@ -599,10 +634,7 @@
 
   // src/capture/captureHandler.ts
   async function findOrCreateInbox() {
-    const projects = await listProjects();
-    const existing = projects.find((p) => p.name === INBOX_PROJECT_NAME);
-    if (existing !== void 0) return existing;
-    return createProject(INBOX_PROJECT_NAME);
+    return getOrCreateProjectByName(INBOX_PROJECT_NAME);
   }
   function buildTitle(selectionText) {
     const trimmed = selectionText.trim();

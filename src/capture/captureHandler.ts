@@ -24,7 +24,7 @@
 // ------------------------------------------------------------
 
 import type { Project } from "../models/project";
-import { createItem, createProject, listProjects } from "../storage";
+import { createItem, getOrCreateProjectByName } from "../storage";
 import { getSelectedProjectId } from "../ui/core/sessionState";
 import { loadProjects } from "../ui/features/projects/loadProjects";
 import { getProjects } from "../ui/features/projects/projectsState";
@@ -42,10 +42,7 @@ const TITLE_MAX_LENGTH = 60;
 // ------------------------------------------------------------
 
 async function findOrCreateInbox(): Promise<Project> {
-  const projects = await listProjects();
-  const existing = projects.find((p) => p.name === INBOX_PROJECT_NAME);
-  if (existing !== undefined) return existing;
-  return createProject(INBOX_PROJECT_NAME);
+  return getOrCreateProjectByName(INBOX_PROJECT_NAME);
 }
 
 // ------------------------------------------------------------

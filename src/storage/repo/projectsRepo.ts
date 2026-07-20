@@ -131,6 +131,59 @@ export async function getProjectById(id: string): Promise<Project | undefined> {
 }
 
 /**
+ * Atomically return the existing project with the given name, or insert the
+ * supplied candidate if none exists — all within a SINGLE readwrite
+ * transaction.
+ *
+ * Why one transaction:
+ * - A readwrite transaction holds an exclusive lock on the projects store, so
+ *   concurrent callers are serialized: a second caller's transaction only runs
+ *   after the first commits, and therefore sees the just-inserted project.
+ *   This closes the check-then-act race that a separate read + write leaves
+ *   open (e.g. two rapid captures creating two "Inbox" projects).
+ *
+ * Semantics:
+ * - Match is by exact `name`. The projects store has no name index in v0, so
+ *   we scan getAll() inside the transaction (fine for v0's small dataset).
+ * - Returns the existing project if found; otherwise inserts `candidate`.
+ *
+ * IMPORTANT: do NOT introduce an await of any non-IDB promise between the
+ * getAll and the put — that would let the transaction auto-commit and the
+ * put would throw TransactionInactiveError. Only synchronous work (the find)
+ * sits between them.
+ *
+ * Failure behavior:
+ * - Any IndexedDB error rejects the promise.
+ * - DB connection is always closed, even on failure.
+ */
+export async function getOrInsertProjectByName(
+  name: string,
+  candidate: Project,
+): Promise<Project> {
+  const db = await openDb();
+  try {
+    const tx = db.transaction(STORE_PROJECTS, "readwrite");
+    const store = tx.objectStore(STORE_PROJECTS);
+
+    const existing: Project[] = await requestToPromise(store.getAll());
+    const match = existing.find((p) => p.name === name);
+
+    let result: Project;
+    if (match !== undefined) {
+      result = match; // no write; transaction completes as a read-only no-op
+    } else {
+      await requestToPromise(store.put(candidate));
+      result = candidate;
+    }
+
+    await txToPromise(tx);
+    return result;
+  } finally {
+    db.close();
+  }
+}
+
+/**
  * Delete a single Project record by primary key.
  *
  * Semantics:

@@ -15,6 +15,7 @@ import {
   getAllProjects,
   deleteProject,
   getProjectById,
+  getOrInsertProjectByName,
 } from "./repo/projectsRepo";
 import {
   insertItem,
@@ -76,6 +77,32 @@ export async function createProject(
 
 export async function listProjects(): Promise<Project[]> {
   return getAllProjects();
+}
+
+/**
+ * Return the existing project with the given name, or create it if none
+ * exists — atomically, so concurrent callers cannot create duplicates.
+ *
+ * Domain rules (id generation, trimming) live here; the atomic get-or-insert
+ * mechanics live in the repo. The candidate is only persisted if no project
+ * with the trimmed name already exists.
+ */
+export async function getOrCreateProjectByName(name: string): Promise<Project> {
+  if (name == null) {
+    throw new Error("Project name is required (received null/undefined)");
+  }
+  const trimmedName = name.trim();
+  if (trimmedName.length === 0) {
+    throw new Error("Project name cannot be empty");
+  }
+
+  const candidate: Project = {
+    id: crypto.randomUUID(),
+    name: trimmedName,
+    createdAt: Date.now(),
+  };
+
+  return getOrInsertProjectByName(trimmedName, candidate);
 }
 
 export async function deleteProjectCascade(projectId: string): Promise<void> {
