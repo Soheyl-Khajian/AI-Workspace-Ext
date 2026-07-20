@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "AI Workspace (v0)",
-  "version": "0.0.1",
-  "description": "Local workspace extension for ChatGPT (personal build).",
+  "name": "AI Workspace",
+  "version": "0.1.0",
+  "description": "Your local AI Workspace",
   "permissions": ["storage", "contextMenus"],
   "host_permissions": ["https://chatgpt.com/*"],
   "background": {

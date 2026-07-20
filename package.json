@@ -1,7 +1,7 @@
 {
-  "name": "ai_workspace",
-  "version": "0.0.1",
-  "description": "Your AI Workspace",
+  "name": "AI Workspace",
+  "version": "0.1.0",
+  "description": "Your local AI Workspace",
   "license": "ISC",
   "author": "",
   "type": "commonjs",
