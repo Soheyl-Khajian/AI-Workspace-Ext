@@ -22,9 +22,11 @@
 
 import { createFloatingDom } from "./floatingDom";
 import { handleOrbAction } from "./orbActionRouter";
-import type { OrbActionContext } from "./orbActionRouter";
-import { getOrbActions } from "./orbActions";
 import type { OrbActionId } from "./types";
+import type { OrbActionContext } from "./orbActionRouter";
+import type { EventBinding } from "./eventBindings";
+import { asListener } from "./eventBindings";
+import { getOrbActions } from "./orbActions";
 import { renderOrbActions } from "./renderOrbActions";
 import { renderFloatingPanels } from "./renderFloatingPanels";
 import {
@@ -623,14 +625,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // asymmetry would leak a listener on every re-mount.
   // ----------------------------------------------------------
 
-  /*Handlers are typed to their specific event (MouseEvent/PointerEvent), but
-  the DOM addEventListener contract is the generic EventListener. asListener
-  bridges that mismatch in ONE place. Safe: each handler is only ever
-  registered on an event type that actually delivers the event it expects.*/
-  const asListener = (handler: (event: never) => unknown): EventListener =>
-    handler as EventListener;
-
-  const eventBindings: Array<[EventTarget, string, EventListener]> = [
+  const eventBindings: EventBinding[] = [
     [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
     [dom.orbPanelsEl, "click", asListener(handleSelectProject)],
     [dom.orbPanelsEl, "click", asListener(handleCreateProject)],
