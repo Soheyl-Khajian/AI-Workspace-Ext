@@ -1432,6 +1432,139 @@
     }
   });
 
+  // src/ui/features/projects/projectsHandlers.ts
+  function createProjectsHandlers(deps) {
+    function handleSelectProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(PROJECT_RENAME_SELECTOR)) return;
+      if (target.closest(PROJECT_DELETE_SELECTOR)) return;
+      if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
+      const row = target.closest(PROJECT_ROW_SELECTOR);
+      if (!(row instanceof HTMLElement)) {
+        return;
+      }
+      const projectId = row.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      deps.projectsController.selectProject(projectId);
+    }
+    async function handleCreateProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const submitButton = target.closest(PROJECT_CREATE_BUTTON_SELECTOR);
+      if (!(submitButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const input = deps.panelsEl.querySelector(".aiw-create-project-input");
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+      const trimmedNewProjectName = input.value.trim();
+      if (trimmedNewProjectName.length === 0) {
+        deps.notify("Project name can't be empty");
+        return;
+      }
+      await deps.projectsController.create(trimmedNewProjectName);
+    }
+    function handleRenameProject(event) {
+      let committed = false;
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
+      if (!(renameButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      const row = renameButton.closest(PROJECT_ROW_SELECTOR);
+      if (!(row instanceof HTMLElement)) {
+        return;
+      }
+      const span = row.querySelector(".aiw-project-text");
+      if (!(span instanceof HTMLSpanElement)) {
+        return;
+      }
+      const currentName = span.textContent ?? "";
+      const renameInputEl = document.createElement("input");
+      renameInputEl.value = currentName;
+      renameInputEl.className = PROJECT_RENAME_INPUT_CLASS;
+      span.replaceWith(renameInputEl);
+      renameInputEl.focus();
+      renameInputEl.select();
+      renameInputEl.addEventListener("keydown", async (event2) => {
+        if (event2.key === "Enter") {
+          committed = true;
+          const trimmedValue = renameInputEl.value.trim();
+          if (trimmedValue) {
+            await deps.projectsController.renameProject(projectId, trimmedValue);
+          } else {
+            deps.requestRender();
+          }
+        }
+        if (event2.key === "Escape") {
+          committed = true;
+          deps.requestRender();
+        }
+      });
+      renameInputEl.addEventListener("blur", async () => {
+        if (committed) return;
+        const trimmedValue = renameInputEl.value.trim();
+        if (trimmedValue && trimmedValue !== currentName) {
+          await deps.projectsController.renameProject(projectId, trimmedValue);
+        } else {
+          deps.requestRender();
+        }
+      });
+    }
+    async function handleDeleteProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
+      if (!(deleteButton instanceof HTMLElement)) {
+        return;
+      }
+      const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      if (!window.confirm("Delete this project and all its items?")) return;
+      await deps.projectsController.deleteProject(projectId);
+    }
+    const eventBindings = [
+      [deps.panelsEl, "click", asListener(handleSelectProject)],
+      [deps.panelsEl, "click", asListener(handleCreateProject)],
+      [deps.panelsEl, "click", asListener(handleRenameProject)],
+      [deps.panelsEl, "click", asListener(handleDeleteProject)]
+    ];
+    return eventBindings;
+  }
+  var PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
+  var init_projectsHandlers = __esm({
+    "src/ui/features/projects/projectsHandlers.ts"() {
+      "use strict";
+      init_eventBindings();
+      PROJECT_ROW_SELECTOR = ".aiw-project-row";
+      PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
+      PROJECT_ID_DATASET_KEY = "projectId";
+      PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
+      PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
+      PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
+      PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
+    }
+  });
+
   // src/ui/features/items/loadItems.ts
   async function loadItems(projectId) {
     setItemsLoading(true);
@@ -1857,6 +1990,12 @@
       notify: showToast,
       itemsController
     });
+    const projectsBindings = createProjectsHandlers({
+      panelsEl: dom.orbPanelsEl,
+      projectsController,
+      notify: showToast,
+      requestRender: renderUi
+    });
     const backupController = createBackupController({
       notify: showToast,
       onImported: reloadAfterImport
@@ -1866,7 +2005,7 @@
     void projectsController.load();
     function handleDocumentPointerDown(event) {
       const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
-        ".aiw-project-rename-input"
+        PROJECT_RENAME_INPUT_SELECTOR
       );
       const target = event.target;
       if (!(target instanceof Node)) {
@@ -1909,114 +2048,6 @@
     }
     function handleOrbActionClick(actionId) {
       handleOrbAction(actionId, actionsContext);
-    }
-    function handleSelectProject(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      if (target.closest(PROJECT_RENAME_SELECTOR)) return;
-      if (target.closest(PROJECT_DELETE_SELECTOR)) return;
-      if (target.closest(".aiw-project-rename-input")) return;
-      const row = target.closest(PROJECT_ROW_SELECTOR);
-      if (!(row instanceof HTMLElement)) {
-        return;
-      }
-      const projectId = row.dataset[PROJECT_ID_DATASET_KEY];
-      if (!projectId) {
-        return;
-      }
-      projectsController.selectProject(projectId);
-    }
-    async function handleCreateProject(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const submitButton = target.closest(PROJECT_CREATE_BUTTON_SELECTOR);
-      if (!(submitButton instanceof HTMLButtonElement)) {
-        return;
-      }
-      const input = dom.orbPanelsEl.querySelector(".aiw-create-project-input");
-      if (!(input instanceof HTMLInputElement)) {
-        return;
-      }
-      const trimmedNewProjectName = input.value.trim();
-      if (trimmedNewProjectName.length === 0) {
-        showToast("Project name can't be empty");
-        return;
-      }
-      await projectsController.create(trimmedNewProjectName);
-    }
-    function handleRenameProject(event) {
-      let committed = false;
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
-      if (!(renameButton instanceof HTMLButtonElement)) {
-        return;
-      }
-      const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
-      if (!projectId) {
-        return;
-      }
-      const row = renameButton.closest(PROJECT_ROW_SELECTOR);
-      if (!(row instanceof HTMLElement)) {
-        return;
-      }
-      const span = row.querySelector(".aiw-project-text");
-      if (!(span instanceof HTMLSpanElement)) {
-        return;
-      }
-      const currentName = span.textContent ?? "";
-      const renameInputEl = document.createElement("input");
-      renameInputEl.value = currentName;
-      renameInputEl.className = "aiw-project-rename-input";
-      span.replaceWith(renameInputEl);
-      renameInputEl.focus();
-      renameInputEl.select();
-      renameInputEl.addEventListener("keydown", async (event2) => {
-        if (event2.key === "Enter") {
-          committed = true;
-          const trimmedValue = renameInputEl.value.trim();
-          if (trimmedValue) {
-            await projectsController.renameProject(projectId, trimmedValue);
-          } else {
-            renderUi();
-          }
-        }
-        if (event2.key === "Escape") {
-          committed = true;
-          renderUi();
-        }
-      });
-      renameInputEl.addEventListener("blur", async () => {
-        if (committed) return;
-        const trimmedValue = renameInputEl.value.trim();
-        if (trimmedValue && trimmedValue !== currentName) {
-          await projectsController.renameProject(projectId, trimmedValue);
-        } else {
-          renderUi();
-        }
-      });
-    }
-    async function handleDeleteProject(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
-      if (!(deleteButton instanceof HTMLElement)) {
-        return;
-      }
-      const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
-      if (!projectId) {
-        return;
-      }
-      if (!window.confirm("Delete this project and all its items?")) return;
-      await projectsController.deleteProject(projectId);
     }
     function handleSelectItem(event) {
       const target = event.target;
@@ -2213,10 +2244,7 @@
     }
     const eventBindings = [
       [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
-      [dom.orbPanelsEl, "click", asListener(handleSelectProject)],
-      [dom.orbPanelsEl, "click", asListener(handleCreateProject)],
-      [dom.orbPanelsEl, "click", asListener(handleRenameProject)],
-      [dom.orbPanelsEl, "click", asListener(handleDeleteProject)],
+      ...projectsBindings,
       [dom.orbPanelsEl, "click", asListener(handleSelectItem)],
       [dom.orbPanelsEl, "click", asListener(handleToggleItemSelection)],
       [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
@@ -2238,7 +2266,7 @@
       }
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -2250,17 +2278,13 @@
       init_renderFloatingPanels();
       init_floatingUiState();
       init_projectsController();
+      init_projectsHandlers();
       init_itemsController();
       init_projectsState();
       init_sessionState();
       init_showToast();
       init_backupController();
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
-      PROJECT_ROW_SELECTOR = ".aiw-project-row";
-      PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
-      PROJECT_ID_DATASET_KEY = "projectId";
-      PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
-      PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_SELECT_SELECTOR = ".aiw-item-select";
       ITEM_DELETE_SELECTOR = ".aiw-item-delete";

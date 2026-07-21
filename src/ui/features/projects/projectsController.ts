@@ -60,7 +60,7 @@ type ProjectsControllerDependencies = {
 // PUBLIC CONTROLLER API
 // ------------------------------------------------------------
 
-type ProjectsController = {
+export type ProjectsController = {
   load: () => Promise<void>;
   selectProject: (projectId: string) => void;
   create: (name: string) => Promise<void>;

@@ -38,6 +38,10 @@ import {
   togglePanel,
 } from "./floatingUiState";
 import { createProjectsController } from "../features/projects/projectsController";
+import {
+  PROJECT_RENAME_INPUT_SELECTOR,
+  createProjectsHandlers,
+} from "../features/projects/projectsHandlers";
 import { createItemsController } from "../features/items/itemsController";
 import { getProjects } from "../features/projects/projectsState";
 import {
@@ -53,12 +57,6 @@ import { createBackupController } from "../features/backup/backupController";
 // ------------------------------------------------------------
 
 const PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
-
-const PROJECT_ROW_SELECTOR = ".aiw-project-row";
-const PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
-const PROJECT_ID_DATASET_KEY = "projectId";
-const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
-const PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
 
 const ITEM_ROW_SELECTOR = ".aiw-item-row";
 const ITEM_SELECT_SELECTOR = ".aiw-item-select";
@@ -85,6 +83,13 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     itemsController,
   });
 
+  const projectsBindings = createProjectsHandlers({
+    panelsEl: dom.orbPanelsEl,
+    projectsController,
+    notify: showToast,
+    requestRender: renderUi,
+  });
+
   const backupController = createBackupController({
     notify: showToast,
     onImported: reloadAfterImport,
@@ -101,7 +106,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   function handleDocumentPointerDown(event: PointerEvent): void {
     const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
-      ".aiw-project-rename-input",
+      PROJECT_RENAME_INPUT_SELECTOR,
     );
     const target = event.target;
 
@@ -170,162 +175,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   function handleOrbActionClick(actionId: OrbActionId): void {
     handleOrbAction(actionId, actionsContext);
-  }
-
-  // ----------------------------------------------------------
-  // PROJECT SELECTION HANDLER
-  // ----------------------------------------------------------
-
-  function handleSelectProject(event: MouseEvent): void {
-    const target = event.target;
-
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    if (target.closest(PROJECT_RENAME_SELECTOR)) return;
-    if (target.closest(PROJECT_DELETE_SELECTOR)) return;
-    if (target.closest(".aiw-project-rename-input")) return;
-
-    const row = target.closest(PROJECT_ROW_SELECTOR);
-
-    if (!(row instanceof HTMLElement)) {
-      return;
-    }
-
-    const projectId = row.dataset[PROJECT_ID_DATASET_KEY];
-
-    if (!projectId) {
-      return;
-    }
-
-    projectsController.selectProject(projectId);
-  }
-
-  // ----------------------------------------------------------
-  // PROJECT CREATION HANDLER
-  // ----------------------------------------------------------
-
-  async function handleCreateProject(event: MouseEvent): Promise<void> {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const submitButton = target.closest(PROJECT_CREATE_BUTTON_SELECTOR);
-    if (!(submitButton instanceof HTMLButtonElement)) {
-      return;
-    }
-
-    const input = dom.orbPanelsEl.querySelector(".aiw-create-project-input");
-    if (!(input instanceof HTMLInputElement)) {
-      return;
-    }
-
-    const trimmedNewProjectName = input.value.trim();
-    if (trimmedNewProjectName.length === 0) {
-      showToast("Project name can't be empty");
-      return;
-    }
-
-    await projectsController.create(trimmedNewProjectName);
-  }
-
-  // ----------------------------------------------------------
-  // PROJECT RENAME HANDLER
-  // ----------------------------------------------------------
-
-  function handleRenameProject(event: MouseEvent): void {
-    let committed = false;
-
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
-    if (!(renameButton instanceof HTMLButtonElement)) {
-      return;
-    }
-
-    const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
-    if (!projectId) {
-      return;
-    }
-
-    const row = renameButton.closest(PROJECT_ROW_SELECTOR);
-    if (!(row instanceof HTMLElement)) {
-      return;
-    }
-
-    const span = row.querySelector(".aiw-project-text");
-    if (!(span instanceof HTMLSpanElement)) {
-      return;
-    }
-
-    const currentName = span.textContent ?? "";
-
-    const renameInputEl = document.createElement("input");
-    renameInputEl.value = currentName;
-    renameInputEl.className = "aiw-project-rename-input";
-
-    span.replaceWith(renameInputEl);
-
-    renameInputEl.focus();
-    renameInputEl.select();
-
-    renameInputEl.addEventListener("keydown", async (event) => {
-      if (event.key === "Enter") {
-        committed = true;
-        const trimmedValue = renameInputEl.value.trim();
-        if (trimmedValue) {
-          await projectsController.renameProject(projectId, trimmedValue);
-        } else {
-          renderUi();
-        }
-      }
-
-      if (event.key === "Escape") {
-        committed = true;
-        renderUi();
-      }
-    });
-
-    renameInputEl.addEventListener("blur", async () => {
-      if (committed) return;
-      const trimmedValue = renameInputEl.value.trim();
-      if (trimmedValue && trimmedValue !== currentName) {
-        await projectsController.renameProject(projectId, trimmedValue);
-      } else {
-        renderUi();
-      }
-    });
-  }
-
-  // ----------------------------------------------------------
-  // PROJECT DELETE HANDLER
-  // ----------------------------------------------------------
-
-  async function handleDeleteProject(event: MouseEvent): Promise<void> {
-    const target = event.target;
-
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
-    if (!(deleteButton instanceof HTMLElement)) {
-      return;
-    }
-
-    const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
-    if (!projectId) {
-      return;
-    }
-
-    if (!window.confirm("Delete this project and all its items?")) return;
-
-    await projectsController.deleteProject(projectId);
   }
 
   // ----------------------------------------------------------
@@ -627,10 +476,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   const eventBindings: EventBinding[] = [
     [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
-    [dom.orbPanelsEl, "click", asListener(handleSelectProject)],
-    [dom.orbPanelsEl, "click", asListener(handleCreateProject)],
-    [dom.orbPanelsEl, "click", asListener(handleRenameProject)],
-    [dom.orbPanelsEl, "click", asListener(handleDeleteProject)],
+    ...projectsBindings,
     [dom.orbPanelsEl, "click", asListener(handleSelectItem)],
     [dom.orbPanelsEl, "click", asListener(handleToggleItemSelection)],
     [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
