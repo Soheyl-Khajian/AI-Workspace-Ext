@@ -759,6 +759,15 @@
     }
   });
 
+  // src/ui/core/eventBindings.ts
+  var asListener;
+  var init_eventBindings = __esm({
+    "src/ui/core/eventBindings.ts"() {
+      "use strict";
+      asListener = (handler) => handler;
+    }
+  });
+
   // src/ui/core/orbActions.ts
   function getOrbActions() {
     return orbActions;
@@ -2202,7 +2211,6 @@
       );
       renderFloatingPanels(dom.orbPanelsEl);
     }
-    const asListener = (handler) => handler;
     const eventBindings = [
       [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
       [dom.orbPanelsEl, "click", asListener(handleSelectProject)],
@@ -2236,6 +2244,7 @@
       "use strict";
       init_floatingDom();
       init_orbActionRouter();
+      init_eventBindings();
       init_orbActions();
       init_renderOrbActions();
       init_renderFloatingPanels();
