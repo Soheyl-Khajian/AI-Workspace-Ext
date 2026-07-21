@@ -11,3 +11,5 @@ export type OrbPanelId =
   | "itemDetail"
   | "backup"
   | "search";
+
+const x: number = "oops";
