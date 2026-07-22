@@ -2145,6 +2145,46 @@
     }
   });
 
+  // src/ui/features/backup/backupHandlers.ts
+  function createBackupHandlers(deps) {
+    async function handleExportBackup(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const exportButton = target.closest(BACKUP_EXPORT_SELECTOR);
+      if (!(exportButton instanceof HTMLElement)) {
+        return;
+      }
+      await deps.backupController.exportBackup();
+    }
+    async function handleImportBackup(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const importButton = target.closest(BACKUP_IMPORT_SELECTOR);
+      if (!(importButton instanceof HTMLElement)) {
+        return;
+      }
+      await deps.backupController.importBackup();
+    }
+    const eventBindings = [
+      [deps.panelsEl, "click", asListener(handleExportBackup)],
+      [deps.panelsEl, "click", asListener(handleImportBackup)]
+    ];
+    return eventBindings;
+  }
+  var BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
+  var init_backupHandlers = __esm({
+    "src/ui/features/backup/backupHandlers.ts"() {
+      "use strict";
+      init_eventBindings();
+      BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
+      BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
+    }
+  });
+
   // src/ui/core/floatingController.ts
   function initFloatingController(rootEl) {
     const dom = createFloatingDom(rootEl);
@@ -2172,6 +2212,10 @@
     const backupController = createBackupController({
       notify: showToast,
       onImported: reloadAfterImport
+    });
+    const backupBindings = createBackupHandlers({
+      panelsEl: dom.orbPanelsEl,
+      backupController
     });
     const actionsContext = createOrbActionContext();
     renderUi();
@@ -2226,30 +2270,7 @@
       const project = getProjects().find(
         (candidate) => candidate.id === projectId
       );
-      const projectName = project ? project.name : "Untitled project";
-      return projectName;
-    }
-    async function handleExportBackup(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const exportButton = target.closest(BACKUP_EXPORT_SELECTOR);
-      if (!(exportButton instanceof HTMLElement)) {
-        return;
-      }
-      await backupController.exportBackup();
-    }
-    async function handleImportBackup(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const importButton = target.closest(BACKUP_IMPORT_SELECTOR);
-      if (!(importButton instanceof HTMLElement)) {
-        return;
-      }
-      await backupController.importBackup();
+      return project ? project.name : "Untitled project";
     }
     async function reloadAfterImport() {
       itemsController.clearSelection();
@@ -2293,8 +2314,7 @@
       [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
       ...projectsBindings,
       ...itemsBindings,
-      [dom.orbPanelsEl, "click", asListener(handleExportBackup)],
-      [dom.orbPanelsEl, "click", asListener(handleImportBackup)],
+      ...backupBindings,
       [document, "pointerdown", asListener(handleDocumentPointerDown)],
       [document, "aiw:projects-updated", asListener(handleProjectsUpdated)]
     ];
@@ -2307,7 +2327,7 @@
       }
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
@@ -2326,9 +2346,8 @@
       init_itemsHandlers();
       init_backupController();
       init_showToast();
+      init_backupHandlers();
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
-      BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
-      BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
     }
   });
 

@@ -47,15 +47,13 @@ import { createItemsController } from "../features/items/itemsController";
 import { createItemsHandlers } from "../features/items/itemsHandlers";
 import { createBackupController } from "../features/backup/backupController";
 import { showToast } from "../shared/showToast";
+import { createBackupHandlers } from "../features/backup/backupHandlers";
 
 // ------------------------------------------------------------
 // SHARED CONSTANTS
 // ------------------------------------------------------------
 
 const PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
-
-const BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
-const BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
 
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
@@ -88,6 +86,11 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   const backupController = createBackupController({
     notify: showToast,
     onImported: reloadAfterImport,
+  });
+
+  const backupBindings = createBackupHandlers({
+    panelsEl: dom.orbPanelsEl,
+    backupController,
   });
 
   const actionsContext = createOrbActionContext();
@@ -187,41 +190,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // ----------------------------------------------------------
-  // EXPORT BACKUP HANDLER
-  // ----------------------------------------------------------
-
-  async function handleExportBackup(event: MouseEvent): Promise<void> {
-    const target = event.target;
-
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const exportButton = target.closest(BACKUP_EXPORT_SELECTOR);
-    if (!(exportButton instanceof HTMLElement)) {
-      return;
-    }
-
-    await backupController.exportBackup();
-  }
-
-  // ----------------------------------------------------------
-  // IMPORT BACKUP HANDLER
-  // ----------------------------------------------------------
-
-  async function handleImportBackup(event: MouseEvent): Promise<void> {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-    const importButton = target.closest(BACKUP_IMPORT_SELECTOR);
-    if (!(importButton instanceof HTMLElement)) {
-      return;
-    }
-    await backupController.importBackup();
-  }
-
-  // ----------------------------------------------------------
   // POST-IMPORT REFRESH
   //
   // The database was fully replaced, so all transient state is stale.
@@ -298,8 +266,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
     ...projectsBindings,
     ...itemsBindings,
-    [dom.orbPanelsEl, "click", asListener(handleExportBackup)],
-    [dom.orbPanelsEl, "click", asListener(handleImportBackup)],
+    ...backupBindings,
     [document, "pointerdown", asListener(handleDocumentPointerDown)],
     [document, "aiw:projects-updated", asListener(handleProjectsUpdated)],
   ];
