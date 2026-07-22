@@ -716,15 +716,6 @@
     }
   });
 
-  // src/ui/core/eventBindings.ts
-  var asListener;
-  var init_eventBindings = __esm({
-    "src/ui/core/eventBindings.ts"() {
-      "use strict";
-      asListener = (handler) => handler;
-    }
-  });
-
   // src/ui/core/floatingUiState.ts
   function isOrbExpanded() {
     return state3.orbExpanded;
@@ -1429,6 +1420,15 @@
       init_loadProjects();
       init_storage();
       init_toErrorMessage();
+    }
+  });
+
+  // src/ui/core/eventBindings.ts
+  var asListener;
+  var init_eventBindings = __esm({
+    "src/ui/core/eventBindings.ts"() {
+      "use strict";
+      asListener = (handler) => handler;
     }
   });
 
@@ -2145,90 +2145,8 @@
     }
   });
 
-  // src/ui/core/floatingController.ts
-  function initFloatingController(rootEl) {
-    const dom = createFloatingDom(rootEl);
-    const itemsController = createItemsController({
-      onStateChange: renderUi,
-      notify: showToast
-    });
-    const projectsController = createProjectsController({
-      onStateChange: renderUi,
-      notify: showToast,
-      itemsController
-    });
-    const projectsBindings = createProjectsHandlers({
-      panelsEl: dom.orbPanelsEl,
-      projectsController,
-      notify: showToast,
-      requestRender: renderUi
-    });
-    const itemsBindings = createItemsHandlers({
-      panelsEl: dom.orbPanelsEl,
-      itemsController,
-      notify: showToast,
-      resolveProjectName
-    });
-    const backupController = createBackupController({
-      notify: showToast,
-      onImported: reloadAfterImport
-    });
-    const actionsContext = createOrbActionContext();
-    renderUi();
-    void projectsController.load();
-    function handleDocumentPointerDown(event) {
-      const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
-        PROJECT_RENAME_INPUT_SELECTOR
-      );
-      const target = event.target;
-      if (!(target instanceof Node)) {
-        return;
-      }
-      const clickedInsideFloatingUi = rootEl.contains(target);
-      if (clickedInsideFloatingUi) {
-        return;
-      }
-      if (activeProjectRenameInput instanceof HTMLInputElement) {
-        return;
-      }
-      setOrbCollapsed();
-    }
-    function handleProjectsUpdated() {
-      renderUi();
-    }
-    function setOrbExpanded() {
-      expandOrb();
-      renderUi();
-    }
-    function setOrbCollapsed() {
-      collapseOrb();
-      renderUi();
-    }
-    function toggleOrbVisibility() {
-      const expanded = isOrbExpanded();
-      if (expanded) {
-        setOrbCollapsed();
-      } else {
-        setOrbExpanded();
-      }
-    }
-    function toggleFloatingPanel(panelId) {
-      togglePanel(panelId);
-      renderUi();
-    }
-    function createOrbActionContext() {
-      return { togglePanel: toggleFloatingPanel };
-    }
-    function handleOrbActionClick(actionId) {
-      handleOrbAction(actionId, actionsContext);
-    }
-    function resolveProjectName(projectId) {
-      const project = getProjects().find(
-        (candidate) => candidate.id === projectId
-      );
-      const projectName = project ? project.name : "Untitled project";
-      return projectName;
-    }
+  // src/ui/features/backup/backupHandlers.ts
+  function createBackupHandlers(deps) {
     async function handleExportBackup(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -2238,7 +2156,7 @@
       if (!(exportButton instanceof HTMLElement)) {
         return;
       }
-      await backupController.exportBackup();
+      await deps.backupController.exportBackup();
     }
     async function handleImportBackup(event) {
       const target = event.target;
@@ -2249,14 +2167,55 @@
       if (!(importButton instanceof HTMLElement)) {
         return;
       }
-      await backupController.importBackup();
+      await deps.backupController.importBackup();
     }
-    async function reloadAfterImport() {
-      itemsController.clearSelection();
-      setSelectedItemId(null);
-      setSelectedProjectId(null);
-      openPanel("projects");
-      await projectsController.load();
+    const eventBindings = [
+      [deps.panelsEl, "click", asListener(handleExportBackup)],
+      [deps.panelsEl, "click", asListener(handleImportBackup)]
+    ];
+    return eventBindings;
+  }
+  var BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
+  var init_backupHandlers = __esm({
+    "src/ui/features/backup/backupHandlers.ts"() {
+      "use strict";
+      init_eventBindings();
+      BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
+      BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
+    }
+  });
+
+  // src/ui/core/orbHandlers.ts
+  function createOrbHandlers(deps) {
+    function setOrbExpanded() {
+      expandOrb();
+      deps.requestRender();
+    }
+    function setOrbCollapsed() {
+      collapseOrb();
+      deps.requestRender();
+    }
+    function toggleOrbVisibility() {
+      const expanded = isOrbExpanded();
+      if (expanded) {
+        setOrbCollapsed();
+      } else {
+        setOrbExpanded();
+      }
+    }
+    function handleDocumentPointerDown(event) {
+      const target = event.target;
+      if (!(target instanceof Node)) {
+        return;
+      }
+      const clickedInsideFloatingUi = deps.rootEl.contains(target);
+      if (clickedInsideFloatingUi) {
+        return;
+      }
+      if (deps.hasActiveInlineEdit()) {
+        return;
+      }
+      setOrbCollapsed();
     }
     function handleBackButtonClick(event) {
       const target = event.target;
@@ -2274,7 +2233,100 @@
         openPanel("projects");
       }
       setSelectedItemId(null);
+      deps.requestRender();
+    }
+    function handleProjectsUpdated() {
+      deps.requestRender();
+    }
+    const eventBindings = [
+      [deps.orbButtonEl, "click", asListener(toggleOrbVisibility)],
+      [deps.panelsEl, "click", asListener(handleBackButtonClick)],
+      [document, "pointerdown", asListener(handleDocumentPointerDown)],
+      [document, "aiw:projects-updated", asListener(handleProjectsUpdated)]
+    ];
+    return eventBindings;
+  }
+  var PANEL_BACK_BUTTON_SELECTOR;
+  var init_orbHandlers = __esm({
+    "src/ui/core/orbHandlers.ts"() {
+      "use strict";
+      init_eventBindings();
+      init_floatingUiState();
+      init_sessionState();
+      PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
+    }
+  });
+
+  // src/ui/core/floatingController.ts
+  function initFloatingController(rootEl) {
+    const dom = createFloatingDom(rootEl);
+    const itemsController = createItemsController({
+      onStateChange: renderUi,
+      notify: showToast
+    });
+    const projectsController = createProjectsController({
+      onStateChange: renderUi,
+      notify: showToast,
+      itemsController
+    });
+    const backupController = createBackupController({
+      notify: showToast,
+      onImported: reloadAfterImport
+    });
+    const orbBindings = createOrbHandlers({
+      rootEl: dom.rootEl,
+      panelsEl: dom.orbPanelsEl,
+      orbButtonEl: dom.orbButtonEl,
+      requestRender: renderUi,
+      hasActiveInlineEdit
+    });
+    const projectsBindings = createProjectsHandlers({
+      panelsEl: dom.orbPanelsEl,
+      projectsController,
+      notify: showToast,
+      requestRender: renderUi
+    });
+    const itemsBindings = createItemsHandlers({
+      panelsEl: dom.orbPanelsEl,
+      itemsController,
+      notify: showToast,
+      resolveProjectName
+    });
+    const backupBindings = createBackupHandlers({
+      panelsEl: dom.orbPanelsEl,
+      backupController
+    });
+    const actionsContext = createOrbActionContext();
+    renderUi();
+    void projectsController.load();
+    function toggleFloatingPanel(panelId) {
+      togglePanel(panelId);
       renderUi();
+    }
+    function createOrbActionContext() {
+      return { togglePanel: toggleFloatingPanel };
+    }
+    function handleOrbActionClick(actionId) {
+      handleOrbAction(actionId, actionsContext);
+    }
+    function hasActiveInlineEdit() {
+      const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
+        PROJECT_RENAME_INPUT_SELECTOR
+      );
+      return activeProjectRenameInput instanceof HTMLInputElement;
+    }
+    function resolveProjectName(projectId) {
+      const project = getProjects().find(
+        (candidate) => candidate.id === projectId
+      );
+      return project ? project.name : "Untitled project";
+    }
+    async function reloadAfterImport() {
+      itemsController.clearSelection();
+      setSelectedItemId(null);
+      setSelectedProjectId(null);
+      openPanel("projects");
+      await projectsController.load();
     }
     function renderUi() {
       const expanded = isOrbExpanded();
@@ -2289,14 +2341,10 @@
       renderFloatingPanels(dom.orbPanelsEl);
     }
     const eventBindings = [
-      [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
-      [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
+      ...orbBindings,
       ...projectsBindings,
       ...itemsBindings,
-      [dom.orbPanelsEl, "click", asListener(handleExportBackup)],
-      [dom.orbPanelsEl, "click", asListener(handleImportBackup)],
-      [document, "pointerdown", asListener(handleDocumentPointerDown)],
-      [document, "aiw:projects-updated", asListener(handleProjectsUpdated)]
+      ...backupBindings
     ];
     for (const [target, type, listener] of eventBindings) {
       target.addEventListener(type, listener);
@@ -2307,11 +2355,9 @@
       }
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
-      init_eventBindings();
       init_floatingUiState();
       init_sessionState();
       init_projectsState();
@@ -2326,9 +2372,8 @@
       init_itemsHandlers();
       init_backupController();
       init_showToast();
-      PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
-      BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
-      BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
+      init_backupHandlers();
+      init_orbHandlers();
     }
   });
 

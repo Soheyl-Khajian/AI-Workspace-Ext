@@ -22,15 +22,7 @@
 import type { OrbActionId } from "./types";
 import type { OrbActionContext } from "./orbActionRouter";
 import type { EventBinding } from "./eventBindings";
-import { asListener } from "./eventBindings";
-import {
-  collapseOrb,
-  expandOrb,
-  getActivePanel,
-  isOrbExpanded,
-  openPanel,
-  togglePanel,
-} from "./floatingUiState";
+import { isOrbExpanded, openPanel, togglePanel } from "./floatingUiState";
 import { setSelectedItemId, setSelectedProjectId } from "./sessionState";
 import { getProjects } from "../features/projects/projectsState";
 import { createFloatingDom } from "./floatingDom";
@@ -47,15 +39,8 @@ import { createItemsController } from "../features/items/itemsController";
 import { createItemsHandlers } from "../features/items/itemsHandlers";
 import { createBackupController } from "../features/backup/backupController";
 import { showToast } from "../shared/showToast";
-
-// ------------------------------------------------------------
-// SHARED CONSTANTS
-// ------------------------------------------------------------
-
-const PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
-
-const BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
-const BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
+import { createBackupHandlers } from "../features/backup/backupHandlers";
+import { createOrbHandlers } from "./orbHandlers";
 
 export function initFloatingController(rootEl: HTMLElement): () => void {
   const dom = createFloatingDom(rootEl);
@@ -69,6 +54,19 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     onStateChange: renderUi,
     notify: showToast,
     itemsController,
+  });
+
+  const backupController = createBackupController({
+    notify: showToast,
+    onImported: reloadAfterImport,
+  });
+
+  const orbBindings = createOrbHandlers({
+    rootEl: dom.rootEl,
+    panelsEl: dom.orbPanelsEl,
+    orbButtonEl: dom.orbButtonEl,
+    requestRender: renderUi,
+    hasActiveInlineEdit,
   });
 
   const projectsBindings = createProjectsHandlers({
@@ -85,9 +83,9 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     resolveProjectName,
   });
 
-  const backupController = createBackupController({
-    notify: showToast,
-    onImported: reloadAfterImport,
+  const backupBindings = createBackupHandlers({
+    panelsEl: dom.orbPanelsEl,
+    backupController,
   });
 
   const actionsContext = createOrbActionContext();
@@ -96,68 +94,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   void projectsController.load();
 
   // ----------------------------------------------------------
-  // OUTSIDE CLICK HANDLING (collapse behavior)
+  // ORB ACTION WIRING (render callbacks — not table bindings)
   // ----------------------------------------------------------
-
-  function handleDocumentPointerDown(event: PointerEvent): void {
-    const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
-      PROJECT_RENAME_INPUT_SELECTOR,
-    );
-    const target = event.target;
-
-    if (!(target instanceof Node)) {
-      return;
-    }
-
-    const clickedInsideFloatingUi = rootEl.contains(target);
-
-    if (clickedInsideFloatingUi) {
-      return;
-    }
-
-    if (activeProjectRenameInput instanceof HTMLInputElement) {
-      return;
-    }
-
-    setOrbCollapsed();
-  }
-
-  // ----------------------------------------------------------
-  // PROJECTS UPDATED HANDLER (cross-context sync)
-  // ----------------------------------------------------------
-  //
-  // Fired by captureHandler after it syncs projects runtime state.
-  // Ensures the projects panel reflects changes (e.g. new Inbox project)
-  // without requiring a page refresh.
-  // ----------------------------------------------------------
-
-  function handleProjectsUpdated(): void {
-    renderUi();
-  }
-
-  // ----------------------------------------------------------
-  // ORB STATE HELPERS
-  // ----------------------------------------------------------
-
-  function setOrbExpanded(): void {
-    expandOrb();
-    renderUi();
-  }
-
-  function setOrbCollapsed(): void {
-    collapseOrb();
-    renderUi();
-  }
-
-  function toggleOrbVisibility(): void {
-    const expanded = isOrbExpanded();
-
-    if (expanded) {
-      setOrbCollapsed();
-    } else {
-      setOrbExpanded();
-    }
-  }
 
   function toggleFloatingPanel(panelId: OrbActionId): void {
     togglePanel(panelId);
@@ -174,51 +112,30 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   // ----------------------------------------------------------
   // CROSS-FEATURE GLUE
-  //
+  // ----------------------------------------------------------
+
+  // ----------------------------------------------------------
+  // Injected into orbHandlers as deps.hasActiveInlineEdit so the
+  // core orb module never imports feature selectors directly —
+  // it asks "is an inline edit in progress?" without knowing WHICH
+  // feature owns the edit. Today that means the projects rename
+  // input; future inline editors extend this predicate, not core.
+  // ----------------------------------------------------------
+  function hasActiveInlineEdit(): boolean {
+    const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
+      PROJECT_RENAME_INPUT_SELECTOR,
+    );
+    return activeProjectRenameInput instanceof HTMLInputElement;
+  }
+
   // Injected into itemsHandlers as deps.resolveProjectName so the
   // items feature never imports projectsState directly — bridging
   // sibling features is the composition root's job, not theirs.
-  // ----------------------------------------------------------
   function resolveProjectName(projectId: string): string {
     const project = getProjects().find(
       (candidate) => candidate.id === projectId,
     );
     return project ? project.name : "Untitled project";
-  }
-
-  // ----------------------------------------------------------
-  // EXPORT BACKUP HANDLER
-  // ----------------------------------------------------------
-
-  async function handleExportBackup(event: MouseEvent): Promise<void> {
-    const target = event.target;
-
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const exportButton = target.closest(BACKUP_EXPORT_SELECTOR);
-    if (!(exportButton instanceof HTMLElement)) {
-      return;
-    }
-
-    await backupController.exportBackup();
-  }
-
-  // ----------------------------------------------------------
-  // IMPORT BACKUP HANDLER
-  // ----------------------------------------------------------
-
-  async function handleImportBackup(event: MouseEvent): Promise<void> {
-    const target = event.target;
-    if (!(target instanceof Element)) {
-      return;
-    }
-    const importButton = target.closest(BACKUP_IMPORT_SELECTOR);
-    if (!(importButton instanceof HTMLElement)) {
-      return;
-    }
-    await backupController.importBackup();
   }
 
   // ----------------------------------------------------------
@@ -234,34 +151,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     setSelectedProjectId(null);
     openPanel("projects");
     await projectsController.load();
-  }
-
-  // ----------------------------------------------------------
-  // BACK BUTTON HANDLER
-  // ----------------------------------------------------------
-
-  function handleBackButtonClick(event: MouseEvent): void {
-    const target = event.target;
-
-    if (!(target instanceof Element)) {
-      return;
-    }
-
-    const backButton = target.closest(PANEL_BACK_BUTTON_SELECTOR);
-
-    if (!(backButton instanceof HTMLElement)) {
-      return;
-    }
-
-    const currentPanel = getActivePanel();
-    if (currentPanel === "itemDetail") {
-      openPanel("items");
-    } else {
-      openPanel("projects");
-    }
-
-    setSelectedItemId(null);
-    renderUi();
   }
 
   // ----------------------------------------------------------
@@ -294,14 +183,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // ----------------------------------------------------------
 
   const eventBindings: EventBinding[] = [
-    [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
-    [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
+    ...orbBindings,
     ...projectsBindings,
     ...itemsBindings,
-    [dom.orbPanelsEl, "click", asListener(handleExportBackup)],
-    [dom.orbPanelsEl, "click", asListener(handleImportBackup)],
-    [document, "pointerdown", asListener(handleDocumentPointerDown)],
-    [document, "aiw:projects-updated", asListener(handleProjectsUpdated)],
+    ...backupBindings,
   ];
 
   for (const [target, type, listener] of eventBindings) {
