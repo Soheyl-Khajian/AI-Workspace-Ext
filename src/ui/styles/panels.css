@@ -1,6 +1,27 @@
 /* src/ui/styles/panels.css */
 /* ------------------------------------------------------------
-   FLOATING PANELS ROOT
+   FLOATING PANELS
+------------------------------------------------------------ */
+/*
+  STRUCTURE OF THIS FILE:
+  1. Panel shell (root, shell, header, body, states)
+  2. Shared components, grouped by ROLE:
+     - list rows        (.aiw-project-row, .aiw-item-row)
+     - row side buttons (.aiw-project-delete, .aiw-item-delete, rename)
+     - footer forms     (create project / create item / item detail)
+     - text inputs      (all five inputs/textareas)
+     - solid buttons    (submit / save)
+     - tinted buttons   (build context, export, import)
+  3. Feature-specific one-offs
+  4. Toast
+
+  DEDUPE RULE: identical-by-role components share ONE grouped rule.
+  Class names are behavior hooks owned by the TS handlers — never
+  rename them here.
+*/
+
+/* ------------------------------------------------------------
+   1. PANELS ROOT
 ------------------------------------------------------------ */
 
 #aiw-orb-panels {
@@ -12,721 +33,216 @@
 }
 
 /* ------------------------------------------------------------
-   FLOATING PANEL SHELL
+   PANEL SHELL
 ------------------------------------------------------------ */
 
 .aiw-floating-panel {
   pointer-events: auto;
-  width: 1050px;
+
+  /* Never wider than the space left of the right-anchored panel
+     root (255px offset + 17px breathing room). Full anchor rework
+     happens in the responsive-positioning pass. */
+  width: min(1050px, calc(100vw - 272px));
   min-height: 240px;
   max-height: 78vh;
-  border-radius: 24px;
 
-  /* Glass surface — reduced opacity lets content show through */
-  background: rgba(0, 12, 30, 0.45);
+  border-radius: var(--aiw-radius-panel);
 
-  /* Blur + saturate is the core of the glass look */
-  backdrop-filter: blur(32px) saturate(180%);
-  -webkit-backdrop-filter: blur(32px) saturate(180%);
-
-  /* Brighter border for glass edge definition */
-  border: 1px solid rgba(255, 255, 255, 0.5);
-
-  /* Depth shadow + inner top highlight */
-  box-shadow:
-    0 24px 64px rgba(0, 0, 0, 0.38),
-    0 8px 20px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /* Anchored glass: near-opaque surface guarantees contrast over
+     any host page; blur keeps the edges feeling lit. */
+  background: var(--aiw-surface-panel);
+  backdrop-filter: var(--aiw-blur);
+  -webkit-backdrop-filter: var(--aiw-blur);
+  border: 1px solid var(--aiw-border-strong);
+  box-shadow: var(--aiw-shadow-panel);
 
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  animation: aiw-panel-enter 180ms ease;
+
+  animation: aiw-panel-enter var(--aiw-dur-med) var(--aiw-ease);
 }
 
 /* ------------------------------------------------------------
-   PANEL HEADER
+   PANEL HEADER + TITLE
 ------------------------------------------------------------ */
 
 .aiw-floating-panel__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 18px 20px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 18px var(--aiw-space-xl);
+  border-bottom: 1px solid var(--aiw-separator);
+
   /* Prevent header from shrinking */
   flex-shrink: 0;
 }
 
-/* ------------------------------------------------------------
-   PANEL TITLE
------------------------------------------------------------- */
-
 .aiw-floating-panel__title {
   margin: 0;
-  font-size: 15px;
+  font-size: var(--aiw-fs-lg);
   font-weight: 600;
   letter-spacing: -0.01em;
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--aiw-text);
 }
 
 /* ------------------------------------------------------------
-   PANEL BODY
+   PANEL BODY + SCROLLBAR
 ------------------------------------------------------------ */
 
 .aiw-floating-panel__body {
-  /* Takes all available space between header and form */
+  /* Takes all available space between header and footer form */
   flex: 1;
-  padding: 20px;
+  padding: var(--aiw-space-xl);
   overflow-y: auto;
+
   /* Prevent body from growing beyond panel bounds */
   min-height: 0;
 }
-
-/* ------------------------------------------------------------
-   PANEL PLACEHOLDER
------------------------------------------------------------- */
-
-.aiw-floating-panel__placeholder {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.5;
-  color: rgba(255, 255, 255, 0.62);
-}
-
-/* ------------------------------------------------------------
-   PANEL SCROLLBAR
------------------------------------------------------------- */
 
 .aiw-floating-panel__body::-webkit-scrollbar {
   width: 10px;
 }
 
 .aiw-floating-panel__body::-webkit-scrollbar-thumb {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: 999px;
+  background: var(--aiw-border-strong);
+  border-radius: var(--aiw-radius-pill);
   border: 3px solid transparent;
   background-clip: content-box;
 }
 
 /* ------------------------------------------------------------
-   PANEL ENTRANCE ANIMATION
+   PANEL STATES (placeholder / loading / empty / error)
 ------------------------------------------------------------ */
 
-@keyframes aiw-panel-enter {
-  from {
-    opacity: 0;
-    transform: translateY(10px) scale(0.98);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0) scale(1);
-  }
+.aiw-floating-panel__placeholder {
+  margin: 0;
+  font-size: var(--aiw-fs-md);
+  line-height: 1.5;
+  color: var(--aiw-text-muted);
 }
-
-/* ------------------------------------------------------------
-   PANEL STATE (loading / empty / error / placeholder)
------------------------------------------------------------- */
 
 .aiw-panel-state {
   display: flex;
   align-items: center;
   justify-content: center;
   min-height: 140px;
-  font-size: 14px;
+  font-size: var(--aiw-fs-md);
   line-height: 1.5;
-  color: rgba(255, 255, 255, 0.62);
+  color: var(--aiw-text-muted);
   text-align: center;
 }
 
 .aiw-panel-state--error {
-  color: rgba(255, 120, 120, 0.92);
+  color: var(--aiw-danger-text);
 }
 
 /* ------------------------------------------------------------
-   PROJECTS LIST
------------------------------------------------------------- */
-
-.aiw-projects-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ------------------------------------------------------------
-   PROJECT ROW
------------------------------------------------------------- */
-
-.aiw-project-row {
-  border: none;
-  width: 100%;
-  display: flex;
-  overflow: hidden;
-  justify-content: space-between;
-  align-items: center;
-  border-radius: 16px;
-  background: rgba(0, 48, 120, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  font-size: 14px;
-  font-weight: 500;
-  color: rgba(255, 255, 255, 0.96);
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    transform 140ms ease;
-}
-
-.aiw-project-row:not(.aiw-project-row--selected):hover {
-  transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.08);
-}
-
-.aiw-project-row:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
-}
-
-.aiw-project-row--selected {
-  background: rgba(0, 48, 120, 0.312);
-  border-left: 2px solid var(--aiw-accent);
-}
-
-.aiw-project-row--selected:hover {
-  background: rgba(255, 255, 255, 0.212);
-  transform: translateY(-1px);
-}
-
-/* ------------------------------------------------------------
-   PROJECT TEXT
------------------------------------------------------------- */
-
-.aiw-project-text {
-  padding: 14px 16px;
-  flex: 1;
-}
-
-/* ------------------------------------------------------------
-   CREATE PROJECT FORM
------------------------------------------------------------- */
-/*
-  Pinned footer form outside the scrollable body.
-  Rendered as a direct child of the panel flex column,
-  so it stays fixed at the bottom regardless of list length.
-*/
-
-.aiw-create-project-form {
-  /* Sits as a flex child of the panel column */
-  display: flex;
-  flex-direction: row;
-  align-items: center;
-  gap: 8px;
-  /* Never shrink — always visible */
-  flex-shrink: 0;
-  padding: 14px 16px;
-  /* Visual separator from list above */
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-.aiw-create-project-input {
-  /* Takes all remaining space in the row */
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 13px;
-  font-family: inherit;
-  /* Remove default outline */
-  outline: none;
-  transition: border-color 140ms ease;
-}
-
-.aiw-create-project-input::placeholder {
-  color: rgba(255, 255, 255, 0.32);
-}
-
-.aiw-create-project-input:focus {
-  border-color: rgba(16, 163, 127, 0.48);
-}
-
-.aiw-create-project-submit {
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: none;
-  background: var(--aiw-accent);
-  color: rgba(255, 255, 255, 0.96);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  /* Prevent shrinking when input takes space */
-  flex-shrink: 0;
-  transition:
-    background-color 140ms ease,
-    transform 140ms ease;
-}
-
-.aiw-create-project-submit:hover {
-  background: rgba(12, 140, 110, 1);
-  transform: translateY(-1px);
-}
-
-.aiw-create-project-submit:active {
-  transform: scale(0.97);
-}
-
-.aiw-create-project-submit:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
-}
-
-/* ------------------------------------------------------------
-   PROJECT RENAME BUTTON
------------------------------------------------------------- */
-
-.aiw-project-rename {
-  align-self: stretch;
-  width: 36px;
-  flex-shrink: 0;
-  background: transparent;
-  border: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.38);
-  font-size: 14px;
-  line-height: 1;
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    color 140ms ease;
-}
-
-.aiw-project-rename:hover {
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.72);
-}
-
-.aiw-project-rename:active {
-  background: rgba(255, 255, 255, 0.1);
-}
-
-/* ------------------------------------------------------------
-   PROJECT RENAME INLINE INPUT
------------------------------------------------------------- */
-
-.aiw-project-rename-input {
-  flex: 1;
-  background: transparent;
-  border: none;
-  border-bottom: 1px solid rgba(16, 163, 127, 0.48);
-  border-radius: 0;
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 14px;
-  font-weight: 500;
-  font-family: inherit;
-  outline: none;
-  padding: 14px 16px;
-  min-width: 0;
-}
-
-/* ------------------------------------------------------------
-   PROJECT DELETE BUTTON
------------------------------------------------------------- */
-
-.aiw-project-delete {
-  /* Full height of the row */
-  align-self: stretch;
-
-  /* Fixed width strip */
-  width: 40px;
-  flex-shrink: 0;
-
-  /* Round only the right side to match row border-radius */
-  border-radius: 0 14px 14px 0;
-
-  /* Subtle danger surface — matches glass aesthetic */
-  background: rgba(220, 60, 60, 0.12);
-  border: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
-
-  /* Typography */
-  color: rgba(255, 100, 100, 0.72);
-  font-size: 16px;
-  line-height: 1;
-
-  cursor: pointer;
-
-  transition:
-    background-color 140ms ease,
-    color 140ms ease;
-}
-
-.aiw-project-delete:hover {
-  background: rgba(220, 60, 60, 0.32);
-  color: rgba(255, 120, 120, 0.96);
-}
-
-.aiw-project-delete:active {
-  background: rgba(220, 60, 60, 0.48);
-}
-
-/* ------------------------------------------------------------
-   ITEMS LIST
------------------------------------------------------------- */
-
-.aiw-items-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-/* ------------------------------------------------------------
-   ITEM PANEL BACK BUTTON
+   PANEL BACK BUTTON
 ------------------------------------------------------------ */
 
 .aiw-panel-back-button {
   background: none;
   border: none;
   cursor: pointer;
-  color: rgba(255, 255, 255, 0.92);
+  color: var(--aiw-text);
   font-size: 16px;
   padding: 0;
   line-height: 1;
 }
 
 /* ------------------------------------------------------------
-   ITEM ROW
+   2. SHARED: LISTS
 ------------------------------------------------------------ */
 
+.aiw-projects-list,
+.aiw-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aiw-space-sm);
+}
+
+/* ------------------------------------------------------------
+   SHARED: LIST ROWS
+------------------------------------------------------------ */
+/*
+  Selection is marked with an inset accent bar (box-shadow), not a
+  border-left — shadows don't participate in layout, so selecting a
+  row can never shift its content by a pixel.
+*/
+
+.aiw-project-row,
 .aiw-item-row {
-  border: none;
+  border: 1px solid var(--aiw-border);
   width: 100%;
   display: flex;
   align-items: center;
-  border-radius: 16px;
-  background: rgba(0, 48, 120, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.15);
-  font-size: 14px;
+  overflow: hidden;
+  border-radius: var(--aiw-radius-row);
+  background: var(--aiw-surface-row);
+
+  font-size: var(--aiw-fs-md);
   font-weight: 500;
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--aiw-text);
   cursor: pointer;
+
   transition:
-    background-color 140ms ease,
-    transform 140ms ease;
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    transform var(--aiw-dur-fast) var(--aiw-ease);
 }
 
+.aiw-project-row {
+  justify-content: space-between;
+}
+
+.aiw-project-row:not(.aiw-project-row--selected):hover,
 .aiw-item-row:not(.aiw-item-row--selected):hover {
   transform: translateY(-1px);
-  background: rgba(255, 255, 255, 0.08);
+  background: var(--aiw-surface-hover);
 }
 
+.aiw-project-row:focus-visible,
 .aiw-item-row:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
+  box-shadow: var(--aiw-focus-ring);
 }
 
+.aiw-project-row--selected,
 .aiw-item-row--selected {
-  background: rgba(0, 48, 120, 0.312);
-  border-left: 2px solid var(--aiw-accent);
+  background: var(--aiw-surface-row-selected);
+  box-shadow: inset 3px 0 0 var(--aiw-accent);
 }
 
+.aiw-project-row--selected:hover,
 .aiw-item-row--selected:hover {
-  background: rgba(255, 255, 255, 0.212);
+  background: var(--aiw-surface-row-selected-hover);
   transform: translateY(-1px);
 }
 
 /* ------------------------------------------------------------
-   ITEM SELECT CHECKBOX (CONTEXT PACK)
------------------------------------------------------------- */
-.aiw-item-select {
-  /* Fixed-size leading control — never grow or shrink with the row */
-  flex: 0 0 auto;
-  width: 16px;
-  height: 16px;
-  /* Left breathing room so it isn't jammed against the row border;
-     the title's own left padding handles spacing on the other side */
-  margin: 0 0 0 14px;
-  cursor: pointer;
-
-  /* Brand the native checkbox tick/fill */
-  accent-color: var(--aiw-accent);
-}
-
-/* ------------------------------------------------------------
-   ITEM TEXT
+   SHARED: ROW TEXT
 ------------------------------------------------------------ */
 
+.aiw-project-text,
 .aiw-item-text {
-  padding: 14px 16px;
+  padding: var(--aiw-space-md) var(--aiw-space-lg);
   flex: 1;
 }
 
 .aiw-item-text--untitled {
-  color: rgba(255, 255, 255, 0.4);
+  color: var(--aiw-text-faint);
   font-style: italic;
 }
 
 /* ------------------------------------------------------------
-   BUILD CONTEXT BAR (CONTEXT PACK)
+   SHARED: ROW DELETE STRIPS (destructive)
 ------------------------------------------------------------ */
 /*
-  Pinned action section above the create form. Holds the
-  build-context button; separated from the list above by a
-  top border, never shrinks.
-*/
-.aiw-build-context-bar {
-  display: flex;
-  flex-shrink: 0;
-  padding: 14px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* ------------------------------------------------------------
-   BUILD CONTEXT BUTTON
------------------------------------------------------------- */
-.aiw-build-context {
-  /* Full-width primary action for the items panel */
-  flex: 1;
-  padding: 10px 16px;
-  border-radius: 12px;
-
-  /* Accent-tinted glass — distinct from the solid-green Add button */
-  background: rgba(16, 163, 127, 0.14);
-  border: 1px solid rgba(16, 163, 127, 0.4);
-  color: rgba(255, 255, 255, 0.92);
-
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    transform 140ms ease;
-}
-
-.aiw-build-context:hover {
-  background: rgba(16, 163, 127, 0.24);
-  transform: translateY(-1px);
-}
-
-.aiw-build-context:active {
-  transform: scale(0.97);
-}
-
-.aiw-build-context:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
-}
-
-/* ------------------------------------------------------------
-   CREATE ITEM FORM
------------------------------------------------------------- */
-/*
-  Pinned footer form outside the scrollable body.
-  Column layout to stack title, content, and button vertically.
+  No own border-radius: the parent row clips via overflow: hidden,
+  so the strip always matches the row's corners exactly.
 */
 
-.aiw-create-item-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
-  padding: 14px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* ------------------------------------------------------------
-   CREATE ITEM TITLE INPUT
------------------------------------------------------------- */
-
-.aiw-create-item-title {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 140ms ease;
-}
-
-.aiw-create-item-title::placeholder {
-  color: rgba(255, 255, 255, 0.32);
-}
-
-.aiw-create-item-title:focus {
-  border-color: rgba(16, 163, 127, 0.48);
-}
-
-/* ------------------------------------------------------------
-   CREATE ITEM CONTENT TEXTAREA
------------------------------------------------------------- */
-
-.aiw-create-item-content {
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  resize: none;
-  height: 72px;
-  transition: border-color 140ms ease;
-}
-
-.aiw-create-item-content::placeholder {
-  color: rgba(255, 255, 255, 0.32);
-}
-
-.aiw-create-item-content:focus {
-  border-color: rgba(16, 163, 127, 0.48);
-}
-
-/* ------------------------------------------------------------
-   CREATE ITEM SUBMIT BUTTON
------------------------------------------------------------- */
-
-.aiw-create-item-submit {
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: none;
-  background: var(--aiw-accent);
-  color: rgba(255, 255, 255, 0.96);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background-color 140ms ease,
-    transform 140ms ease;
-}
-
-.aiw-create-item-submit:hover {
-  background: rgba(12, 140, 110, 1);
-  transform: translateY(-1px);
-}
-
-.aiw-create-item-submit:active {
-  transform: scale(0.97);
-}
-
-.aiw-create-item-submit:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
-}
-
-/* ------------------------------------------------------------
-   ITEM DETAIL FORM
------------------------------------------------------------- */
-/*
-  Pinned footer form outside the scrollable body.
-  Column layout to stack title input, content textarea,
-  and save button vertically.
-*/
-
-.aiw-item-detail-form {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  flex-shrink: 0;
-  padding: 14px 16px;
-  border-top: 1px solid rgba(255, 255, 255, 0.06);
-}
-
-/* ------------------------------------------------------------
-   ITEM DETAIL TITLE INPUT
------------------------------------------------------------- */
-
-.aiw-item-detail-title {
-  flex: 1;
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  transition: border-color 140ms ease;
-}
-
-.aiw-item-detail-title::placeholder {
-  color: rgba(255, 255, 255, 0.32);
-}
-
-.aiw-item-detail-title:focus {
-  border-color: rgba(16, 163, 127, 0.48);
-}
-
-/* ------------------------------------------------------------
-   ITEM DETAIL CONTENT TEXTAREA
------------------------------------------------------------- */
-
-.aiw-item-detail-content {
-  padding: 10px 14px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  background: rgba(255, 255, 255, 0.06);
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 13px;
-  font-family: inherit;
-  outline: none;
-  resize: none;
-  height: 120px;
-  transition: border-color 140ms ease;
-}
-
-.aiw-item-detail-content::placeholder {
-  color: rgba(255, 255, 255, 0.32);
-}
-
-.aiw-item-detail-content:focus {
-  border-color: rgba(16, 163, 127, 0.48);
-}
-
-/* ------------------------------------------------------------
-   ITEM DETAIL SAVE BUTTON
------------------------------------------------------------- */
-
-.aiw-item-detail-save {
-  padding: 10px 16px;
-  border-radius: 12px;
-  border: none;
-  background: var(--aiw-accent);
-  color: rgba(255, 255, 255, 0.96);
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  flex-shrink: 0;
-  transition:
-    background-color 140ms ease,
-    transform 140ms ease;
-}
-
-.aiw-item-detail-save:hover {
-  background: rgba(12, 140, 110, 1);
-  transform: translateY(-1px);
-}
-
-.aiw-item-detail-save:active {
-  transform: scale(0.97);
-}
-
-.aiw-item-detail-save:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
-}
-
-/* ------------------------------------------------------------
-   ITEM DELETE BUTTON
------------------------------------------------------------- */
-
+.aiw-project-delete,
 .aiw-item-delete {
   /* Full height of the row */
   align-self: stretch;
@@ -735,110 +251,333 @@
   width: 40px;
   flex-shrink: 0;
 
-  /* Round only the right side to match row border-radius */
-  border-radius: 0 14px 14px 0;
-
-  /* Subtle danger surface — matches glass aesthetic */
-  background: rgba(220, 60, 60, 0.12);
+  background: var(--aiw-danger-soft);
   border: none;
-  border-left: 1px solid rgba(255, 255, 255, 0.06);
+  border-left: 1px solid var(--aiw-separator);
 
-  /* Typography */
-  color: rgba(255, 100, 100, 0.72);
+  color: var(--aiw-danger-text);
   font-size: 16px;
   line-height: 1;
-
   cursor: pointer;
 
   transition:
-    background-color 140ms ease,
-    color 140ms ease;
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    color var(--aiw-dur-fast) var(--aiw-ease);
 }
 
+.aiw-project-delete:hover,
 .aiw-item-delete:hover {
-  background: rgba(220, 60, 60, 0.32);
-  color: rgba(255, 120, 120, 0.96);
+  background: var(--aiw-danger-soft-hover);
 }
 
+.aiw-project-delete:active,
 .aiw-item-delete:active {
-  background: rgba(220, 60, 60, 0.48);
+  background: var(--aiw-danger-soft-active);
+}
+
+/* ------------------------------------------------------------
+   PROJECT RENAME BUTTON + INLINE INPUT
+------------------------------------------------------------ */
+
+.aiw-project-rename {
+  align-self: stretch;
+  width: 36px;
+  flex-shrink: 0;
+
+  background: transparent;
+  border: none;
+  border-left: 1px solid var(--aiw-separator);
+
+  color: var(--aiw-text-faint);
+  font-size: var(--aiw-fs-md);
+  line-height: 1;
+  cursor: pointer;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    color var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-project-rename:hover {
+  background: var(--aiw-surface-hover);
+  color: var(--aiw-text-muted);
+}
+
+.aiw-project-rename:active {
+  background: var(--aiw-surface-active);
+}
+
+.aiw-project-rename-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--aiw-accent-border);
+  border-radius: 0;
+
+  color: var(--aiw-text);
+  font-size: var(--aiw-fs-md);
+  font-weight: 500;
+  font-family: inherit;
+  outline: none;
+
+  padding: var(--aiw-space-md) var(--aiw-space-lg);
+  min-width: 0;
+}
+
+/* ------------------------------------------------------------
+   SHARED: FOOTER FORMS
+------------------------------------------------------------ */
+/*
+  Pinned footer forms outside the scrollable body. Direct children
+  of the panel flex column, so they stay fixed at the bottom
+  regardless of list length.
+*/
+
+.aiw-create-project-form,
+.aiw-create-item-form,
+.aiw-item-detail-form {
+  display: flex;
+  gap: var(--aiw-space-xs);
+
+  /* Never shrink — always visible */
+  flex-shrink: 0;
+  padding: var(--aiw-space-md) var(--aiw-space-lg);
+
+  /* Visual separator from content above */
+  border-top: 1px solid var(--aiw-separator);
+}
+
+/* Single-line form: input + button in a row. */
+.aiw-create-project-form {
+  flex-direction: row;
+  align-items: center;
+}
+
+/* Stacked forms: title, content, button in a column. */
+.aiw-create-item-form,
+.aiw-item-detail-form {
+  flex-direction: column;
+}
+
+/* ------------------------------------------------------------
+   SHARED: TEXT INPUTS
+------------------------------------------------------------ */
+
+.aiw-create-project-input,
+.aiw-create-item-title,
+.aiw-create-item-content,
+.aiw-item-detail-title,
+.aiw-item-detail-content {
+  padding: var(--aiw-space-sm) var(--aiw-space-md);
+  border-radius: var(--aiw-radius-control);
+  border: 1px solid var(--aiw-border);
+  background: var(--aiw-surface-control);
+
+  color: var(--aiw-text);
+  font-size: var(--aiw-fs-sm);
+  font-family: inherit;
+
+  /* Focus is signaled via border-color, not outline */
+  outline: none;
+  transition: border-color var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-create-project-input::placeholder,
+.aiw-create-item-title::placeholder,
+.aiw-create-item-content::placeholder,
+.aiw-item-detail-title::placeholder,
+.aiw-item-detail-content::placeholder {
+  color: var(--aiw-text-faint);
+}
+
+.aiw-create-project-input:focus,
+.aiw-create-item-title:focus,
+.aiw-create-item-content:focus,
+.aiw-item-detail-title:focus,
+.aiw-item-detail-content:focus {
+  border-color: var(--aiw-accent-border);
+}
+
+/* Single-line inputs take the remaining row/column width. */
+.aiw-create-project-input,
+.aiw-create-item-title,
+.aiw-item-detail-title {
+  flex: 1;
+}
+
+/* Textareas: fixed heights, no manual resize. */
+.aiw-create-item-content {
+  resize: none;
+  height: 72px;
+}
+
+.aiw-item-detail-content {
+  resize: none;
+  height: 120px;
+}
+
+/* ------------------------------------------------------------
+   SHARED: SOLID ACCENT BUTTONS (primary actions)
+------------------------------------------------------------ */
+
+.aiw-create-project-submit,
+.aiw-create-item-submit,
+.aiw-item-detail-save {
+  padding: var(--aiw-space-sm) var(--aiw-space-lg);
+  border-radius: var(--aiw-radius-control);
+  border: none;
+
+  background: var(--aiw-accent);
+  color: var(--aiw-text);
+
+  font-size: var(--aiw-fs-sm);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+
+  /* Never collapses when siblings take space */
+  flex-shrink: 0;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    transform var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-create-project-submit:hover,
+.aiw-create-item-submit:hover,
+.aiw-item-detail-save:hover {
+  background: var(--aiw-accent-strong);
+  transform: translateY(-1px);
+}
+
+.aiw-create-project-submit:active,
+.aiw-create-item-submit:active,
+.aiw-item-detail-save:active {
+  transform: scale(0.97);
+}
+
+.aiw-create-project-submit:focus-visible,
+.aiw-create-item-submit:focus-visible,
+.aiw-item-detail-save:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
+}
+
+/* ------------------------------------------------------------
+   SHARED: ACCENT-TINTED GLASS BUTTONS (secondary actions)
+------------------------------------------------------------ */
+
+.aiw-build-context,
+.aiw-backup-export {
+  padding: var(--aiw-space-sm) var(--aiw-space-lg);
+  border-radius: var(--aiw-radius-control);
+
+  /* Accent-tinted glass — distinct from solid primary buttons */
+  background: var(--aiw-accent-soft);
+  border: 1px solid var(--aiw-accent-border);
+  color: var(--aiw-text);
+
+  font-size: var(--aiw-fs-sm);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    transform var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-build-context:hover,
+.aiw-backup-export:hover {
+  background: var(--aiw-accent-soft-hover);
+  transform: translateY(-1px);
+}
+
+.aiw-build-context:active,
+.aiw-backup-export:active {
+  transform: scale(0.97);
+}
+
+.aiw-build-context:focus-visible,
+.aiw-backup-export:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
+}
+
+/* ------------------------------------------------------------
+   3. BUILD CONTEXT BAR (context pack)
+------------------------------------------------------------ */
+
+.aiw-build-context-bar {
+  display: flex;
+  flex-shrink: 0;
+  padding: var(--aiw-space-md) var(--aiw-space-lg);
+  border-top: 1px solid var(--aiw-separator);
+}
+
+/* Full-width primary action for the items panel */
+.aiw-build-context {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------
+   ITEM SELECT CHECKBOX (context pack)
+------------------------------------------------------------ */
+
+.aiw-item-select {
+  /* Fixed-size leading control — never grow or shrink with the row */
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+
+  /* Left breathing room so it isn't jammed against the row border;
+     the title's own left padding handles spacing on the other side */
+  margin: 0 0 0 var(--aiw-space-md);
+  cursor: pointer;
+
+  /* Brand the native checkbox tick/fill */
+  accent-color: var(--aiw-accent);
 }
 
 /* ------------------------------------------------------------
    BACKUP PANEL
 ------------------------------------------------------------ */
+
 .aiw-backup-section {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
-  gap: 12px;
-  padding: 16px;
+  gap: var(--aiw-space-sm);
+  padding: var(--aiw-space-lg);
 }
 
 .aiw-backup-section p {
   margin: 0;
-  font-size: 13px;
-  color: rgba(255, 255, 255, 0.6);
+  font-size: var(--aiw-fs-sm);
+  color: var(--aiw-text-muted);
 }
 
-/* ------------------------------------------------------------
-   EXPORT BUTTON
------------------------------------------------------------- */
-.aiw-backup-export {
-  padding: 10px 18px;
-  border-radius: 12px;
-
-  /* Accent-tinted glass — consistent with the build-context button */
-  background: rgba(16, 163, 127, 0.14);
-  border: 1px solid rgba(16, 163, 127, 0.4);
-  color: rgba(255, 255, 255, 0.92);
-
-  font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
-  cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    transform 140ms ease;
-}
-
-.aiw-backup-export:hover {
-  background: rgba(16, 163, 127, 0.24);
-  transform: translateY(-1px);
-}
-
-.aiw-backup-export:active {
-  transform: scale(0.97);
-}
-
-.aiw-backup-export:focus-visible {
-  outline: none;
-  box-shadow: 0 0 0 4px rgba(16, 163, 127, 0.24);
-}
-
-/* ------------------------------------------------------------
-   IMPORT BUTTON (DESTRUCTIVE)
------------------------------------------------------------- */
+/* Import is destructive (replaces ALL data): danger-tinted glass. */
 .aiw-backup-import {
-  padding: 10px 18px;
-  border-radius: 12px;
+  padding: var(--aiw-space-sm) var(--aiw-space-lg);
+  border-radius: var(--aiw-radius-control);
 
-  /* Danger-tinted glass — signals this replaces ALL data */
-  background: rgba(220, 60, 60, 0.14);
-  border: 1px solid rgba(220, 60, 60, 0.4);
-  color: rgba(255, 255, 255, 0.92);
+  background: var(--aiw-danger-soft);
+  border: 1px solid var(--aiw-danger-border);
+  color: var(--aiw-text);
 
-  font-size: 13px;
+  font-size: var(--aiw-fs-sm);
   font-weight: 500;
   font-family: inherit;
   cursor: pointer;
+
   transition:
-    background-color 140ms ease,
-    transform 140ms ease;
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    transform var(--aiw-dur-fast) var(--aiw-ease);
 }
 
 .aiw-backup-import:hover {
-  background: rgba(220, 60, 60, 0.24);
+  background: var(--aiw-danger-soft-hover);
   transform: translateY(-1px);
 }
 
@@ -848,57 +587,44 @@
 
 .aiw-backup-import:focus-visible {
   outline: none;
-  box-shadow: 0 0 0 4px rgba(220, 60, 60, 0.24);
+  box-shadow: var(--aiw-danger-ring);
 }
 
 /* ------------------------------------------------------------
-   TOAST NOTIFICATION
+   4. TOAST NOTIFICATION
 ------------------------------------------------------------ */
 /*
   Anchored to the viewport (bottom-center), independent of the orb
-  and the panel. Sits in the clear band below the panel's bottom
-  edge, so it reads well whether the panel is open or closed.
+  and the panel. Purely informational — never blocks interaction.
 */
+
 .aiw-toast {
   position: absolute;
   bottom: 50px;
   left: 50%;
-  /* Centering transform — must match the keyframe end state below */
+
+  /* Centering transform — must match the keyframe end state */
   transform: translateX(-50%);
+
   /* Keep above the panel within the floating root */
   z-index: 1;
 
-  padding: 10px 18px;
-  border-radius: 999px;
+  padding: var(--aiw-space-sm) 18px;
+  border-radius: var(--aiw-radius-pill);
 
-  /* Glass surface — matches orb action buttons */
-  background: rgba(24, 42, 76, 0.65);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.22),
-    0 2px 8px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /* Floating glass surface — matches orb action pills */
+  background: var(--aiw-surface-float);
+  backdrop-filter: var(--aiw-blur);
+  -webkit-backdrop-filter: var(--aiw-blur);
+  border: 1px solid var(--aiw-border-strong);
+  box-shadow: var(--aiw-shadow-float);
 
-  color: rgba(255, 255, 255, 0.92);
-  font-size: 17px;
+  color: var(--aiw-text);
+  font-size: var(--aiw-fs-md);
   font-weight: 500;
   white-space: nowrap;
 
-  /* Toast is purely informational — never blocks page interaction */
   pointer-events: none;
-  animation: aiw-toast-enter 180ms ease;
-}
 
-@keyframes aiw-toast-enter {
-  from {
-    opacity: 0;
-    /* -50% X is folded in so centering survives the animation */
-    transform: translate(-50%, 6px);
-  }
-  to {
-    opacity: 1;
-    transform: translate(-50%, 0);
-  }
+  animation: aiw-toast-enter var(--aiw-dur-med) var(--aiw-ease);
 }

@@ -1,9 +1,15 @@
-/* src/ui/styles/floatingShell.css*/
+/* src/ui/styles/floatingShell.css */
 /* ------------------------------------------------------------
    FLOATING UI STYLESHEET
 ------------------------------------------------------------ */
+/*
+  Import order matters only for readability — no rule here relies
+  on cascade order between files. root.css must stay first so the
+  token definitions read before their usages.
+*/
 
 @import "./root.css";
+@import "./animations.css";
 @import "./orb.css";
 @import "./actions.css";
 @import "./panels.css";

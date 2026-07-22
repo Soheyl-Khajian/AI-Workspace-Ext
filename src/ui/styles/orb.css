@@ -1,16 +1,20 @@
-/* src/ui/styles/orb.css*/
+/* src/ui/styles/orb.css */
 /* ------------------------------------------------------------
-FLOATING ORB BUTTON
+   FLOATING ORB BUTTON
 ------------------------------------------------------------ */
 /*
-Main interaction anchor.
+  Main interaction anchor.
 
-The orb is:
-- entrypoint
-- animation origin
-- radial menu anchor
-- future navigation hub
+  The orb is:
+  - entrypoint
+  - animation origin
+  - radial menu anchor
+  - future navigation hub
+
+  The orb is the ONE solid-accent surface in the UI — it is the
+  brand mark, so it reads identically over any host page.
 */
+
 #aiw-orb-button {
   position: absolute;
   right: 52px;
@@ -18,26 +22,22 @@ The orb is:
   width: 56px;
   height: 56px;
   border-radius: 50%;
+
   pointer-events: auto;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
 
-  /* Glass surface */
-  background: rgba(0, 110, 220, 0.4);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
-
-  /* Glass edge + inner highlight */
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  box-shadow:
-    0 10px 32px rgba(0, 0, 0, 0.24),
-    0 2px 10px rgba(0, 0, 0, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  /* Solid brand surface + glass edge */
+  background: var(--aiw-accent);
+  backdrop-filter: var(--aiw-blur);
+  -webkit-backdrop-filter: var(--aiw-blur);
+  border: 1px solid var(--aiw-border-strong);
+  box-shadow: var(--aiw-shadow-float);
 
   transition:
-    transform 160ms ease,
-    background-color 160ms ease,
-    box-shadow 160ms ease;
+    transform var(--aiw-dur-fast) var(--aiw-ease),
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    box-shadow var(--aiw-dur-fast) var(--aiw-ease);
 }
 
 /* ------------------------------------------------------------
@@ -46,94 +46,69 @@ The orb is:
 
 #aiw-orb-button:hover {
   transform: translateY(-2px);
-  background: rgba(30, 30, 38, 0.72);
-  box-shadow:
-    0 14px 40px rgba(0, 0, 0, 0.28),
-    0 4px 14px rgba(0, 0, 0, 0.18),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: var(--aiw-accent-strong);
+  box-shadow: var(--aiw-shadow-float-hover);
 }
 
 /* ------------------------------------------------------------
-ORB EXPANDED STATE
+   ORB EXPANDED STATE
 ------------------------------------------------------------ */
 /*
-Visual feedback when radial menu is opened.
+  Visual feedback when radial menu is opened.
 */
 
 #aiw-floating-root[data-orb-expanded="true"] #aiw-orb-button {
-  /*
- Slight scale increase creates active feeling.
-*/
+  /* Slight scale increase creates active feeling. */
   transform: scale(1.05);
 
-  /*
- Active tinted surface.
-*/
-  background: rgba(24, 42, 76, 0.75);
+  background: var(--aiw-accent-strong);
 
-  /*
- Stronger active glow.
-*/
+  /* Brand glow marks the open state. */
   box-shadow:
-    0 0 18px rgba(59, 130, 246, 0.18),
-    0 12px 38px rgba(0, 0, 0, 0.34);
+    var(--aiw-accent-glow),
+    var(--aiw-shadow-float-hover);
 }
 
 /* ------------------------------------------------------------
-ORB FOCUS STATE
+   ORB FOCUS STATE
 ------------------------------------------------------------ */
 
 #aiw-orb-button:focus-visible {
-  /*
- Remove default browser outline.
-*/
+  /* Remove default browser outline. */
   outline: none;
 
-  /*
- Accessible focus ring.
-*/
+  /* Accessible focus ring layered over the resting shadow. */
   box-shadow:
-    0 0 0 4px rgba(16, 163, 127, 0.28),
-    0 10px 32px rgba(0, 0, 0, 0.28);
+    var(--aiw-focus-ring),
+    var(--aiw-shadow-float);
 }
 
 /* ------------------------------------------------------------
-ORB ACTIONS CONTAINER
+   ORB ACTIONS CONTAINER
 ------------------------------------------------------------ */
 /*
-Shared coordinate space for radial action buttons.
+  Shared coordinate space for radial action buttons.
 
-IMPORTANT:
-This container itself is NOT interactive.
-
-Only child buttons are interactive.
+  IMPORTANT:
+  This container itself is NOT interactive.
+  Only child buttons are interactive.
 */
 
 #aiw-orb-actions {
-  /*
- Positioned relative to floating root.
-*/
+  /* Positioned relative to floating root. */
   position: absolute;
 
-  /*
- Match orb anchor coordinates.
-*/
+  /* Match orb anchor coordinates. */
   right: 52px;
   bottom: 52px;
 
-  /*
- Same initial size as orb.
-*/
+  /* Same initial size as orb. */
   width: 56px;
   height: 56px;
 
-  /*
- Container itself should not block clicks.
-*/
+  /* Container itself should not block clicks. */
   pointer-events: none;
 
-  /*
- Allow buttons to escape container bounds.
-*/
+  /* Allow buttons to escape container bounds. */
   overflow: visible;
 }

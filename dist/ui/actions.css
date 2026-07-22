@@ -1,16 +1,16 @@
-/* src/ui/styles/actions.css*/
+/* src/ui/styles/actions.css */
 /* ------------------------------------------------------------
-ORB ACTION BUTTONS
+   ORB ACTION BUTTONS
 ------------------------------------------------------------ */
 /*
-Floating radial actions.
+  Floating radial actions.
 
-Initially:
-- stacked at center
-- invisible
-- scaled down
+  Initially:
+  - stacked at center
+  - invisible
+  - scaled down
 
-Expanded state moves them outward.
+  Expanded state moves them outward.
 */
 
 .aiw-orb-action {
@@ -23,32 +23,27 @@ Expanded state moves them outward.
 
   width: 96px;
   height: 40px;
-  border: none;
-  border-radius: 999px;
+  border-radius: var(--aiw-radius-pill);
 
-  /* Glass surface */
-  background: rgba(24, 42, 76, 0.5);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  /* Floating glass surface */
+  background: var(--aiw-surface-float);
+  backdrop-filter: var(--aiw-blur);
+  -webkit-backdrop-filter: var(--aiw-blur);
+  border: 1px solid var(--aiw-border-strong);
+  box-shadow: var(--aiw-shadow-float);
 
-  /* Glass edge + inner highlight */
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.22),
-    0 2px 8px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--aiw-text);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--aiw-fs-sm);
   font-weight: 500;
+  font-family: inherit;
   user-select: none;
 
   transition:
-    transform 180ms ease,
-    opacity 180ms ease,
-    background-color 160ms ease,
-    box-shadow 160ms ease;
+    transform var(--aiw-dur-med) var(--aiw-ease),
+    opacity var(--aiw-dur-med) var(--aiw-ease),
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    box-shadow var(--aiw-dur-fast) var(--aiw-ease);
 }
 
 /* ------------------------------------------------------------
@@ -56,11 +51,8 @@ Expanded state moves them outward.
 ------------------------------------------------------------ */
 
 .aiw-orb-action:hover {
-  background: rgba(30, 30, 38, 0.72);
-  box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.26),
-    0 3px 10px rgba(0, 0, 0, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: var(--aiw-surface-active);
+  box-shadow: var(--aiw-shadow-float-hover);
 }
 
 /* ------------------------------------------------------------
@@ -69,10 +61,9 @@ Expanded state moves them outward.
 
 .aiw-orb-action:focus-visible {
   outline: none;
-
   box-shadow:
-    0 0 0 4px rgba(16, 163, 127, 0.24),
-    0 8px 24px rgba(0, 0, 0, 0.24);
+    var(--aiw-focus-ring),
+    var(--aiw-shadow-float);
 }
 
 /* ------------------------------------------------------------
@@ -88,28 +79,28 @@ Expanded state moves them outward.
 }
 
 /* ------------------------------------------------------------
-   PROJECTS ACTION POSITION
+   FAN POSITIONS (orb-relative geometry)
 ------------------------------------------------------------ */
-/* Bottom of the diagonal fan — closest to the orb. */
+/*
+  Diagonal fan anchored to the orb. These px transforms are
+  orb-relative geometry, not page layout — they stay literal on
+  purpose (see root.css token rules). Even 66px vertical / 48px
+  horizontal steps keep the three wide pills from overlapping.
+*/
+
+/* Bottom of the fan — closest to the orb. */
 #aiw-floating-root[data-orb-expanded="true"]
   .aiw-orb-action[data-action-id="projects"] {
   transform: translate(-128px, -32px) scale(1);
 }
 
-/* ------------------------------------------------------------
-   BACKUP ACTION POSITION
------------------------------------------------------------- */
-/* Middle of the fan — evenly spaced between Projects and Search. */
+/* Middle of the fan. */
 #aiw-floating-root[data-orb-expanded="true"]
   .aiw-orb-action[data-action-id="backup"] {
   transform: translate(-80px, -98px) scale(1);
 }
 
-/* ------------------------------------------------------------
-   SEARCH ACTION POSITION
------------------------------------------------------------- */
-/* Top of the fan — furthest up. Even 66px vertical / 48px
-   horizontal steps keep the three wide pills from overlapping. */
+/* Top of the fan — furthest up. */
 #aiw-floating-root[data-orb-expanded="true"]
   .aiw-orb-action[data-action-id="search"] {
   transform: translate(-32px, -164px) scale(1);
