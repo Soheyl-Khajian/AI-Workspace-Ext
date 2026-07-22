@@ -70,7 +70,7 @@ type ItemsControllerDependencies = {
 // PUBLIC CONTROLLER API
 // ------------------------------------------------------------
 
-type ItemsController = {
+export type ItemsController = {
   load: (projectId: string) => Promise<void>;
   selectItem: (itemId: string) => void;
   toggleSelection: (itemId: string) => void;

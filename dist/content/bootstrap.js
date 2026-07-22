@@ -716,6 +716,53 @@
     }
   });
 
+  // src/ui/core/eventBindings.ts
+  var asListener;
+  var init_eventBindings = __esm({
+    "src/ui/core/eventBindings.ts"() {
+      "use strict";
+      asListener = (handler) => handler;
+    }
+  });
+
+  // src/ui/core/floatingUiState.ts
+  function isOrbExpanded() {
+    return state3.orbExpanded;
+  }
+  function getActivePanel() {
+    return state3.activePanel;
+  }
+  function expandOrb() {
+    state3.orbExpanded = true;
+  }
+  function collapseOrb() {
+    state3.orbExpanded = false;
+    state3.activePanel = null;
+  }
+  function openPanel(panel) {
+    state3.activePanel = panel;
+    state3.orbExpanded = true;
+  }
+  function togglePanel(panel) {
+    const current = state3.activePanel;
+    if (current === panel) {
+      state3.activePanel = null;
+    } else {
+      state3.activePanel = panel;
+      state3.orbExpanded = true;
+    }
+  }
+  var state3;
+  var init_floatingUiState = __esm({
+    "src/ui/core/floatingUiState.ts"() {
+      "use strict";
+      state3 = {
+        orbExpanded: false,
+        activePanel: null
+      };
+    }
+  });
+
   // src/ui/core/floatingDom.ts
   function mustQuery(root, selector) {
     const el = root.querySelector(selector);
@@ -756,15 +803,6 @@
   var init_orbActionRouter = __esm({
     "src/ui/core/orbActionRouter.ts"() {
       "use strict";
-    }
-  });
-
-  // src/ui/core/eventBindings.ts
-  var asListener;
-  var init_eventBindings = __esm({
-    "src/ui/core/eventBindings.ts"() {
-      "use strict";
-      asListener = (handler) => handler;
     }
   });
 
@@ -830,44 +868,6 @@
     "src/ui/core/renderOrbActions.ts"() {
       "use strict";
       init_createOrbActionButton();
-    }
-  });
-
-  // src/ui/core/floatingUiState.ts
-  function isOrbExpanded() {
-    return state3.orbExpanded;
-  }
-  function getActivePanel() {
-    return state3.activePanel;
-  }
-  function expandOrb() {
-    state3.orbExpanded = true;
-  }
-  function collapseOrb() {
-    state3.orbExpanded = false;
-    state3.activePanel = null;
-  }
-  function openPanel(panel) {
-    state3.activePanel = panel;
-    state3.orbExpanded = true;
-  }
-  function togglePanel(panel) {
-    const current = state3.activePanel;
-    if (current === panel) {
-      state3.activePanel = null;
-    } else {
-      state3.activePanel = panel;
-      state3.orbExpanded = true;
-    }
-  }
-  var state3;
-  var init_floatingUiState = __esm({
-    "src/ui/core/floatingUiState.ts"() {
-      "use strict";
-      state3 = {
-        orbExpanded: false,
-        activePanel: null
-      };
     }
   });
 
@@ -1775,6 +1775,173 @@
     }
   });
 
+  // src/ui/features/items/itemsHandlers.ts
+  function createItemsHandlers(deps) {
+    function handleSelectItem(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(ITEM_SELECT_SELECTOR)) return;
+      if (target.closest(ITEM_DELETE_SELECTOR)) return;
+      const row = target.closest(ITEM_ROW_SELECTOR);
+      if (!(row instanceof HTMLElement)) {
+        return;
+      }
+      const itemId = row.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      deps.itemsController.selectItem(itemId);
+    }
+    function handleToggleItemSelection(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const checkBox = target.closest(ITEM_SELECT_SELECTOR);
+      if (!(checkBox instanceof HTMLInputElement)) {
+        return;
+      }
+      const itemId = checkBox.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      deps.itemsController.toggleSelection(itemId);
+    }
+    async function handleCreateItem(event) {
+      const selectedProjectId = getSelectedProjectId();
+      if (selectedProjectId === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const submitButton = target.closest(ITEM_CREATE_BUTTON_SELECTOR);
+      if (!(submitButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const titleInput = deps.panelsEl.querySelector(ITEM_CREATE_TITLE_SELECTOR);
+      const contentInput = deps.panelsEl.querySelector(
+        ITEM_CREATE_CONTENT_SELECTOR
+      );
+      if (!(titleInput instanceof HTMLInputElement) || !(contentInput instanceof HTMLTextAreaElement)) {
+        return;
+      }
+      const trimmedItemTitle = titleInput.value.trim();
+      const itemContent = contentInput.value;
+      if (trimmedItemTitle.length === 0 && itemContent.trim().length === 0) {
+        deps.notify("Add a title or some content");
+        return;
+      }
+      await deps.itemsController.create(
+        selectedProjectId,
+        trimmedItemTitle,
+        itemContent
+      );
+    }
+    async function handleUpdateItem(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const saveButton = target.closest(ITEM_DETAIL_SAVE_SELECTOR);
+      if (!(saveButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const itemId = saveButton.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      const titleInput = deps.panelsEl.querySelector(ITEM_DETAIL_TITLE_SELECTOR);
+      if (!(titleInput instanceof HTMLInputElement)) {
+        return;
+      }
+      const contentInput = deps.panelsEl.querySelector(
+        ITEM_DETAIL_CONTENT_SELECTOR
+      );
+      if (!(contentInput instanceof HTMLTextAreaElement)) {
+        return;
+      }
+      const trimmedItemTitle = titleInput.value.trim();
+      const itemContent = contentInput.value;
+      if (trimmedItemTitle.length === 0 && itemContent.trim().length === 0) {
+        deps.notify("Add a title or some content");
+        return;
+      }
+      await deps.itemsController.updateItem(
+        itemId,
+        trimmedItemTitle,
+        itemContent
+      );
+    }
+    async function handleBuildContext(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const buildButton = target.closest(ITEM_BUILD_CONTEXT_SELECTOR);
+      if (!(buildButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const selectedProjectId = getSelectedProjectId();
+      if (selectedProjectId === null) {
+        return;
+      }
+      const projectName = deps.resolveProjectName(selectedProjectId);
+      await deps.itemsController.copyContextPack(projectName);
+    }
+    async function handleDeleteItem(event) {
+      const selectedProjectId = getSelectedProjectId();
+      if (selectedProjectId === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const deleteButton = target.closest(ITEM_DELETE_SELECTOR);
+      if (!(deleteButton instanceof HTMLElement)) {
+        return;
+      }
+      const itemId = deleteButton.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      if (!window.confirm("Delete this item?")) return;
+      await deps.itemsController.deleteItem(itemId, selectedProjectId);
+    }
+    const eventBindings = [
+      [deps.panelsEl, "click", asListener(handleSelectItem)],
+      [deps.panelsEl, "click", asListener(handleToggleItemSelection)],
+      [deps.panelsEl, "click", asListener(handleCreateItem)],
+      [deps.panelsEl, "click", asListener(handleUpdateItem)],
+      [deps.panelsEl, "click", asListener(handleBuildContext)],
+      [deps.panelsEl, "click", asListener(handleDeleteItem)]
+    ];
+    return eventBindings;
+  }
+  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR;
+  var init_itemsHandlers = __esm({
+    "src/ui/features/items/itemsHandlers.ts"() {
+      "use strict";
+      init_eventBindings();
+      init_sessionState();
+      ITEM_ROW_SELECTOR = ".aiw-item-row";
+      ITEM_SELECT_SELECTOR = ".aiw-item-select";
+      ITEM_DELETE_SELECTOR = ".aiw-item-delete";
+      ITEM_ID_DATASET_KEY = "itemId";
+      ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
+      ITEM_CREATE_TITLE_SELECTOR = ".aiw-create-item-title";
+      ITEM_CREATE_CONTENT_SELECTOR = ".aiw-create-item-content";
+      ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
+      ITEM_DETAIL_TITLE_SELECTOR = ".aiw-item-detail-title";
+      ITEM_DETAIL_CONTENT_SELECTOR = ".aiw-item-detail-content";
+      ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
+    }
+  });
+
   // src/ui/features/backup/buildBackup.ts
   function buildBackup(snapshot, exportedAt) {
     return {
@@ -1996,6 +2163,12 @@
       notify: showToast,
       requestRender: renderUi
     });
+    const itemsBindings = createItemsHandlers({
+      panelsEl: dom.orbPanelsEl,
+      itemsController,
+      notify: showToast,
+      resolveProjectName
+    });
     const backupController = createBackupController({
       notify: showToast,
       onImported: reloadAfterImport
@@ -2049,139 +2222,12 @@
     function handleOrbActionClick(actionId) {
       handleOrbAction(actionId, actionsContext);
     }
-    function handleSelectItem(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      if (target.closest(ITEM_SELECT_SELECTOR)) return;
-      if (target.closest(ITEM_DELETE_SELECTOR)) return;
-      const row = target.closest(ITEM_ROW_SELECTOR);
-      if (!(row instanceof HTMLElement)) {
-        return;
-      }
-      const itemId = row.dataset[ITEM_ID_DATASET_KEY];
-      if (!itemId) {
-        return;
-      }
-      itemsController.selectItem(itemId);
-    }
-    function handleToggleItemSelection(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const checkBox = target.closest(ITEM_SELECT_SELECTOR);
-      if (!(checkBox instanceof HTMLInputElement)) {
-        return;
-      }
-      const itemId = checkBox.dataset[ITEM_ID_DATASET_KEY];
-      if (!itemId) {
-        return;
-      }
-      itemsController.toggleSelection(itemId);
-    }
-    async function handleCreateItem(event) {
-      const selectedProjectId = getSelectedProjectId();
-      if (selectedProjectId === null) {
-        return;
-      }
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const submitButton = target.closest(ITEM_CREATE_BUTTON_SELECTOR);
-      if (!(submitButton instanceof HTMLButtonElement)) {
-        return;
-      }
-      const titleInput = dom.orbPanelsEl.querySelector(".aiw-create-item-title");
-      const contentInput = dom.orbPanelsEl.querySelector(
-        ".aiw-create-item-content"
-      );
-      if (!(titleInput instanceof HTMLInputElement) || !(contentInput instanceof HTMLTextAreaElement)) {
-        return;
-      }
-      const trimmedItemTitle = titleInput.value.trim();
-      const itemContent = contentInput.value;
-      if (trimmedItemTitle.length === 0 && itemContent.trim().length === 0) {
-        showToast("Add a title or some content");
-        return;
-      }
-      await itemsController.create(
-        selectedProjectId,
-        trimmedItemTitle,
-        itemContent
-      );
-    }
-    async function handleUpdateItem(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const saveButton = target.closest(ITEM_DETAIL_SAVE_SELECTOR);
-      if (!(saveButton instanceof HTMLButtonElement)) {
-        return;
-      }
-      const itemId = saveButton.dataset[ITEM_ID_DATASET_KEY];
-      if (!itemId) {
-        return;
-      }
-      const titleInput = dom.orbPanelsEl.querySelector(".aiw-item-detail-title");
-      if (!(titleInput instanceof HTMLInputElement)) {
-        return;
-      }
-      const contentInput = dom.orbPanelsEl.querySelector(
-        ".aiw-item-detail-content"
-      );
-      if (!(contentInput instanceof HTMLTextAreaElement)) {
-        return;
-      }
-      const trimmedItemTitle = titleInput.value.trim();
-      const itemContent = contentInput.value;
-      if (trimmedItemTitle.length === 0 && itemContent.trim().length === 0) {
-        showToast("Add a title or some content");
-        return;
-      }
-      await itemsController.updateItem(itemId, trimmedItemTitle, itemContent);
-    }
-    async function handleBuildContext(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const buildButton = target.closest(ITEM_BUILD_CONTEXT_SELECTOR);
-      if (!(buildButton instanceof HTMLButtonElement)) {
-        return;
-      }
-      const selectedProjectId = getSelectedProjectId();
-      if (selectedProjectId === null) {
-        return;
-      }
+    function resolveProjectName(projectId) {
       const project = getProjects().find(
-        (candidate) => candidate.id === selectedProjectId
+        (candidate) => candidate.id === projectId
       );
       const projectName = project ? project.name : "Untitled project";
-      await itemsController.copyContextPack(projectName);
-    }
-    async function handleDeleteItem(event) {
-      const selectedProjectId = getSelectedProjectId();
-      if (selectedProjectId === null) {
-        return;
-      }
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const deleteButton = target.closest(ITEM_DELETE_SELECTOR);
-      if (!(deleteButton instanceof HTMLElement)) {
-        return;
-      }
-      const itemId = deleteButton.dataset[ITEM_ID_DATASET_KEY];
-      if (!itemId) {
-        return;
-      }
-      if (!window.confirm("Delete this item?")) return;
-      await itemsController.deleteItem(itemId, selectedProjectId);
+      return projectName;
     }
     async function handleExportBackup(event) {
       const target = event.target;
@@ -2244,14 +2290,9 @@
     }
     const eventBindings = [
       [dom.orbButtonEl, "click", asListener(toggleOrbVisibility)],
-      ...projectsBindings,
-      [dom.orbPanelsEl, "click", asListener(handleSelectItem)],
-      [dom.orbPanelsEl, "click", asListener(handleToggleItemSelection)],
       [dom.orbPanelsEl, "click", asListener(handleBackButtonClick)],
-      [dom.orbPanelsEl, "click", asListener(handleCreateItem)],
-      [dom.orbPanelsEl, "click", asListener(handleUpdateItem)],
-      [dom.orbPanelsEl, "click", asListener(handleBuildContext)],
-      [dom.orbPanelsEl, "click", asListener(handleDeleteItem)],
+      ...projectsBindings,
+      ...itemsBindings,
       [dom.orbPanelsEl, "click", asListener(handleExportBackup)],
       [dom.orbPanelsEl, "click", asListener(handleImportBackup)],
       [document, "pointerdown", asListener(handleDocumentPointerDown)],
@@ -2266,32 +2307,26 @@
       }
     };
   }
-  var PANEL_BACK_BUTTON_SELECTOR, ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
+  var PANEL_BACK_BUTTON_SELECTOR, BACKUP_EXPORT_SELECTOR, BACKUP_IMPORT_SELECTOR;
   var init_floatingController = __esm({
     "src/ui/core/floatingController.ts"() {
       "use strict";
+      init_eventBindings();
+      init_floatingUiState();
+      init_sessionState();
+      init_projectsState();
       init_floatingDom();
       init_orbActionRouter();
-      init_eventBindings();
       init_orbActions();
       init_renderOrbActions();
       init_renderFloatingPanels();
-      init_floatingUiState();
       init_projectsController();
       init_projectsHandlers();
       init_itemsController();
-      init_projectsState();
-      init_sessionState();
-      init_showToast();
+      init_itemsHandlers();
       init_backupController();
+      init_showToast();
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
-      ITEM_ROW_SELECTOR = ".aiw-item-row";
-      ITEM_SELECT_SELECTOR = ".aiw-item-select";
-      ITEM_DELETE_SELECTOR = ".aiw-item-delete";
-      ITEM_ID_DATASET_KEY = "itemId";
-      ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
-      ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
-      ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
       BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
       BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
     }
