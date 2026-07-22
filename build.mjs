@@ -22,6 +22,10 @@ const entryPoints = [
 ];
 const outdir = "dist";
 
+// Clean previous output so dist/ contains exactly what THIS build
+// produced — esbuild overwrites but never deletes stale files.
+fs.rmSync(outdir, { recursive: true, force: true });
+
 const ctx = await esbuild.context({
   entryPoints: entryPoints, // Specify entry files
   outdir: outdir, // Directory for compiled output
