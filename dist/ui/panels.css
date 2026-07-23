@@ -70,8 +70,8 @@
 .aiw-floating-panel__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  padding: 18px var(--aiw-space-xl);
+  gap: var(--aiw-space-sm);
+  padding: var(--aiw-space-md) var(--aiw-space-xl);
   border-bottom: 1px solid var(--aiw-separator);
 
   /* Prevent header from shrinking */
@@ -79,9 +79,10 @@
 }
 
 .aiw-floating-panel__title {
+  flex: 1;
   margin: 0;
   font-size: var(--aiw-fs-lg);
-  font-weight: 600;
+  font-weight: 700;
   letter-spacing: -0.01em;
   color: var(--aiw-text);
 }
@@ -142,13 +143,27 @@
 ------------------------------------------------------------ */
 
 .aiw-panel-back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 5px 5px 5px;
   background: none;
-  border: none;
+  border: 1px solid var(--aiw-border);
+  border-radius: var(--aiw-radius-sm);
   cursor: pointer;
   color: var(--aiw-text);
-  font-size: 16px;
-  padding: 0;
+  font-size: calc(var(--aiw-fs-lg) * 1.5);
+  font-weight: 900;
   line-height: 1;
+}
+
+.aiw-panel-back-button:hover {
+  background: var(--aiw-surface-hover);
+}
+
+.aiw-panel-back-button:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
 }
 
 /* ------------------------------------------------------------
