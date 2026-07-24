@@ -136,7 +136,7 @@ export function renderItemsPanel(containerEl: HTMLElement): void {
     buildContextButtonEl.textContent = `Build context (${selectedCount})`;
 
     buildContextBarEl.append(buildContextButtonEl);
-    shell.panelEl.append(buildContextBarEl);
+    shell.headerEl.append(buildContextBarEl);
   }
 
   // ------------------------------------------------------------

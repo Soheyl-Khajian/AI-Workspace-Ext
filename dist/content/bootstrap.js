@@ -1186,7 +1186,7 @@
       buildContextButtonEl.className = "aiw-build-context";
       buildContextButtonEl.textContent = `Build context (${selectedCount})`;
       buildContextBarEl.append(buildContextButtonEl);
-      shell.panelEl.append(buildContextBarEl);
+      shell.headerEl.append(buildContextBarEl);
     }
     if (selectedProjectId !== null) {
       const formEl = document.createElement("div");

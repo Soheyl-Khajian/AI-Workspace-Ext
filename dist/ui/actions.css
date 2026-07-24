@@ -1,54 +1,114 @@
-/* src/ui/styles/actions.css*/
+/* src/ui/styles/actions.css */
 /* ------------------------------------------------------------
-ORB ACTION BUTTONS
+   ORB ACTION BUTTONS (elliptical radial fan)
 ------------------------------------------------------------ */
 /*
-Floating radial actions.
+  POLAR POSITIONING SYSTEM:
+  Each pill's expanded position is angle + radius, projected in CSS:
 
-Initially:
-- stacked at center
-- invisible
-- scaled down
+    x = cos(angle) * radius-x
+    y = -sin(angle) * radius-y   (minus: CSS y grows downward)
 
-Expanded state moves them outward.
+  - The RADII are shared tokens (--aiw-fan-radius-x/y in root.css).
+    The arc is an ELLIPSE, wider than tall, because the pills are
+    wide: on a circle, equal angles give unequal visible gaps
+    (pill width eats the gap near the top of the arc, pill height
+    near the side).
+  - The ANGLE is each button's IDENTITY, declared on the button
+    itself — not inside the expanded state. State toggles progress
+    (opacity, transform); it never redefines who a button is.
+  - Angles 95° / 145° / 180° are tuned (with the radii) so the
+    edge-to-edge whitespace between neighbors is near-equal
+    (~20px) — the harmony invariant. If you change pill size or
+    radii, re-check the gaps, not the angles alone.
 */
 
 .aiw-orb-action {
   position: absolute;
-  top: 0;
-  left: 0;
+
+  /* Center the pill on the orb center: the polar transform below
+     then moves the pill CENTER along the arc. */
+  top: calc((var(--aiw-orb-size) - var(--aiw-action-height)) / 2);
+  left: calc((var(--aiw-orb-size) - var(--aiw-action-width)) / 2);
+
+  /* Per-button identity (overridden below per action id).
+     Declared here so the values always exist — no dependence on
+     invalid-at-computed-value fallbacks. */
+  --fan-angle: 145deg;
+  --fan-index: 0;
+
+  /* COLLAPSED STATE: tucked into the orb, invisible, inert. */
   transform: translate(0, 0) scale(0.72);
   opacity: 0;
   pointer-events: none;
 
-  width: 96px;
-  height: 40px;
-  border: none;
-  border-radius: 999px;
+  width: var(--aiw-action-width);
+  height: var(--aiw-action-height);
+  border-radius: var(--aiw-radius-pill);
 
-  /* Glass surface */
-  background: rgba(24, 42, 76, 0.5);
-  backdrop-filter: blur(24px) saturate(160%);
-  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  /* Floating glass surface */
+  background: var(--aiw-surface-float);
+  backdrop-filter: var(--aiw-blur);
+  -webkit-backdrop-filter: var(--aiw-blur);
+  border: 1px solid var(--aiw-border-strong);
+  box-shadow: var(--aiw-shadow-float);
 
-  /* Glass edge + inner highlight */
-  border: 1px solid rgba(255, 255, 255, 0.13);
-  box-shadow:
-    0 8px 24px rgba(0, 0, 0, 0.22),
-    0 2px 8px rgba(0, 0, 0, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.08);
-
-  color: rgba(255, 255, 255, 0.96);
+  color: var(--aiw-text);
   cursor: pointer;
-  font-size: 13px;
+  font-size: var(--aiw-fs-sm);
   font-weight: 500;
+  font-family: inherit;
   user-select: none;
 
+  /* Property order matters: transition-delay in the expanded state
+     pairs with this list positionally. */
   transition:
-    transform 180ms ease,
-    opacity 180ms ease,
-    background-color 160ms ease,
-    box-shadow 160ms ease;
+    transform var(--aiw-dur-med) var(--aiw-ease),
+    opacity var(--aiw-dur-med) var(--aiw-ease),
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    box-shadow var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+/* ------------------------------------------------------------
+   BUTTON IDENTITIES (angle on the arc + bloom order)
+------------------------------------------------------------ */
+
+.aiw-orb-action[data-action-id="projects"] {
+  --fan-angle: 180deg; /* level with the orb, straight left */
+  --fan-index: 0;
+}
+
+.aiw-orb-action[data-action-id="backup"] {
+  top: 14px;
+  left: 5px;
+  --fan-angle: 145deg; /* upper diagonal */
+  --fan-index: 1;
+}
+
+.aiw-orb-action[data-action-id="search"] {
+  --fan-angle: 95deg; /* nearly straight up */
+  --fan-index: 2;
+}
+
+/* ------------------------------------------------------------
+   EXPANDED STATE (elliptical projection + staggered bloom)
+------------------------------------------------------------ */
+
+#aiw-floating-root[data-orb-expanded="true"] .aiw-orb-action {
+  transform: translate(
+      calc(cos(var(--fan-angle)) * var(--aiw-fan-radius-x)),
+      calc(sin(var(--fan-angle)) * var(--aiw-fan-radius-y) * -1)
+    )
+    scale(1);
+  opacity: 1;
+  pointer-events: auto;
+
+  /* Staggered bloom on open: delay transform and opacity only
+     (first two entries of the base transition list); hover
+     feedback (background, shadow) stays instant. Closing is not
+     staggered — the collapsed state declares no delay. */
+  transition-delay:
+    calc(var(--fan-index) * 40ms), calc(var(--fan-index) * 40ms), 0ms, 0ms;
 }
 
 /* ------------------------------------------------------------
@@ -56,11 +116,8 @@ Expanded state moves them outward.
 ------------------------------------------------------------ */
 
 .aiw-orb-action:hover {
-  background: rgba(30, 30, 38, 0.72);
-  box-shadow:
-    0 12px 30px rgba(0, 0, 0, 0.26),
-    0 3px 10px rgba(0, 0, 0, 0.14),
-    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  background: var(--aiw-surface-active);
+  box-shadow: var(--aiw-shadow-float-hover);
 }
 
 /* ------------------------------------------------------------
@@ -69,48 +126,5 @@ Expanded state moves them outward.
 
 .aiw-orb-action:focus-visible {
   outline: none;
-
-  box-shadow:
-    0 0 0 4px rgba(16, 163, 127, 0.24),
-    0 8px 24px rgba(0, 0, 0, 0.24);
-}
-
-/* ------------------------------------------------------------
-   EXPANDED ACTION BASE STATE
------------------------------------------------------------- */
-/*
-  Shared expanded behavior.
-*/
-
-#aiw-floating-root[data-orb-expanded="true"] .aiw-orb-action {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-/* ------------------------------------------------------------
-   PROJECTS ACTION POSITION
------------------------------------------------------------- */
-/* Bottom of the diagonal fan — closest to the orb. */
-#aiw-floating-root[data-orb-expanded="true"]
-  .aiw-orb-action[data-action-id="projects"] {
-  transform: translate(-128px, -32px) scale(1);
-}
-
-/* ------------------------------------------------------------
-   BACKUP ACTION POSITION
------------------------------------------------------------- */
-/* Middle of the fan — evenly spaced between Projects and Search. */
-#aiw-floating-root[data-orb-expanded="true"]
-  .aiw-orb-action[data-action-id="backup"] {
-  transform: translate(-80px, -98px) scale(1);
-}
-
-/* ------------------------------------------------------------
-   SEARCH ACTION POSITION
------------------------------------------------------------- */
-/* Top of the fan — furthest up. Even 66px vertical / 48px
-   horizontal steps keep the three wide pills from overlapping. */
-#aiw-floating-root[data-orb-expanded="true"]
-  .aiw-orb-action[data-action-id="search"] {
-  transform: translate(-32px, -164px) scale(1);
+  box-shadow: var(--aiw-focus-ring), var(--aiw-shadow-float);
 }

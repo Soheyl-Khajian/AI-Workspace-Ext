@@ -1,0 +1,38 @@
+/* src/ui/styles/animations.css */
+/* ------------------------------------------------------------
+   KEYFRAME ANIMATIONS
+------------------------------------------------------------ */
+/*
+  All @keyframes live here; components reference them by name.
+
+  REMINDER (flicker work): a CSS animation replays every time an
+  element is INSERTED into the DOM, while a transition only runs on
+  a style CHANGE of an existing element. Entrance animations must
+  therefore be applied only on genuine "enter" moments once the
+  renderer can tell those apart.
+*/
+
+/* Panel entrance: rise + fade. */
+@keyframes aiw-panel-enter {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Toast entrance: rise + fade, centering folded into transform. */
+@keyframes aiw-toast-enter {
+  from {
+    opacity: 0;
+    /* -50% X is folded in so centering survives the animation */
+    transform: translate(-50%, 6px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}

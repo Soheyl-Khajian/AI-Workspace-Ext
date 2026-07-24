@@ -1,54 +1,177 @@
-/* src/ui/styles/root.css*/
+/* src/ui/styles/root.css */
 /* ------------------------------------------------------------
-   FLOATING UI ROOT
+   FLOATING UI ROOT + DESIGN TOKENS
 ------------------------------------------------------------ */
 /*
-  Global floating layer for the extension.
+  Single source of truth for every design value in the floating UI.
 
-  This layer spans the entire viewport and becomes the shared
-  positioning + animation space for all future floating UI.
+  TOKEN RULES:
+  - Tokens are named by ROLE (what the value does), never by value.
+  - Components reference tokens only; no color/shadow/radius/motion
+    literals below this file.
+  - Layout geometry lives ONLY in the GEOMETRY block: one anchor
+    (the orb) plus declared relationships. Everything else derives
+    from it — moving the anchor moves the whole assembly.
+  - Declared on #aiw-floating-root so tokens inherit to all floating
+    UI and never leak into (or from) the host page.
 
-  Future systems:
-  - radial menus
-  - overlays
-  - panels
-  - tooltips
-  - animations
-  - click-outside detection
+  THEME: "anchored glass" — near-opaque dark neutral surfaces with a
+  soft blur edge. Surfaces guarantee their own text contrast, so the
+  UI reads identically over light- and dark-mode ChatGPT.
 */
 
 #aiw-floating-root {
-  --aiw-accent: rgb(16, 163, 127);
+  /* ---------- BRAND ---------- */
+  --aiw-accent: #1070a3;
+  --aiw-accent-strong: color-mix(in srgb, var(--aiw-accent) 85%, black);
+  --aiw-accent-soft: color-mix(in srgb, var(--aiw-accent) 16%, transparent);
+  --aiw-accent-soft-hover: color-mix(
+    in srgb,
+    var(--aiw-accent) 28%,
+    transparent
+  );
+  --aiw-accent-border: color-mix(in srgb, var(--aiw-accent) 50%, transparent);
+  --aiw-accent-glow: 0 0 18px
+    color-mix(in srgb, var(--aiw-accent) 35%, transparent);
 
+  /* ---------- DANGER ---------- */
+  --aiw-danger: #e05252;
+  --aiw-danger-soft: color-mix(in srgb, var(--aiw-danger) 16%, transparent);
+  --aiw-danger-soft-hover: color-mix(
+    in srgb,
+    var(--aiw-danger) 32%,
+    transparent
+  );
+  --aiw-danger-soft-active: color-mix(
+    in srgb,
+    var(--aiw-danger) 46%,
+    transparent
+  );
+  --aiw-danger-border: color-mix(in srgb, var(--aiw-danger) 50%, transparent);
+  --aiw-danger-text: color-mix(in srgb, var(--aiw-danger) 55%, white);
+  --aiw-danger-ring: 0 0 0 4px
+    color-mix(in srgb, var(--aiw-danger) 28%, transparent);
+
+  /* ---------- SURFACES ---------- */
+  /* Near-opaque: contrast is self-contained, host page mode-proof. */
+  --aiw-surface-panel: rgba(17, 19, 25, 0.97); /* large panels */
+  --aiw-surface-float: rgba(28, 31, 39, 0.96); /* pills, toast */
+  --aiw-surface-row: rgba(255, 255, 255, 0.04); /* list rows */
+  --aiw-surface-row-selected: color-mix(
+    in srgb,
+    var(--aiw-accent) 14%,
+    transparent
+  );
+  --aiw-surface-row-selected-hover: color-mix(
+    in srgb,
+    var(--aiw-accent) 22%,
+    transparent
+  );
+  --aiw-surface-control: rgba(255, 255, 255, 0.07); /* inputs */
+  --aiw-surface-hover: rgba(255, 255, 255, 0.1); /* generic hover */
+  --aiw-surface-active: rgba(255, 255, 255, 0.14); /* generic press */
+
+  /* ---------- BORDERS ---------- */
+  --aiw-border: rgba(255, 255, 255, 0.1); /* controls, rows */
+  --aiw-border-strong: rgba(255, 255, 255, 0.18); /* glass edges */
+  --aiw-separator: rgba(255, 255, 255, 0.08); /* internal dividers */
+
+  /* ---------- TEXT ---------- */
+  --aiw-text: rgba(255, 255, 255, 0.96);
+  --aiw-text-muted: rgba(255, 255, 255, 0.65);
+  --aiw-text-faint: rgba(255, 255, 255, 0.4); /* placeholders, untitled */
+
+  /* ---------- EFFECTS ---------- */
+  --aiw-blur: blur(20px) saturate(140%);
+  --aiw-shadow-panel:
+    0 24px 64px rgba(0, 0, 0, 0.45), 0 8px 20px rgba(0, 0, 0, 0.25),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+  --aiw-shadow-float:
+    0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 8px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.08);
+  --aiw-shadow-float-hover:
+    0 12px 30px rgba(0, 0, 0, 0.4), 0 3px 10px rgba(0, 0, 0, 0.24),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  --aiw-focus-ring: 0 0 0 4px
+    color-mix(in srgb, var(--aiw-accent) 30%, transparent);
+
+  /* ---------- SHAPE ---------- */
+  --aiw-radius-checkbox: 4px;
+  --aiw-radius-sm: 8px;
+  --aiw-radius-panel: 20px;
+  --aiw-radius-row: 14px;
+  --aiw-radius-control: 12px;
+  --aiw-radius-toast: 14px;
+  --aiw-radius-pill: 999px;
+
+  /* ---------- SPACING ---------- */
+  --aiw-space-xs: 8px;
+  --aiw-space-sm: 10px;
+  --aiw-space-md: 14px;
+  --aiw-space-lg: 16px;
+  --aiw-space-xl: 20px;
+
+  /* ---------- GEOMETRY ---------- */
   /*
-      Attach directly to viewport.
-    */
+  The positioning system. Two independent anchors:
+  - The ORB anchors the corner assembly (orb + action fan).
+    Acceptance test: change --aiw-edge-x/y and both move as one.
+  - PANELS anchor to the viewport center (command-palette style),
+    so they read the same at any window size and never depend on
+    the host page's DOM.
+*/
+
+  /* Anchor */
+  --aiw-edge-x: 52px; /* orb distance from right viewport edge */
+  --aiw-edge-y: 52px; /* orb distance from bottom viewport edge */
+  --aiw-orb-size: 56px;
+  --aiw-gutter: 16px; /* minimum breathing room to any viewport edge */
+
+  /* Fan (polar, elliptical: pills sit on a quarter-arc around the
+   orb center). The x-radius is larger than the y-radius because
+   the pills are wide — a circle makes horizontal neighbors look
+   cramped and vertical neighbors look loose. These radii plus
+   the angles in actions.css give near-equal EDGE gaps (~40px)
+   between neighboring pills, which is what reads as harmony. */
+  --aiw-action-width: 96px;
+  --aiw-action-height: 40px;
+  --aiw-fan-radius-x: 138px; /* orb center -> pill center, horizontal */
+  --aiw-fan-radius-y: 110px; /* orb center -> pill center, vertical */
+
+  /* Panel (command palette: screen-centered, with a slight upward
+   bias because the optical center sits above geometric center) */
+  --aiw-panel-header: 60px;
+  --aiw-panel-shift: 6vw; /* nudge right of center: ChatGPT's sidebar
+   sits left, so the visual center of the content area is right
+   of the geometric center */
+  --aiw-panel-lift: 4vh;
+  --aiw-panel-max-width: 1050px;
+  --aiw-panel-max-height: 60vh;
+
+  /* ---------- TYPOGRAPHY ---------- */
+  --aiw-font:
+    Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
+    "Segoe UI", sans-serif;
+  --aiw-fs-sm: 13px; /* controls, buttons, meta */
+  --aiw-fs-md: 14px; /* rows, body text */
+  --aiw-fs-lg: 19px; /* panel titles */
+
+  /* ---------- MOTION ---------- */
+  --aiw-ease: cubic-bezier(0.2, 0, 0, 1);
+  --aiw-dur-fast: 140ms; /* hovers, presses */
+  --aiw-dur-med: 180ms; /* entrances, fan */
+
+  /* ---------- ROOT LAYOUT ---------- */
+  /* Attach directly to viewport, fill entire screen. */
   position: fixed;
-
-  /*
-      Fill entire screen.
-    */
   inset: 0;
 
-  /*
-      Prevent invisible overlay from blocking ChatGPT UI.
-    */
+  /* Prevent invisible overlay from blocking ChatGPT UI. */
   pointer-events: none;
 
-  /*
-      Extension must sit above host application.
-    */
+  /* Extension must sit above host application. */
   z-index: 999999;
 
-  /*
-      Shared typography baseline.
-    */
-  font-family:
-    Inter,
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    BlinkMacSystemFont,
-    "Segoe UI",
-    sans-serif;
+  /* Shared typography baseline. */
+  font-family: var(--aiw-font);
 }
