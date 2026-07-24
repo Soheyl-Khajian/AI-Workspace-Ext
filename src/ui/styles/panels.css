@@ -75,7 +75,9 @@
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
 
+.aiw-floating-panel--enter {
   animation: aiw-panel-enter var(--aiw-dur-med) var(--aiw-ease);
 }
 

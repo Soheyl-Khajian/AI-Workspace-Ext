@@ -27,7 +27,7 @@
 // - NO persistent storage (storage facade)
 // ------------------------------------------------------------
 
-import type { OrbActionId } from "./types";
+import type { OrbActionId, OrbPanelId } from "./types";
 import type { OrbActionContext } from "./orbActionRouter";
 import type { EventBinding } from "./eventBindings";
 
@@ -36,7 +36,12 @@ import { handleOrbAction } from "./orbActionRouter";
 import { getOrbActions } from "./orbActions";
 import { renderOrbActions } from "./renderOrbActions";
 import { renderFloatingPanels } from "./renderFloatingPanels";
-import { isOrbExpanded, openPanel, togglePanel } from "./floatingUiState";
+import {
+  getActivePanel,
+  isOrbExpanded,
+  openPanel,
+  togglePanel,
+} from "./floatingUiState";
 import { setSelectedItemId, setSelectedProjectId } from "./sessionState";
 import { createOrbHandlers } from "./orbHandlers";
 
@@ -110,18 +115,19 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     togglePanel: toggleFloatingPanel,
   };
 
-  renderUi();
-  void projectsController.load();
-
   // ----------------------------------------------------------
   // RENDER
   //
   // Single state → DOM synchronization point. Everything that
   // mutates UI state funnels back through here.
   // ----------------------------------------------------------
+  let lastRenderedPanel: OrbPanelId | null = null;
+
   function renderUi(): void {
     const expanded = isOrbExpanded();
     const orbActions = getOrbActions();
+    const activePanelId = getActivePanel();
+    const panelChanged = activePanelId !== lastRenderedPanel;
 
     dom.rootEl.dataset.orbExpanded = String(expanded);
 
@@ -132,7 +138,13 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       handleOrbActionClick,
     );
 
-    renderFloatingPanels(dom.orbPanelsEl);
+    const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId);
+
+    if (panelChanged && panelEl !== null) {
+      panelEl.classList.add("aiw-floating-panel--enter");
+    }
+
+    lastRenderedPanel = activePanelId;
   }
 
   // ----------------------------------------------------------
@@ -213,6 +225,12 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   for (const [target, type, listener] of eventBindings) {
     target.addEventListener(type, listener);
   }
+
+  // ----------------------------------------------------------
+  // INITIAL RENDER + LOAD
+  // ----------------------------------------------------------
+  renderUi();
+  void projectsController.load();
 
   // ----------------------------------------------------------
   // CLEANUP

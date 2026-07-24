@@ -27,7 +27,7 @@ import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell"
 import { createPanelState } from "../../shared/createPanelState";
 import { getItems } from "./itemsState";
 
-export function renderItemDetailPanel(containerEl: HTMLElement): void {
+export function renderItemDetailPanel(containerEl: HTMLElement): HTMLElement {
   // ------------------------------------------------------------
   // PANEL SHELL
   // ------------------------------------------------------------
@@ -94,4 +94,6 @@ export function renderItemDetailPanel(containerEl: HTMLElement): void {
   // ------------------------------------------------------------
 
   containerEl.append(shell.panelEl);
+
+  return shell.panelEl;
 }

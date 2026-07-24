@@ -824,44 +824,6 @@
     }
   });
 
-  // src/ui/core/floatingUiState.ts
-  function isOrbExpanded() {
-    return state3.orbExpanded;
-  }
-  function getActivePanel() {
-    return state3.activePanel;
-  }
-  function expandOrb() {
-    state3.orbExpanded = true;
-  }
-  function collapseOrb() {
-    state3.orbExpanded = false;
-    state3.activePanel = null;
-  }
-  function openPanel(panel) {
-    state3.activePanel = panel;
-    state3.orbExpanded = true;
-  }
-  function togglePanel(panel) {
-    const current = state3.activePanel;
-    if (current === panel) {
-      state3.activePanel = null;
-    } else {
-      state3.activePanel = panel;
-      state3.orbExpanded = true;
-    }
-  }
-  var state3;
-  var init_floatingUiState = __esm({
-    "src/ui/core/floatingUiState.ts"() {
-      "use strict";
-      state3 = {
-        orbExpanded: false,
-        activePanel: null
-      };
-    }
-  });
-
   // src/ui/shared/createFloatingPanelShell.ts
   function createFloatingPanelShell(title) {
     const panelEl = document.createElement("section");
@@ -1001,6 +963,7 @@
     formEl.append(inputEl, buttonEl);
     shell.panelEl.append(formEl);
     containerEl.append(shell.panelEl);
+    return shell.panelEl;
   }
   var init_renderProjectsPanel = __esm({
     "src/ui/features/projects/renderProjectsPanel.ts"() {
@@ -1022,6 +985,7 @@
     });
     shell.bodyEl.append(panelStateEl);
     containerEl.append(shell.panelEl);
+    return shell.panelEl;
   }
   var init_renderSearchPanel = __esm({
     "src/ui/features/search/renderSearchPanel.ts"() {
@@ -1069,28 +1033,28 @@
 
   // src/ui/features/items/itemsState.ts
   function getItems() {
-    return [...state4.items];
+    return [...state3.items];
   }
   function isItemsLoading() {
-    return state4.loading;
+    return state3.loading;
   }
   function getItemsError() {
-    return state4.error;
+    return state3.error;
   }
   function setItems(itemsList) {
-    state4.items = [...itemsList];
+    state3.items = [...itemsList];
   }
   function setItemsLoading(loading) {
-    state4.loading = loading;
+    state3.loading = loading;
   }
   function setItemsError(error) {
-    state4.error = error;
+    state3.error = error;
   }
-  var state4;
+  var state3;
   var init_itemsState = __esm({
     "src/ui/features/items/itemsState.ts"() {
       "use strict";
-      state4 = {
+      state3 = {
         items: [],
         loading: false,
         error: null
@@ -1206,6 +1170,7 @@
       shell.panelEl.append(formEl);
     }
     containerEl.append(shell.panelEl);
+    return shell.panelEl;
   }
   var init_renderItemsPanel = __esm({
     "src/ui/features/items/renderItemsPanel.ts"() {
@@ -1256,6 +1221,7 @@
       shell.panelEl.append(formEl);
     }
     containerEl.append(shell.panelEl);
+    return shell.panelEl;
   }
   var init_renderItemDetailPanel = __esm({
     "src/ui/features/items/renderItemDetailPanel.ts"() {
@@ -1290,6 +1256,7 @@
     sectionEl.append(actionsEl);
     shell.panelEl.append(sectionEl);
     containerEl.append(shell.panelEl);
+    return shell.panelEl;
   }
   var init_renderBackupPanel = __esm({
     "src/ui/features/backup/renderBackupPanel.ts"() {
@@ -1299,30 +1266,24 @@
   });
 
   // src/ui/core/renderFloatingPanels.ts
-  function renderFloatingPanels(containerEl) {
+  function renderFloatingPanels(containerEl, activePanel) {
     containerEl.textContent = "";
-    const activePanel = getActivePanel();
     if (activePanel === null) {
-      return;
+      return null;
     }
     switch (activePanel) {
       case "projects":
-        renderProjectsPanel(containerEl);
-        break;
+        return renderProjectsPanel(containerEl);
       case "items":
-        renderItemsPanel(containerEl);
-        break;
+        return renderItemsPanel(containerEl);
       case "itemDetail":
-        renderItemDetailPanel(containerEl);
-        break;
+        return renderItemDetailPanel(containerEl);
       case "backup":
-        renderBackupPanel(containerEl);
-        break;
+        return renderBackupPanel(containerEl);
       case "search":
-        renderSearchPanel(containerEl);
-        break;
+        return renderSearchPanel(containerEl);
       default:
-        assertNever2(activePanel);
+        return assertNever2(activePanel);
     }
   }
   function assertNever2(value) {
@@ -1331,12 +1292,49 @@
   var init_renderFloatingPanels = __esm({
     "src/ui/core/renderFloatingPanels.ts"() {
       "use strict";
-      init_floatingUiState();
       init_renderProjectsPanel();
       init_renderSearchPanel();
       init_renderItemsPanel();
       init_renderItemDetailPanel();
       init_renderBackupPanel();
+    }
+  });
+
+  // src/ui/core/floatingUiState.ts
+  function isOrbExpanded() {
+    return state4.orbExpanded;
+  }
+  function getActivePanel() {
+    return state4.activePanel;
+  }
+  function expandOrb() {
+    state4.orbExpanded = true;
+  }
+  function collapseOrb() {
+    state4.orbExpanded = false;
+    state4.activePanel = null;
+  }
+  function openPanel(panel) {
+    state4.activePanel = panel;
+    state4.orbExpanded = true;
+  }
+  function togglePanel(panel) {
+    const current = state4.activePanel;
+    if (current === panel) {
+      state4.activePanel = null;
+    } else {
+      state4.activePanel = panel;
+      state4.orbExpanded = true;
+    }
+  }
+  var state4;
+  var init_floatingUiState = __esm({
+    "src/ui/core/floatingUiState.ts"() {
+      "use strict";
+      state4 = {
+        orbExpanded: false,
+        activePanel: null
+      };
     }
   });
 
@@ -2299,11 +2297,12 @@
     const actionsContext = {
       togglePanel: toggleFloatingPanel
     };
-    renderUi();
-    void projectsController.load();
+    let lastRenderedPanel = null;
     function renderUi() {
       const expanded = isOrbExpanded();
       const orbActions2 = getOrbActions();
+      const activePanelId = getActivePanel();
+      const panelChanged = activePanelId !== lastRenderedPanel;
       dom.rootEl.dataset.orbExpanded = String(expanded);
       renderOrbActions(
         dom.orbActionsEl,
@@ -2311,7 +2310,11 @@
         orbActions2,
         handleOrbActionClick
       );
-      renderFloatingPanels(dom.orbPanelsEl);
+      const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId);
+      if (panelChanged && panelEl !== null) {
+        panelEl.classList.add("aiw-floating-panel--enter");
+      }
+      lastRenderedPanel = activePanelId;
     }
     function toggleFloatingPanel(panelId) {
       togglePanel(panelId);
@@ -2348,6 +2351,8 @@
     for (const [target, type, listener] of eventBindings) {
       target.addEventListener(type, listener);
     }
+    renderUi();
+    void projectsController.load();
     return function destroyFloatingController() {
       for (const [target, type, listener] of eventBindings) {
         target.removeEventListener(type, listener);

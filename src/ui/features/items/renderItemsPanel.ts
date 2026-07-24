@@ -33,7 +33,7 @@ import {
   getSelectedItemId,
 } from "../../core/sessionState";
 
-export function renderItemsPanel(containerEl: HTMLElement): void {
+export function renderItemsPanel(containerEl: HTMLElement): HTMLElement {
   // ------------------------------------------------------------
   // PANEL SHELL
   // ------------------------------------------------------------
@@ -170,4 +170,6 @@ export function renderItemsPanel(containerEl: HTMLElement): void {
   // ------------------------------------------------------------
 
   containerEl.append(shell.panelEl);
+
+  return shell.panelEl;
 }

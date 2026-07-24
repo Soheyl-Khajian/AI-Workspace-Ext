@@ -32,7 +32,7 @@ import {
 
 import { getSelectedProjectId } from "../../core/sessionState";
 
-export function renderProjectsPanel(containerEl: HTMLElement): void {
+export function renderProjectsPanel(containerEl: HTMLElement): HTMLElement {
   const shell = createFloatingPanelShell("Projects");
 
   // ------------------------------------------------------------
@@ -117,4 +117,6 @@ export function renderProjectsPanel(containerEl: HTMLElement): void {
   // ------------------------------------------------------------
 
   containerEl.append(shell.panelEl);
+
+  return shell.panelEl;
 }

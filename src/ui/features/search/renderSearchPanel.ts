@@ -21,7 +21,7 @@
 import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell";
 import { createPanelState } from "../../shared/createPanelState";
 
-export function renderSearchPanel(containerEl: HTMLElement): void {
+export function renderSearchPanel(containerEl: HTMLElement): HTMLElement {
   const shell = createFloatingPanelShell("Search");
 
   const panelStateEl = createPanelState({
@@ -32,4 +32,6 @@ export function renderSearchPanel(containerEl: HTMLElement): void {
   shell.bodyEl.append(panelStateEl);
 
   containerEl.append(shell.panelEl);
+
+  return shell.panelEl;
 }

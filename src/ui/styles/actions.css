@@ -79,6 +79,9 @@
 }
 
 .aiw-orb-action[data-action-id="backup"] {
+  /* DELIBERATE hand-tuned offset on top of the polar projection:
+     no angle at these radii produced a satisfying middle position.
+     If --aiw-fan-radius-x/y change, re-tune or delete these. */
   top: 14px;
   left: 5px;
   --fan-angle: 145deg; /* upper diagonal */

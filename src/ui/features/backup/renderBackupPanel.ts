@@ -17,7 +17,7 @@
 
 import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell";
 
-export function renderBackupPanel(containerEl: HTMLElement): void {
+export function renderBackupPanel(containerEl: HTMLElement): HTMLElement {
   const shell = createFloatingPanelShell("Backup");
 
   const sectionEl = document.createElement("div");
@@ -50,4 +50,6 @@ export function renderBackupPanel(containerEl: HTMLElement): void {
   // FINAL ASSEMBLY
   // ------------------------------------------------------------
   containerEl.append(shell.panelEl);
+
+  return shell.panelEl;
 }

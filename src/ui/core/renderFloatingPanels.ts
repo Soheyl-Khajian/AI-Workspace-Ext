@@ -5,7 +5,7 @@
 
 // Responsibility:
 //
-// - reads current active panel
+// - receives current active panel
 // - clears previous panel render
 // - chooses correct panel renderer
 // - mounts correct floating panel
@@ -19,46 +19,36 @@
 // - NO event orchestration
 // ------------------------------------------------------------
 
-import { getActivePanel } from "./floatingUiState";
+import type { OrbPanelId } from "./types";
 import { renderProjectsPanel } from "../features/projects/renderProjectsPanel";
 import { renderSearchPanel } from "../features/search/renderSearchPanel";
 import { renderItemsPanel } from "../features/items/renderItemsPanel";
 import { renderItemDetailPanel } from "../features/items/renderItemDetailPanel";
 import { renderBackupPanel } from "../features/backup/renderBackupPanel";
 
-export function renderFloatingPanels(containerEl: HTMLElement): void {
+export function renderFloatingPanels(
+  containerEl: HTMLElement,
+  activePanel: OrbPanelId | null,
+): HTMLElement | null {
   containerEl.textContent = "";
 
-  // potential future spaghetti due to state read :D
-  const activePanel = getActivePanel();
-
   if (activePanel === null) {
-    return;
+    return null;
   }
 
   switch (activePanel) {
     case "projects":
-      renderProjectsPanel(containerEl);
-      break;
-
+      return renderProjectsPanel(containerEl);
     case "items":
-      renderItemsPanel(containerEl);
-      break;
-
+      return renderItemsPanel(containerEl);
     case "itemDetail":
-      renderItemDetailPanel(containerEl);
-      break;
-
+      return renderItemDetailPanel(containerEl);
     case "backup":
-      renderBackupPanel(containerEl);
-      break;
-
+      return renderBackupPanel(containerEl);
     case "search":
-      renderSearchPanel(containerEl);
-      break;
-
+      return renderSearchPanel(containerEl);
     default:
-      assertNever(activePanel);
+      return assertNever(activePanel);
   }
 }
 
