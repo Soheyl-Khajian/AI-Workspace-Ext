@@ -6,10 +6,13 @@
 // Responsibility:
 //
 // - own the projects panel's DOM event handlers
-//   (select / create / rename / delete)
+//   (select / deselect / create / rename / delete)
 // - own the projects selector constants + dataset key
 // - contribute EventBinding[] to the floating controller's
 //   declarative add/remove table via createProjectsHandlers()
+// - handleSelectProject treats ANY click inside a row as "select"
+//   unless guarded: every interactive element added inside a row
+//   MUST be excluded there (deselect / rename / delete / inputs)
 //
 // IMPORTANT ARCHITECTURE RULES:
 //
@@ -30,6 +33,7 @@ import { asListener } from "../../core/eventBindings";
 // ------------------------------------------------------------
 
 const PROJECT_ROW_SELECTOR = ".aiw-project-row";
+const PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
 const PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
 const PROJECT_ID_DATASET_KEY = "projectId";
 const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
@@ -51,7 +55,6 @@ export function createProjectsHandlers(
   // ----------------------------------------------------------
   // PROJECT SELECTION HANDLER
   // ----------------------------------------------------------
-
   function handleSelectProject(event: MouseEvent): void {
     const target = event.target;
 
@@ -59,6 +62,7 @@ export function createProjectsHandlers(
       return;
     }
 
+    if (target.closest(PROJECT_DESELECT_SELECTOR)) return;
     if (target.closest(PROJECT_RENAME_SELECTOR)) return;
     if (target.closest(PROJECT_DELETE_SELECTOR)) return;
     if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
@@ -79,9 +83,25 @@ export function createProjectsHandlers(
   }
 
   // ----------------------------------------------------------
+  // PROJECT DESELECTION HANDLER
+  // ----------------------------------------------------------
+  function handleDeselectProject(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const deselectButton = target.closest(PROJECT_DESELECT_SELECTOR);
+    if (!(deselectButton instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    deps.projectsController.deselectProject();
+  }
+
+  // ----------------------------------------------------------
   // PROJECT CREATION HANDLER
   // ----------------------------------------------------------
-
   async function handleCreateProject(event: MouseEvent): Promise<void> {
     const target = event.target;
     if (!(target instanceof Element)) {
@@ -110,7 +130,6 @@ export function createProjectsHandlers(
   // ----------------------------------------------------------
   // PROJECT RENAME HANDLER
   // ----------------------------------------------------------
-
   function handleRenameProject(event: MouseEvent): void {
     let committed = false;
 
@@ -181,7 +200,6 @@ export function createProjectsHandlers(
   // ----------------------------------------------------------
   // PROJECT DELETE HANDLER
   // ----------------------------------------------------------
-
   async function handleDeleteProject(event: MouseEvent): Promise<void> {
     const target = event.target;
 
@@ -207,9 +225,9 @@ export function createProjectsHandlers(
   // ----------------------------------------------------------
   // EVENT BINDINGS
   // ----------------------------------------------------------
-
   const eventBindings: EventBinding[] = [
     [deps.panelsEl, "click", asListener(handleSelectProject)],
+    [deps.panelsEl, "click", asListener(handleDeselectProject)],
     [deps.panelsEl, "click", asListener(handleCreateProject)],
     [deps.panelsEl, "click", asListener(handleRenameProject)],
     [deps.panelsEl, "click", asListener(handleDeleteProject)],

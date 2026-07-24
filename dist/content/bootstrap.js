@@ -895,6 +895,13 @@
     if (selected) {
       rowEl.classList.add("aiw-project-row--selected");
     }
+    if (selected) {
+      const deselectButtonEl = document.createElement("button");
+      deselectButtonEl.type = "button";
+      deselectButtonEl.className = "aiw-project-deselect";
+      deselectButtonEl.textContent = "\u23CF";
+      rowEl.append(deselectButtonEl);
+    }
     const renameButtonEl = document.createElement("button");
     renameButtonEl.type = "button";
     renameButtonEl.className = "aiw-project-rename";
@@ -1448,6 +1455,11 @@
       itemsController.clearSelection();
       itemsController.load(projectId);
     }
+    function deselectProject() {
+      setSelectedProjectId(null);
+      itemsController.clearSelection();
+      onStateChange();
+    }
     async function create(name) {
       try {
         await createProject(name);
@@ -1486,6 +1498,7 @@
     return {
       load,
       selectProject,
+      deselectProject,
       create,
       renameProject: renameProject2,
       deleteProject: deleteProject2
@@ -1509,6 +1522,7 @@
       if (!(target instanceof Element)) {
         return;
       }
+      if (target.closest(PROJECT_DESELECT_SELECTOR)) return;
       if (target.closest(PROJECT_RENAME_SELECTOR)) return;
       if (target.closest(PROJECT_DELETE_SELECTOR)) return;
       if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
@@ -1521,6 +1535,17 @@
         return;
       }
       deps.projectsController.selectProject(projectId);
+    }
+    function handleDeselectProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const deselectButton = target.closest(PROJECT_DESELECT_SELECTOR);
+      if (!(deselectButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      deps.projectsController.deselectProject();
     }
     async function handleCreateProject(event) {
       const target = event.target;
@@ -1614,18 +1639,20 @@
     }
     const eventBindings = [
       [deps.panelsEl, "click", asListener(handleSelectProject)],
+      [deps.panelsEl, "click", asListener(handleDeselectProject)],
       [deps.panelsEl, "click", asListener(handleCreateProject)],
       [deps.panelsEl, "click", asListener(handleRenameProject)],
       [deps.panelsEl, "click", asListener(handleDeleteProject)]
     ];
     return eventBindings;
   }
-  var PROJECT_ROW_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
+  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
   var init_projectsHandlers = __esm({
     "src/ui/features/projects/projectsHandlers.ts"() {
       "use strict";
       init_eventBindings();
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
+      PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
       PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
       PROJECT_ID_DATASET_KEY = "projectId";
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";

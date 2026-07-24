@@ -7,6 +7,8 @@
 // - create one project row button
 // - reflect selected state visually
 // - expose project identity via dataset
+// - render the deselect strip ONLY on the selected row
+//   (release selection — not a checkbox, not delete)
 // - remain purely presentational
 //
 // IMPORTANT:
@@ -25,7 +27,6 @@ export function createProjectRow(
   // ----------------------------------------------------------
   // PROJECT ROW
   // ----------------------------------------------------------
-
   const rowEl = document.createElement("div");
   rowEl.className = "aiw-project-row";
 
@@ -42,9 +43,20 @@ export function createProjectRow(
   }
 
   // ----------------------------------------------------------
+  // DESELECT BUTTON
+  // ----------------------------------------------------------
+  if (selected) {
+    const deselectButtonEl = document.createElement("button");
+    deselectButtonEl.type = "button";
+    deselectButtonEl.className = "aiw-project-deselect";
+    deselectButtonEl.textContent = "⏏";
+
+    rowEl.append(deselectButtonEl);
+  }
+
+  // ----------------------------------------------------------
   // RENAME BUTTON
   // ----------------------------------------------------------
-
   const renameButtonEl = document.createElement("button");
   renameButtonEl.type = "button";
   renameButtonEl.className = "aiw-project-rename";
@@ -56,7 +68,6 @@ export function createProjectRow(
   // ----------------------------------------------------------
   // DELETE BUTTON
   // ----------------------------------------------------------
-
   const deleteButtonEl = document.createElement("button");
   deleteButtonEl.type = "button";
   deleteButtonEl.className = "aiw-project-delete";

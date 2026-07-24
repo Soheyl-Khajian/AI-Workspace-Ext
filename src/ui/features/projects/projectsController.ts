@@ -63,6 +63,7 @@ type ProjectsControllerDependencies = {
 export type ProjectsController = {
   load: () => Promise<void>;
   selectProject: (projectId: string) => void;
+  deselectProject: () => void;
   create: (name: string) => Promise<void>;
   renameProject: (projectId: string, name: string) => Promise<void>;
   deleteProject: (projectId: string) => Promise<void>;
@@ -100,6 +101,18 @@ export function createProjectsController(
 
     itemsController.clearSelection();
     itemsController.load(projectId);
+  }
+
+  // ----------------------------------------------------------
+  // DESELECT PROJECT WORKFLOW
+  // ----------------------------------------------------------
+
+  function deselectProject(): void {
+    setSelectedProjectId(null);
+
+    itemsController.clearSelection();
+
+    onStateChange();
   }
 
   // ----------------------------------------------------------
@@ -161,6 +174,7 @@ export function createProjectsController(
   return {
     load,
     selectProject,
+    deselectProject,
     create,
     renameProject,
     deleteProject,

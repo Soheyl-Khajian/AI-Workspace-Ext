@@ -314,10 +314,11 @@
 }
 
 /* ------------------------------------------------------------
-   PROJECT RENAME BUTTON + INLINE INPUT
+   PROJECT DESELECT BUTTON + RENAME BUTTON + INLINE INPUT
 ------------------------------------------------------------ */
 
-.aiw-project-rename {
+.aiw-project-rename,
+.aiw-project-deselect {
   align-self: stretch;
   width: 36px;
   flex-shrink: 0;
@@ -360,6 +361,25 @@
 
   padding: var(--aiw-space-md) var(--aiw-space-lg);
   min-width: 0;
+}
+
+/* ------------------------------------------------------------
+   PROJECT DESELECT STRIP (selected row only)
+------------------------------------------------------------ */
+/*
+  Same strip anatomy as rename (shared base rule above). Accent-
+  tinted feedback because it acts on SELECTION, not on the project
+  itself — it removes the inset accent bar, so its hover tint
+  matches what it takes away.
+*/
+
+.aiw-project-deselect:hover {
+  background: var(--aiw-accent-soft);
+  color: var(--aiw-text);
+}
+
+.aiw-project-deselect:active {
+  background: var(--aiw-accent-soft-hover);
 }
 
 /* ------------------------------------------------------------
