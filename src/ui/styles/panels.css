@@ -24,10 +24,21 @@
    1. PANELS ROOT
 ------------------------------------------------------------ */
 
+/*
+  Command-palette placement: centered on the viewport with a slight
+  upward bias (--aiw-panel-lift), fully independent of the orb and
+  of the host page's DOM. Centered reads as intentional at any
+  window size — and can't be broken by ChatGPT layout changes.
+
+  The centering transform lives HERE, on the wrapper, so the panel
+  itself stays free for its own entrance animation.
+*/
+
 #aiw-orb-panels {
   position: absolute;
-  right: 255px;
-  bottom: 150px;
+  left: calc(50% + var(--aiw-panel-shift));
+  top: calc(50% - var(--aiw-panel-lift));
+  transform: translate(-50%, -50%);
   overflow: visible;
   pointer-events: none;
 }
@@ -39,12 +50,17 @@
 .aiw-floating-panel {
   pointer-events: auto;
 
-  /* Never wider than the space left of the right-anchored panel
-     root (255px offset + 17px breathing room). Full anchor rework
-     happens in the responsive-positioning pass. */
-  width: min(1050px, calc(100vw - 272px));
+  /* Size is fully derived: as large as the design allows, never
+   larger than the viewport minus a gutter on each side. */
+  width: min(
+    var(--aiw-panel-max-width),
+    calc(100vw - var(--aiw-gutter) * 2 - var(--aiw-panel-shift) * 2)
+  );
   min-height: 240px;
-  max-height: 78vh;
+  max-height: min(
+    var(--aiw-panel-max-height),
+    calc(100vh - var(--aiw-gutter) * 2)
+  );
 
   border-radius: var(--aiw-radius-panel);
 
@@ -69,9 +85,10 @@
 
 .aiw-floating-panel__header {
   display: flex;
+  height: var(--aiw-panel-header);
   align-items: center;
   gap: var(--aiw-space-sm);
-  padding: var(--aiw-space-md) var(--aiw-space-xl);
+  padding: 0 var(--aiw-space-xl);
   border-bottom: 1px solid var(--aiw-separator);
 
   /* Prevent header from shrinking */
@@ -156,7 +173,7 @@
   border-radius: var(--aiw-radius-sm);
   cursor: pointer;
   color: var(--aiw-text);
-  font-size: calc(var(--aiw-fs-lg) * 1.5);
+  font-size: calc(var(--aiw-fs-lg) * 1.7);
   font-weight: 900;
   line-height: 1;
 }
@@ -530,13 +547,6 @@
 .aiw-build-context-bar {
   display: flex;
   flex-shrink: 0;
-  padding: var(--aiw-space-md) var(--aiw-space-lg);
-  border-top: 1px solid var(--aiw-separator);
-}
-
-/* Full-width primary action for the items panel */
-.aiw-build-context {
-  flex: 1;
 }
 
 /* ------------------------------------------------------------
@@ -548,6 +558,7 @@
   flex: 0 0 auto;
   width: 16px;
   height: 16px;
+  border-radius: var(--aiw-radius-checkbox);
 
   /* Left breathing room so it isn't jammed against the row border;
      the title's own left padding handles spacing on the other side */
@@ -613,14 +624,23 @@
    4. TOAST NOTIFICATION
 ------------------------------------------------------------ */
 /*
-  Anchored to the viewport (bottom-center), independent of the orb
-  and the panel. Purely informational — never blocks interaction.
+  Anchored bottom-center, baseline-aligned with the orb (same
+  --aiw-edge-y). Purely informational — never blocks interaction.
+
+  SIZING RULE: the box derives from its content — padding around
+  text, no fixed width/height. A fixed box and a text line have no
+  relationship, which is exactly why the text drifted; content-
+  driven sizing makes drift impossible and fits any message length.
+  Long messages are capped at the gutters and ellipsized.
 */
 
 .aiw-toast {
   position: absolute;
-  bottom: 50px;
+  bottom: var(--aiw-edge-y);
   left: 50%;
+  max-width: calc(100vw - (var(--aiw-gutter) * 2));
+  overflow: hidden;
+  text-overflow: ellipsis;
 
   /* Centering transform — must match the keyframe end state */
   transform: translateX(-50%);
@@ -629,7 +649,7 @@
   z-index: 1;
 
   padding: var(--aiw-space-sm) 18px;
-  border-radius: var(--aiw-radius-pill);
+  border-radius: var(--aiw-radius-toast);
 
   /* Floating glass surface — matches orb action pills */
   background: var(--aiw-surface-float);

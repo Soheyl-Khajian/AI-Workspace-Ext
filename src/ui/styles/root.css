@@ -8,8 +8,10 @@
   TOKEN RULES:
   - Tokens are named by ROLE (what the value does), never by value.
   - Components reference tokens only; no color/shadow/radius/motion
-    literals below this file. Layout geometry (positions, strip
-    widths) stays literal until the responsive-positioning pass.
+    literals below this file.
+  - Layout geometry lives ONLY in the GEOMETRY block: one anchor
+    (the orb) plus declared relationships. Everything else derives
+    from it — moving the anchor moves the whole assembly.
   - Declared on #aiw-floating-root so tokens inherit to all floating
     UI and never leak into (or from) the host page.
 
@@ -94,10 +96,12 @@
     color-mix(in srgb, var(--aiw-accent) 30%, transparent);
 
   /* ---------- SHAPE ---------- */
+  --aiw-radius-checkbox: 4px;
   --aiw-radius-sm: 8px;
   --aiw-radius-panel: 20px;
   --aiw-radius-row: 14px;
   --aiw-radius-control: 12px;
+  --aiw-radius-toast: 14px;
   --aiw-radius-pill: 999px;
 
   /* ---------- SPACING ---------- */
@@ -107,13 +111,50 @@
   --aiw-space-lg: 16px;
   --aiw-space-xl: 20px;
 
+  /* ---------- GEOMETRY ---------- */
+  /*
+  The positioning system. Two independent anchors:
+  - The ORB anchors the corner assembly (orb + action fan).
+    Acceptance test: change --aiw-edge-x/y and both move as one.
+  - PANELS anchor to the viewport center (command-palette style),
+    so they read the same at any window size and never depend on
+    the host page's DOM.
+*/
+
+  /* Anchor */
+  --aiw-edge-x: 52px; /* orb distance from right viewport edge */
+  --aiw-edge-y: 52px; /* orb distance from bottom viewport edge */
+  --aiw-orb-size: 56px;
+  --aiw-gutter: 16px; /* minimum breathing room to any viewport edge */
+
+  /* Fan (polar, elliptical: pills sit on a quarter-arc around the
+   orb center). The x-radius is larger than the y-radius because
+   the pills are wide — a circle makes horizontal neighbors look
+   cramped and vertical neighbors look loose. These radii plus
+   the angles in actions.css give near-equal EDGE gaps (~40px)
+   between neighboring pills, which is what reads as harmony. */
+  --aiw-action-width: 96px;
+  --aiw-action-height: 40px;
+  --aiw-fan-radius-x: 138px; /* orb center -> pill center, horizontal */
+  --aiw-fan-radius-y: 110px; /* orb center -> pill center, vertical */
+
+  /* Panel (command palette: screen-centered, with a slight upward
+   bias because the optical center sits above geometric center) */
+  --aiw-panel-header: 60px;
+  --aiw-panel-shift: 6vw; /* nudge right of center: ChatGPT's sidebar
+   sits left, so the visual center of the content area is right
+   of the geometric center */
+  --aiw-panel-lift: 4vh;
+  --aiw-panel-max-width: 1050px;
+  --aiw-panel-max-height: 60vh;
+
   /* ---------- TYPOGRAPHY ---------- */
   --aiw-font:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
     "Segoe UI", sans-serif;
   --aiw-fs-sm: 13px; /* controls, buttons, meta */
   --aiw-fs-md: 14px; /* rows, body text */
-  --aiw-fs-lg: 17px; /* panel titles */
+  --aiw-fs-lg: 19px; /* panel titles */
 
   /* ---------- MOTION ---------- */
   --aiw-ease: cubic-bezier(0.2, 0, 0, 1);

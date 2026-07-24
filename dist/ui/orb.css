@@ -13,14 +13,18 @@
 
   The orb is the ONE solid-accent surface in the UI — it is the
   brand mark, so it reads identically over any host page.
+
+  GEOMETRY: the orb IS the anchor of the positioning system. Its
+  position and size come exclusively from the GEOMETRY tokens in
+  root.css — no literal coordinates in this file.
 */
 
 #aiw-orb-button {
   position: absolute;
-  right: 52px;
-  bottom: 52px;
-  width: 56px;
-  height: 56px;
+  right: var(--aiw-edge-x);
+  bottom: var(--aiw-edge-y);
+  width: var(--aiw-orb-size);
+  height: var(--aiw-orb-size);
   border-radius: 50%;
 
   pointer-events: auto;
@@ -64,9 +68,7 @@
   background: var(--aiw-accent-strong);
 
   /* Brand glow marks the open state. */
-  box-shadow:
-    var(--aiw-accent-glow),
-    var(--aiw-shadow-float-hover);
+  box-shadow: var(--aiw-accent-glow), var(--aiw-shadow-float-hover);
 }
 
 /* ------------------------------------------------------------
@@ -78,16 +80,16 @@
   outline: none;
 
   /* Accessible focus ring layered over the resting shadow. */
-  box-shadow:
-    var(--aiw-focus-ring),
-    var(--aiw-shadow-float);
+  box-shadow: var(--aiw-focus-ring), var(--aiw-shadow-float);
 }
 
 /* ------------------------------------------------------------
    ORB ACTIONS CONTAINER
 ------------------------------------------------------------ */
 /*
-  Shared coordinate space for radial action buttons.
+  Shared coordinate space for radial action buttons. Mirrors the
+  orb's anchor exactly, so a pill at translate(0,0) sits centered
+  on the orb.
 
   IMPORTANT:
   This container itself is NOT interactive.
@@ -98,13 +100,11 @@
   /* Positioned relative to floating root. */
   position: absolute;
 
-  /* Match orb anchor coordinates. */
-  right: 52px;
-  bottom: 52px;
-
-  /* Same initial size as orb. */
-  width: 56px;
-  height: 56px;
+  /* Mirror the orb anchor. */
+  right: var(--aiw-edge-x);
+  bottom: var(--aiw-edge-y);
+  width: var(--aiw-orb-size);
+  height: var(--aiw-orb-size);
 
   /* Container itself should not block clicks. */
   pointer-events: none;
