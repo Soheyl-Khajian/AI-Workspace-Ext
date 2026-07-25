@@ -6,6 +6,7 @@
 // Responsibility:
 //
 // - receives current active panel
+// - receives render context
 // - clears previous panel render
 // - chooses correct panel renderer
 // - mounts correct floating panel
@@ -19,7 +20,7 @@
 // - NO event orchestration
 // ------------------------------------------------------------
 
-import type { OrbPanelId } from "./types";
+import type { OrbPanelId, RenderContext } from "./types";
 import { renderProjectsPanel } from "../features/projects/renderProjectsPanel";
 import { renderSearchPanel } from "../features/search/renderSearchPanel";
 import { renderItemsPanel } from "../features/items/renderItemsPanel";
@@ -29,6 +30,7 @@ import { renderBackupPanel } from "../features/backup/renderBackupPanel";
 export function renderFloatingPanels(
   containerEl: HTMLElement,
   activePanel: OrbPanelId | null,
+  context: RenderContext,
 ): HTMLElement | null {
   containerEl.textContent = "";
 
@@ -40,9 +42,9 @@ export function renderFloatingPanels(
     case "projects":
       return renderProjectsPanel(containerEl);
     case "items":
-      return renderItemsPanel(containerEl);
+      return renderItemsPanel(containerEl, context.projectName);
     case "itemDetail":
-      return renderItemDetailPanel(containerEl);
+      return renderItemDetailPanel(containerEl, context.projectName);
     case "backup":
       return renderBackupPanel(containerEl);
     case "search":

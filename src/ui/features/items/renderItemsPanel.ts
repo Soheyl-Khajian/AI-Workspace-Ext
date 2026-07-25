@@ -33,20 +33,10 @@ import {
   getSelectedItemId,
 } from "../../core/sessionState";
 
-export function renderItemsPanel(containerEl: HTMLElement): HTMLElement {
-  // ------------------------------------------------------------
-  // PANEL SHELL
-  // ------------------------------------------------------------
-
-  const shell = createFloatingPanelShell("Items");
-
-  const backButtonEl = document.createElement("button");
-  backButtonEl.type = "button";
-  backButtonEl.className = "aiw-panel-back-button";
-  backButtonEl.textContent = "←";
-
-  shell.headerEl.prepend(backButtonEl);
-
+export function renderItemsPanel(
+  containerEl: HTMLElement,
+  projectName: string | null,
+): HTMLElement {
   // ------------------------------------------------------------
   // READ RUNTIME STATE SNAPSHOT
   // ------------------------------------------------------------
@@ -59,6 +49,26 @@ export function renderItemsPanel(containerEl: HTMLElement): HTMLElement {
   const items = getItems();
 
   const isEmpty = items.length === 0;
+
+  // ------------------------------------------------------------
+  // PANEL SHELL
+  // ------------------------------------------------------------
+  let muted = false;
+  let label = projectName;
+
+  if (label === null) {
+    muted = true;
+    label = "Select a project";
+  }
+
+  const shell = createFloatingPanelShell("Items", { label, muted });
+
+  const backButtonEl = document.createElement("button");
+  backButtonEl.type = "button";
+  backButtonEl.className = "aiw-panel-back-button";
+  backButtonEl.textContent = "←";
+
+  shell.headerEl.prepend(backButtonEl);
 
   // ------------------------------------------------------------
   // RENDER HELPERS

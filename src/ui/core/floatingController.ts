@@ -42,7 +42,11 @@ import {
   openPanel,
   togglePanel,
 } from "./floatingUiState";
-import { setSelectedItemId, setSelectedProjectId } from "./sessionState";
+import {
+  getSelectedProjectId,
+  setSelectedItemId,
+  setSelectedProjectId,
+} from "./sessionState";
 import { createOrbHandlers } from "./orbHandlers";
 
 import { createProjectsController } from "../features/projects/projectsController";
@@ -126,8 +130,17 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   function renderUi(): void {
     const expanded = isOrbExpanded();
     const orbActions = getOrbActions();
+
     const activePanelId = getActivePanel();
     const panelChanged = activePanelId !== lastRenderedPanel;
+
+    const selectedProjectId = getSelectedProjectId();
+    let projectName: string | null;
+    if (selectedProjectId !== null) {
+      projectName = resolveProjectName(selectedProjectId);
+    } else {
+      projectName = null;
+    }
 
     dom.rootEl.dataset.orbExpanded = String(expanded);
 
@@ -138,7 +151,9 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       handleOrbActionClick,
     );
 
-    const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId);
+    const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId, {
+      projectName,
+    });
 
     if (panelChanged && panelEl !== null) {
       panelEl.classList.add("aiw-floating-panel--enter");
@@ -185,6 +200,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // Injected into itemsHandlers as deps.resolveProjectName so the
   // items feature never imports projectsState directly — bridging
   // sibling features is the composition root's job, not theirs.
+  // also used in renderUi.
   function resolveProjectName(projectId: string): string {
     const project = getProjects().find(
       (candidate) => candidate.id === projectId,

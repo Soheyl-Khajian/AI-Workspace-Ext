@@ -27,12 +27,38 @@ import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell"
 import { createPanelState } from "../../shared/createPanelState";
 import { getItems } from "./itemsState";
 
-export function renderItemDetailPanel(containerEl: HTMLElement): HTMLElement {
+export function renderItemDetailPanel(
+  containerEl: HTMLElement,
+  projectName: string | null,
+): HTMLElement {
+  // ------------------------------------------------------------
+  // READ RUNTIME STATE SNAPSHOT
+  // ------------------------------------------------------------
+
+  const selectedItemId = getSelectedItemId();
+  const items = getItems();
+
   // ------------------------------------------------------------
   // PANEL SHELL
   // ------------------------------------------------------------
+  let muted = false;
+  let label = projectName;
+  let panelTitle = "Item Detail";
+  const item = items.find((candidate) => candidate.id === selectedItemId);
 
-  const shell = createFloatingPanelShell("Item Detail");
+  if (item) {
+    const hasTitle = item.title.trim().length > 0;
+    panelTitle = hasTitle ? item.title : "Untitled";
+  }
+
+  if (label === null) {
+    muted = true;
+    label = "Select a project";
+  }
+  const shell = createFloatingPanelShell(panelTitle, {
+    label,
+    muted,
+  });
 
   const backButtonEl = document.createElement("button");
   backButtonEl.type = "button";
@@ -42,18 +68,10 @@ export function renderItemDetailPanel(containerEl: HTMLElement): HTMLElement {
   shell.headerEl.prepend(backButtonEl);
 
   // ------------------------------------------------------------
-  // READ RUNTIME STATE SNAPSHOT
-  // ------------------------------------------------------------
-
-  const selectedItemId = getSelectedItemId();
-  const items = getItems();
-
-  // ------------------------------------------------------------
   // STATE-DRIVEN RENDER FLOW
   // ------------------------------------------------------------
 
-  const itemObject = items.find((item) => item.id === selectedItemId);
-  if (!itemObject) {
+  if (!item) {
     const placeholderStateEl = createPanelState({
       variant: "placeholder",
       message: "Item not found",
@@ -66,24 +84,24 @@ export function renderItemDetailPanel(containerEl: HTMLElement): HTMLElement {
   // CREATE FORM
   // ------------------------------------------------------------
 
-  if (itemObject !== undefined) {
+  if (item !== undefined) {
     const formEl = document.createElement("div");
     formEl.className = "aiw-item-detail-form";
 
     const titleInputEl = document.createElement("input");
     titleInputEl.className = "aiw-item-detail-title";
     titleInputEl.type = "text";
-    titleInputEl.value = itemObject.title;
+    titleInputEl.value = item.title;
 
     const contentInputEl = document.createElement("textarea");
     contentInputEl.className = "aiw-item-detail-content";
-    contentInputEl.value = itemObject.content;
+    contentInputEl.value = item.content;
 
     const buttonEl = document.createElement("button");
     buttonEl.className = "aiw-item-detail-save";
     buttonEl.type = "button";
     buttonEl.textContent = "Save";
-    buttonEl.dataset.itemId = itemObject.id;
+    buttonEl.dataset.itemId = item.id;
 
     formEl.append(titleInputEl, contentInputEl, buttonEl);
     shell.panelEl.append(formEl);

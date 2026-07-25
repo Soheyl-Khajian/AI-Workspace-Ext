@@ -11,3 +11,5 @@ export type OrbPanelId =
   | "itemDetail"
   | "backup"
   | "search";
+
+export type RenderContext = { projectName: string | null };

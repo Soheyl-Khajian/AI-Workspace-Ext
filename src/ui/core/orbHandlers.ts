@@ -6,7 +6,7 @@
 // Responsibility:
 //
 // - own the orb-level DOM event handlers: orb toggle, outside-click
-//   collapse, panel back navigation, cross-context re-render on
+//   collapse, panel back navigation, cross-context re-render, panel-context (breadcrumb) navigation on
 //   "aiw:projects-updated"
 // - contribute EventBinding[] to the floating controller's
 //   declarative add/remove table via createOrbHandlers()
@@ -32,6 +32,7 @@ import {
   openPanel,
 } from "./floatingUiState";
 import { setSelectedItemId } from "./sessionState";
+import { PANEL_SHELL_CONTEXT_SELECTOR } from "../shared/createFloatingPanelShell";
 
 // ------------------------------------------------------------
 // CONSTANTS
@@ -53,7 +54,6 @@ export function createOrbHandlers(
   // ----------------------------------------------------------
   // ORB STATE HELPERS
   // ----------------------------------------------------------
-
   function setOrbExpanded(): void {
     expandOrb();
     deps.requestRender();
@@ -77,10 +77,8 @@ export function createOrbHandlers(
   // ----------------------------------------------------------
   // OUTSIDE CLICK HANDLING (collapse behavior)
   // ----------------------------------------------------------
-
   function handleDocumentPointerDown(event: PointerEvent): void {
     const target = event.target;
-
     if (!(target instanceof Node)) {
       return;
     }
@@ -101,10 +99,8 @@ export function createOrbHandlers(
   // ----------------------------------------------------------
   // BACK BUTTON HANDLER
   // ----------------------------------------------------------
-
   function handleBackButtonClick(event: MouseEvent): void {
     const target = event.target;
-
     if (!(target instanceof Element)) {
       return;
     }
@@ -127,6 +123,25 @@ export function createOrbHandlers(
   }
 
   // ----------------------------------------------------------
+  // PANEL CONTEXT (BREADCRUMB) HANDLER
+  // ----------------------------------------------------------
+  function handlePanelContextClick(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const panelContextButton = target.closest(PANEL_SHELL_CONTEXT_SELECTOR);
+    if (!(panelContextButton instanceof HTMLElement)) {
+      return;
+    }
+
+    openPanel("projects");
+
+    deps.requestRender();
+  }
+
+  // ----------------------------------------------------------
   // PROJECTS UPDATED HANDLER (cross-context sync)
   // ----------------------------------------------------------
   //
@@ -134,7 +149,6 @@ export function createOrbHandlers(
   // Ensures the projects panel reflects changes (e.g. new Inbox project)
   // without requiring a page refresh.
   // ----------------------------------------------------------
-
   function handleProjectsUpdated(): void {
     deps.requestRender();
   }
@@ -142,10 +156,10 @@ export function createOrbHandlers(
   // ----------------------------------------------------------
   // EVENT BINDINGS
   // ----------------------------------------------------------
-
   const eventBindings: EventBinding[] = [
     [deps.orbButtonEl, "click", asListener(toggleOrbVisibility)],
     [deps.panelsEl, "click", asListener(handleBackButtonClick)],
+    [deps.panelsEl, "click", asListener(handlePanelContextClick)],
     [document, "pointerdown", asListener(handleDocumentPointerDown)],
     [document, "aiw:projects-updated", asListener(handleProjectsUpdated)],
   ];

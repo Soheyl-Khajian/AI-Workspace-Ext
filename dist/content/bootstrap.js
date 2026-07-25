@@ -825,11 +825,24 @@
   });
 
   // src/ui/shared/createFloatingPanelShell.ts
-  function createFloatingPanelShell(title) {
+  function createFloatingPanelShell(title, context) {
     const panelEl = document.createElement("section");
     panelEl.className = "aiw-floating-panel";
     const headerEl = document.createElement("header");
     headerEl.className = "aiw-floating-panel__header";
+    if (context) {
+      const buttonEl = document.createElement("button");
+      buttonEl.type = "button";
+      buttonEl.className = PANEL_SHELL_CONTEXT_CLASS;
+      buttonEl.textContent = context.label;
+      if (context.muted) {
+        buttonEl.classList.add(`${PANEL_SHELL_CONTEXT_CLASS}--muted`);
+      }
+      const spanEl = document.createElement("span");
+      spanEl.className = `${PANEL_SHELL_CONTEXT_CLASS}-separator`;
+      spanEl.textContent = "\u203A";
+      headerEl.append(buttonEl, spanEl);
+    }
     const titleEl = document.createElement("h2");
     titleEl.className = "aiw-floating-panel__title";
     titleEl.textContent = title;
@@ -843,9 +856,12 @@
       bodyEl
     };
   }
+  var PANEL_SHELL_CONTEXT_CLASS, PANEL_SHELL_CONTEXT_SELECTOR;
   var init_createFloatingPanelShell = __esm({
     "src/ui/shared/createFloatingPanelShell.ts"() {
       "use strict";
+      PANEL_SHELL_CONTEXT_CLASS = "aiw-panel-context";
+      PANEL_SHELL_CONTEXT_SELECTOR = `.${PANEL_SHELL_CONTEXT_CLASS}`;
     }
   });
 
@@ -1098,19 +1114,25 @@
   });
 
   // src/ui/features/items/renderItemsPanel.ts
-  function renderItemsPanel(containerEl) {
-    const shell = createFloatingPanelShell("Items");
-    const backButtonEl = document.createElement("button");
-    backButtonEl.type = "button";
-    backButtonEl.className = "aiw-panel-back-button";
-    backButtonEl.textContent = "\u2190";
-    shell.headerEl.prepend(backButtonEl);
+  function renderItemsPanel(containerEl, projectName) {
     const selectedProjectId = getSelectedProjectId();
     const selectedItemId = getSelectedItemId();
     const loading = isItemsLoading();
     const error = getItemsError();
     const items = getItems();
     const isEmpty = items.length === 0;
+    let muted = false;
+    let label = projectName;
+    if (label === null) {
+      muted = true;
+      label = "Select a project";
+    }
+    const shell = createFloatingPanelShell("Items", { label, muted });
+    const backButtonEl = document.createElement("button");
+    backButtonEl.type = "button";
+    backButtonEl.className = "aiw-panel-back-button";
+    backButtonEl.textContent = "\u2190";
+    shell.headerEl.prepend(backButtonEl);
     function renderItemsList(itemsList) {
       const listEl = document.createElement("div");
       listEl.className = "aiw-items-list";
@@ -1192,38 +1214,52 @@
   });
 
   // src/ui/features/items/renderItemDetailPanel.ts
-  function renderItemDetailPanel(containerEl) {
-    const shell = createFloatingPanelShell("Item Detail");
+  function renderItemDetailPanel(containerEl, projectName) {
+    const selectedItemId = getSelectedItemId();
+    const items = getItems();
+    let muted = false;
+    let label = projectName;
+    let panelTitle = "Item Detail";
+    const item = items.find((candidate) => candidate.id === selectedItemId);
+    if (item) {
+      const hasTitle = item.title.trim().length > 0;
+      panelTitle = hasTitle ? item.title : "Untitled";
+    }
+    if (label === null) {
+      muted = true;
+      label = "Select a project";
+    }
+    const shell = createFloatingPanelShell(panelTitle, {
+      label,
+      muted
+    });
     const backButtonEl = document.createElement("button");
     backButtonEl.type = "button";
     backButtonEl.className = "aiw-panel-back-button";
     backButtonEl.textContent = "\u2190";
     shell.headerEl.prepend(backButtonEl);
-    const selectedItemId = getSelectedItemId();
-    const items = getItems();
-    const itemObject = items.find((item) => item.id === selectedItemId);
-    if (!itemObject) {
+    if (!item) {
       const placeholderStateEl = createPanelState({
         variant: "placeholder",
         message: "Item not found"
       });
       shell.bodyEl.append(placeholderStateEl);
     }
-    if (itemObject !== void 0) {
+    if (item !== void 0) {
       const formEl = document.createElement("div");
       formEl.className = "aiw-item-detail-form";
       const titleInputEl = document.createElement("input");
       titleInputEl.className = "aiw-item-detail-title";
       titleInputEl.type = "text";
-      titleInputEl.value = itemObject.title;
+      titleInputEl.value = item.title;
       const contentInputEl = document.createElement("textarea");
       contentInputEl.className = "aiw-item-detail-content";
-      contentInputEl.value = itemObject.content;
+      contentInputEl.value = item.content;
       const buttonEl = document.createElement("button");
       buttonEl.className = "aiw-item-detail-save";
       buttonEl.type = "button";
       buttonEl.textContent = "Save";
-      buttonEl.dataset.itemId = itemObject.id;
+      buttonEl.dataset.itemId = item.id;
       formEl.append(titleInputEl, contentInputEl, buttonEl);
       shell.panelEl.append(formEl);
     }
@@ -1273,7 +1309,7 @@
   });
 
   // src/ui/core/renderFloatingPanels.ts
-  function renderFloatingPanels(containerEl, activePanel) {
+  function renderFloatingPanels(containerEl, activePanel, context) {
     containerEl.textContent = "";
     if (activePanel === null) {
       return null;
@@ -1282,9 +1318,9 @@
       case "projects":
         return renderProjectsPanel(containerEl);
       case "items":
-        return renderItemsPanel(containerEl);
+        return renderItemsPanel(containerEl, context.projectName);
       case "itemDetail":
-        return renderItemDetailPanel(containerEl);
+        return renderItemDetailPanel(containerEl, context.projectName);
       case "backup":
         return renderBackupPanel(containerEl);
       case "search":
@@ -1404,12 +1440,25 @@
       setSelectedItemId(null);
       deps.requestRender();
     }
+    function handlePanelContextClick(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const panelContextButton = target.closest(PANEL_SHELL_CONTEXT_SELECTOR);
+      if (!(panelContextButton instanceof HTMLElement)) {
+        return;
+      }
+      openPanel("projects");
+      deps.requestRender();
+    }
     function handleProjectsUpdated() {
       deps.requestRender();
     }
     const eventBindings = [
       [deps.orbButtonEl, "click", asListener(toggleOrbVisibility)],
       [deps.panelsEl, "click", asListener(handleBackButtonClick)],
+      [deps.panelsEl, "click", asListener(handlePanelContextClick)],
       [document, "pointerdown", asListener(handleDocumentPointerDown)],
       [document, "aiw:projects-updated", asListener(handleProjectsUpdated)]
     ];
@@ -1422,6 +1471,7 @@
       init_eventBindings();
       init_floatingUiState();
       init_sessionState();
+      init_createFloatingPanelShell();
       PANEL_BACK_BUTTON_SELECTOR = ".aiw-panel-back-button";
     }
   });
@@ -2330,6 +2380,13 @@
       const orbActions2 = getOrbActions();
       const activePanelId = getActivePanel();
       const panelChanged = activePanelId !== lastRenderedPanel;
+      const selectedProjectId = getSelectedProjectId();
+      let projectName;
+      if (selectedProjectId !== null) {
+        projectName = resolveProjectName(selectedProjectId);
+      } else {
+        projectName = null;
+      }
       dom.rootEl.dataset.orbExpanded = String(expanded);
       renderOrbActions(
         dom.orbActionsEl,
@@ -2337,7 +2394,9 @@
         orbActions2,
         handleOrbActionClick
       );
-      const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId);
+      const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId, {
+        projectName
+      });
       if (panelChanged && panelEl !== null) {
         panelEl.classList.add("aiw-floating-panel--enter");
       }

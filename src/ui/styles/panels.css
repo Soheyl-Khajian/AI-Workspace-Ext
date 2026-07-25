@@ -190,6 +190,62 @@
 }
 
 /* ------------------------------------------------------------
+   PANEL CONTEXT SEGMENT (breadcrumb)
+------------------------------------------------------------ */
+/*
+  Project-scope segment before the title. ALWAYS a button: with a
+  project name it navigates to project scope (later: switcher);
+  muted "Select a project" is the same door for the empty state.
+  Quiet by default — the title owns the header's visual weight.
+  Long names ellipsize; the title must never be pushed out.
+*/
+
+.aiw-panel-context {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  /* Small vertical inset, like the back button's optical padding */
+  padding: 4px var(--aiw-space-sm);
+  background: none;
+  border: none;
+  border-radius: var(--aiw-radius-sm);
+
+  color: var(--aiw-text-muted);
+  font-size: var(--aiw-fs-md);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    color var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-panel-context:hover {
+  background: var(--aiw-surface-hover);
+  color: var(--aiw-text);
+}
+
+.aiw-panel-context:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
+}
+
+.aiw-panel-context--muted {
+  color: var(--aiw-text-faint);
+  font-style: italic;
+}
+
+.aiw-panel-context-separator {
+  flex-shrink: 0;
+  color: var(--aiw-text-faint);
+  font-size: var(--aiw-fs-md);
+}
+
+/* ------------------------------------------------------------
    2. SHARED: LISTS
 ------------------------------------------------------------ */
 
