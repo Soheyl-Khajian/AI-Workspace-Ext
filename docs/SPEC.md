@@ -128,6 +128,7 @@ Purpose:
 - selected entities
 
 Runtime state is separate from storage.
+Project selection is ephemeral by design: it lasts for the current page visit only and is never persisted. Each visit starts with no project selected; captures without a selection fall back to Inbox.
 
 Refreshing the page rebuilds runtime state from IndexedDB.
 
