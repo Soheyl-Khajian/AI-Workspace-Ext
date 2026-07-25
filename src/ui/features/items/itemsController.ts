@@ -53,6 +53,7 @@ import {
   getSelectedItemIds,
   toggleItemSelection,
 } from "./itemSelectionState";
+import { clearCreateItemDraft, clearItemDetailDraft } from "./itemsDraftState";
 
 import { buildContextPack } from "./buildContextPack";
 import { copyToClipboard } from "../../shared/copyToClipboard";
@@ -177,6 +178,11 @@ export function createItemsController(
       notify(toErrorMessage(error, "Couldn't create item."));
       return;
     }
+
+    // Success: the draft's job is done. On failure (catch above)
+    // the draft is deliberately kept so the user can retry.
+    clearCreateItemDraft();
+
     await loadItems(projectId);
     onStateChange();
   }
@@ -203,6 +209,9 @@ export function createItemsController(
       notify(toErrorMessage(error, "Couldn't save item."));
       return;
     }
+
+    clearItemDetailDraft(itemId);
+
     await loadItems(selectedProjectId);
     onStateChange();
   }
@@ -252,6 +261,10 @@ export function createItemsController(
       notify(toErrorMessage(error, "Couldn't delete item."));
       return;
     }
+
+    // Deleted items must not leave orphaned drafts behind.
+    clearItemDetailDraft(itemId);
+
     if (selectedItemId === itemId) {
       setSelectedItemId(null);
     }

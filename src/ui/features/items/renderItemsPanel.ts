@@ -26,6 +26,10 @@ import { createItemRow } from "./createItemRow";
 import { createPanelState } from "../../shared/createPanelState";
 
 import { getItems, getItemsError, isItemsLoading } from "./itemsState";
+import {
+  getCreateItemTitleDraft,
+  getCreateItemContentDraft,
+} from "./itemsDraftState";
 import { isItemSelected, getSelectedItemsCount } from "./itemSelectionState";
 
 import {
@@ -162,9 +166,13 @@ export function renderItemsPanel(
     titleInputEl.type = "text";
     titleInputEl.placeholder = "Title";
 
+    titleInputEl.value = getCreateItemTitleDraft() ?? "";
+
     const contentInputEl = document.createElement("textarea");
     contentInputEl.className = "aiw-create-item-content";
     contentInputEl.placeholder = "Content";
+
+    contentInputEl.value = getCreateItemContentDraft() ?? "";
 
     const buttonEl = document.createElement("button");
     buttonEl.className = "aiw-create-item-submit";

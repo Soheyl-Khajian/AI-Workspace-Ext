@@ -937,6 +937,29 @@
     }
   });
 
+  // src/ui/features/projects/projectsDraftState.ts
+  function getCreateProjectNameDraft() {
+    return state3.createName;
+  }
+  function setCreateProjectNameDraft(value) {
+    state3.createName = value;
+  }
+  function clearCreateProjectNameDraft() {
+    state3.createName = null;
+  }
+  function resetProjectsDraftState() {
+    state3.createName = null;
+  }
+  var state3;
+  var init_projectsDraftState = __esm({
+    "src/ui/features/projects/projectsDraftState.ts"() {
+      "use strict";
+      state3 = {
+        createName: null
+      };
+    }
+  });
+
   // src/ui/features/projects/renderProjectsPanel.ts
   function renderProjectsPanel(containerEl) {
     const shell = createFloatingPanelShell("Projects");
@@ -979,6 +1002,7 @@
     inputEl.className = "aiw-create-project-input";
     inputEl.type = "text";
     inputEl.placeholder = "New project name";
+    inputEl.value = getCreateProjectNameDraft() ?? "";
     const buttonEl = document.createElement("button");
     buttonEl.className = "aiw-create-project-submit";
     buttonEl.type = "button";
@@ -995,6 +1019,7 @@
       init_createPanelState();
       init_createProjectRow();
       init_projectsState();
+      init_projectsDraftState();
       init_sessionState();
     }
   });
@@ -1056,31 +1081,90 @@
 
   // src/ui/features/items/itemsState.ts
   function getItems() {
-    return [...state3.items];
+    return [...state4.items];
   }
   function isItemsLoading() {
-    return state3.loading;
+    return state4.loading;
   }
   function getItemsError() {
-    return state3.error;
+    return state4.error;
   }
   function setItems(itemsList) {
-    state3.items = [...itemsList];
+    state4.items = [...itemsList];
   }
   function setItemsLoading(loading) {
-    state3.loading = loading;
+    state4.loading = loading;
   }
   function setItemsError(error) {
-    state3.error = error;
+    state4.error = error;
   }
-  var state3;
+  var state4;
   var init_itemsState = __esm({
     "src/ui/features/items/itemsState.ts"() {
       "use strict";
-      state3 = {
+      state4 = {
         items: [],
         loading: false,
         error: null
+      };
+    }
+  });
+
+  // src/ui/features/items/itemsDraftState.ts
+  function getCreateItemTitleDraft() {
+    return state5.createTitle;
+  }
+  function getCreateItemContentDraft() {
+    return state5.createContent;
+  }
+  function setCreateItemTitleDraft(value) {
+    state5.createTitle = value;
+  }
+  function setCreateItemContentDraft(value) {
+    state5.createContent = value;
+  }
+  function clearCreateItemDraft() {
+    state5.createTitle = null;
+    state5.createContent = null;
+  }
+  function getItemDetailTitleDraft(itemId) {
+    return state5.detailDrafts.get(itemId)?.title ?? null;
+  }
+  function getItemDetailContentDraft(itemId) {
+    return state5.detailDrafts.get(itemId)?.content ?? null;
+  }
+  function setItemDetailTitleDraft(itemId, value) {
+    const draft = state5.detailDrafts.get(itemId) ?? {
+      title: null,
+      content: null
+    };
+    draft.title = value;
+    state5.detailDrafts.set(itemId, draft);
+  }
+  function setItemDetailContentDraft(itemId, value) {
+    const draft = state5.detailDrafts.get(itemId) ?? {
+      title: null,
+      content: null
+    };
+    draft.content = value;
+    state5.detailDrafts.set(itemId, draft);
+  }
+  function clearItemDetailDraft(itemId) {
+    state5.detailDrafts.delete(itemId);
+  }
+  function resetItemsDraftState() {
+    state5.createTitle = null;
+    state5.createContent = null;
+    state5.detailDrafts.clear();
+  }
+  var state5;
+  var init_itemsDraftState = __esm({
+    "src/ui/features/items/itemsDraftState.ts"() {
+      "use strict";
+      state5 = {
+        createTitle: null,
+        createContent: null,
+        detailDrafts: /* @__PURE__ */ new Map()
       };
     }
   });
@@ -1188,9 +1272,11 @@
       titleInputEl.className = "aiw-create-item-title";
       titleInputEl.type = "text";
       titleInputEl.placeholder = "Title";
+      titleInputEl.value = getCreateItemTitleDraft() ?? "";
       const contentInputEl = document.createElement("textarea");
       contentInputEl.className = "aiw-create-item-content";
       contentInputEl.placeholder = "Content";
+      contentInputEl.value = getCreateItemContentDraft() ?? "";
       const buttonEl = document.createElement("button");
       buttonEl.className = "aiw-create-item-submit";
       buttonEl.type = "button";
@@ -1208,6 +1294,7 @@
       init_createItemRow();
       init_createPanelState();
       init_itemsState();
+      init_itemsDraftState();
       init_itemSelectionState();
       init_sessionState();
     }
@@ -1251,10 +1338,10 @@
       const titleInputEl = document.createElement("input");
       titleInputEl.className = "aiw-item-detail-title";
       titleInputEl.type = "text";
-      titleInputEl.value = item.title;
+      titleInputEl.value = getItemDetailTitleDraft(item.id) ?? item.title;
       const contentInputEl = document.createElement("textarea");
       contentInputEl.className = "aiw-item-detail-content";
-      contentInputEl.value = item.content;
+      contentInputEl.value = getItemDetailContentDraft(item.id) ?? item.content;
       const buttonEl = document.createElement("button");
       buttonEl.className = "aiw-item-detail-save";
       buttonEl.type = "button";
@@ -1273,6 +1360,7 @@
       init_createFloatingPanelShell();
       init_createPanelState();
       init_itemsState();
+      init_itemsDraftState();
     }
   });
 
@@ -1345,36 +1433,36 @@
 
   // src/ui/core/floatingUiState.ts
   function isOrbExpanded() {
-    return state4.orbExpanded;
+    return state6.orbExpanded;
   }
   function getActivePanel() {
-    return state4.activePanel;
+    return state6.activePanel;
   }
   function expandOrb() {
-    state4.orbExpanded = true;
+    state6.orbExpanded = true;
   }
   function collapseOrb() {
-    state4.orbExpanded = false;
-    state4.activePanel = null;
+    state6.orbExpanded = false;
+    state6.activePanel = null;
   }
   function openPanel(panel) {
-    state4.activePanel = panel;
-    state4.orbExpanded = true;
+    state6.activePanel = panel;
+    state6.orbExpanded = true;
   }
   function togglePanel(panel) {
-    const current = state4.activePanel;
+    const current = state6.activePanel;
     if (current === panel) {
-      state4.activePanel = null;
+      state6.activePanel = null;
     } else {
-      state4.activePanel = panel;
-      state4.orbExpanded = true;
+      state6.activePanel = panel;
+      state6.orbExpanded = true;
     }
   }
-  var state4;
+  var state6;
   var init_floatingUiState = __esm({
     "src/ui/core/floatingUiState.ts"() {
       "use strict";
-      state4 = {
+      state6 = {
         orbExpanded: false,
         activePanel: null
       };
@@ -1517,6 +1605,7 @@
         notify(toErrorMessage(error, "Couldn't create project."));
         return;
       }
+      clearCreateProjectNameDraft();
       await loadProjects();
       onStateChange();
     }
@@ -1559,6 +1648,7 @@
       "use strict";
       init_floatingUiState();
       init_sessionState();
+      init_projectsDraftState();
       init_loadProjects();
       init_storage();
       init_toErrorMessage();
@@ -1606,7 +1696,7 @@
       if (!(submitButton instanceof HTMLButtonElement)) {
         return;
       }
-      const input = deps.panelsEl.querySelector(".aiw-create-project-input");
+      const input = deps.panelsEl.querySelector(PROJECT_CREATE_INPUT_SELECTOR);
       if (!(input instanceof HTMLInputElement)) {
         return;
       }
@@ -1687,25 +1777,37 @@
       if (!window.confirm("Delete this project and all its items?")) return;
       await deps.projectsController.deleteProject(projectId);
     }
+    function handleCreateProjectInput(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target instanceof HTMLInputElement && target.matches(PROJECT_CREATE_INPUT_SELECTOR)) {
+        setCreateProjectNameDraft(target.value);
+      }
+    }
     const eventBindings = [
       [deps.panelsEl, "click", asListener(handleSelectProject)],
       [deps.panelsEl, "click", asListener(handleDeselectProject)],
       [deps.panelsEl, "click", asListener(handleCreateProject)],
       [deps.panelsEl, "click", asListener(handleRenameProject)],
-      [deps.panelsEl, "click", asListener(handleDeleteProject)]
+      [deps.panelsEl, "click", asListener(handleDeleteProject)],
+      [deps.panelsEl, "input", asListener(handleCreateProjectInput)]
     ];
     return eventBindings;
   }
-  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
+  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_CREATE_INPUT_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
   var init_projectsHandlers = __esm({
     "src/ui/features/projects/projectsHandlers.ts"() {
       "use strict";
       init_eventBindings();
+      init_projectsDraftState();
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
       PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
       PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
       PROJECT_ID_DATASET_KEY = "projectId";
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
+      PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
       PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
       PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
       PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
@@ -1842,6 +1944,7 @@
         notify(toErrorMessage(error, "Couldn't create item."));
         return;
       }
+      clearCreateItemDraft();
       await loadItems(projectId);
       onStateChange();
     }
@@ -1859,6 +1962,7 @@
         notify(toErrorMessage(error, "Couldn't save item."));
         return;
       }
+      clearItemDetailDraft(itemId);
       await loadItems(selectedProjectId);
       onStateChange();
     }
@@ -1890,6 +1994,7 @@
         notify(toErrorMessage(error, "Couldn't delete item."));
         return;
       }
+      clearItemDetailDraft(itemId);
       if (selectedItemId === itemId) {
         setSelectedItemId(null);
       }
@@ -1917,6 +2022,7 @@
       init_floatingUiState();
       init_toErrorMessage();
       init_itemSelectionState();
+      init_itemsDraftState();
       init_buildContextPack();
       init_copyToClipboard();
     }
@@ -2059,13 +2165,45 @@
       if (!window.confirm("Delete this item?")) return;
       await deps.itemsController.deleteItem(itemId, selectedProjectId);
     }
+    function handleCreateItemInput(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target instanceof HTMLInputElement && target.matches(ITEM_CREATE_TITLE_SELECTOR)) {
+        setCreateItemTitleDraft(target.value);
+        return;
+      }
+      if (target instanceof HTMLTextAreaElement && target.matches(ITEM_CREATE_CONTENT_SELECTOR)) {
+        setCreateItemContentDraft(target.value);
+      }
+    }
+    function handleItemDetailInput(event) {
+      const selectedItemId = getSelectedItemId();
+      if (selectedItemId === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target instanceof HTMLInputElement && target.matches(ITEM_DETAIL_TITLE_SELECTOR)) {
+        setItemDetailTitleDraft(selectedItemId, target.value);
+        return;
+      }
+      if (target instanceof HTMLTextAreaElement && target.matches(ITEM_DETAIL_CONTENT_SELECTOR)) {
+        setItemDetailContentDraft(selectedItemId, target.value);
+      }
+    }
     const eventBindings = [
       [deps.panelsEl, "click", asListener(handleSelectItem)],
       [deps.panelsEl, "click", asListener(handleToggleItemSelection)],
       [deps.panelsEl, "click", asListener(handleCreateItem)],
       [deps.panelsEl, "click", asListener(handleUpdateItem)],
       [deps.panelsEl, "click", asListener(handleBuildContext)],
-      [deps.panelsEl, "click", asListener(handleDeleteItem)]
+      [deps.panelsEl, "click", asListener(handleDeleteItem)],
+      [deps.panelsEl, "input", asListener(handleCreateItemInput)],
+      [deps.panelsEl, "input", asListener(handleItemDetailInput)]
     ];
     return eventBindings;
   }
@@ -2075,6 +2213,7 @@
       "use strict";
       init_eventBindings();
       init_sessionState();
+      init_itemsDraftState();
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_SELECT_SELECTOR = ".aiw-item-select";
       ITEM_DELETE_SELECTOR = ".aiw-item-delete";
@@ -2423,6 +2562,8 @@
     }
     async function reloadAfterImport() {
       itemsController.clearSelection();
+      resetItemsDraftState();
+      resetProjectsDraftState();
       setSelectedItemId(null);
       setSelectedProjectId(null);
       openPanel("projects");
@@ -2459,8 +2600,10 @@
       init_projectsController();
       init_projectsHandlers();
       init_projectsState();
+      init_projectsDraftState();
       init_itemsController();
       init_itemsHandlers();
+      init_itemsDraftState();
       init_backupController();
       init_backupHandlers();
       init_showToast();

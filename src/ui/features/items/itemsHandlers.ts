@@ -6,7 +6,7 @@
 // Responsibility:
 //
 // - own the items panel's DOM event handlers (select / toggle-selection /
-//   create / update / build-context / delete)
+//   create / update / build-context / delete / draft capture)
 // - own the items selector constants + dataset key
 // - contribute EventBinding[] to the floating controller's
 //   declarative add/remove table via createItemsHandlers()
@@ -27,7 +27,16 @@
 import type { EventBinding } from "../../core/eventBindings";
 import type { ItemsController } from "./itemsController";
 import { asListener } from "../../core/eventBindings";
-import { getSelectedProjectId } from "../../core/sessionState";
+import {
+  getSelectedProjectId,
+  getSelectedItemId,
+} from "../../core/sessionState";
+import {
+  setCreateItemContentDraft,
+  setCreateItemTitleDraft,
+  setItemDetailContentDraft,
+  setItemDetailTitleDraft,
+} from "./itemsDraftState";
 
 // ------------------------------------------------------------
 // CONSTANTS
@@ -249,6 +258,64 @@ export function createItemsHandlers(
   }
 
   // ----------------------------------------------------------
+  // DRAFT CAPTURE HANDLERS (typed-text survival)
+  //
+  // Write every keystroke into draft state WITHOUT requesting a
+  // re-render: the DOM already shows the text, and re-rendering
+  // would rebuild the input and move the cursor. Renderers
+  // re-hydrate inputs from draft state after wipe-rebuilds.
+  // ----------------------------------------------------------
+
+  function handleCreateItemInput(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (
+      target instanceof HTMLInputElement &&
+      target.matches(ITEM_CREATE_TITLE_SELECTOR)
+    ) {
+      setCreateItemTitleDraft(target.value);
+      return;
+    }
+
+    if (
+      target instanceof HTMLTextAreaElement &&
+      target.matches(ITEM_CREATE_CONTENT_SELECTOR)
+    ) {
+      setCreateItemContentDraft(target.value);
+    }
+  }
+
+  function handleItemDetailInput(event: Event): void {
+    const selectedItemId = getSelectedItemId();
+    if (selectedItemId === null) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (
+      target instanceof HTMLInputElement &&
+      target.matches(ITEM_DETAIL_TITLE_SELECTOR)
+    ) {
+      setItemDetailTitleDraft(selectedItemId, target.value);
+      return;
+    }
+
+    if (
+      target instanceof HTMLTextAreaElement &&
+      target.matches(ITEM_DETAIL_CONTENT_SELECTOR)
+    ) {
+      setItemDetailContentDraft(selectedItemId, target.value);
+    }
+  }
+
+  // ----------------------------------------------------------
   // EVENT BINDINGS
   // ----------------------------------------------------------
 
@@ -259,6 +326,8 @@ export function createItemsHandlers(
     [deps.panelsEl, "click", asListener(handleUpdateItem)],
     [deps.panelsEl, "click", asListener(handleBuildContext)],
     [deps.panelsEl, "click", asListener(handleDeleteItem)],
+    [deps.panelsEl, "input", asListener(handleCreateItemInput)],
+    [deps.panelsEl, "input", asListener(handleItemDetailInput)],
   ];
 
   return eventBindings;

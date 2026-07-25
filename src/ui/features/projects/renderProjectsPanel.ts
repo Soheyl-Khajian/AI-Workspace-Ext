@@ -29,7 +29,7 @@ import {
   getProjectsError,
   isProjectsLoading,
 } from "./projectsState";
-
+import { getCreateProjectNameDraft } from "./projectsDraftState";
 import { getSelectedProjectId } from "../../core/sessionState";
 
 export function renderProjectsPanel(containerEl: HTMLElement): HTMLElement {
@@ -103,6 +103,9 @@ export function renderProjectsPanel(containerEl: HTMLElement): HTMLElement {
   inputEl.className = "aiw-create-project-input";
   inputEl.type = "text";
   inputEl.placeholder = "New project name";
+
+  // Re-hydrate in-flight draft (?? — "" means deliberately cleared)
+  inputEl.value = getCreateProjectNameDraft() ?? "";
 
   const buttonEl = document.createElement("button");
   buttonEl.className = "aiw-create-project-submit";

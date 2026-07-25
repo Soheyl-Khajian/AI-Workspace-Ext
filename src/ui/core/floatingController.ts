@@ -55,8 +55,10 @@ import {
   createProjectsHandlers,
 } from "../features/projects/projectsHandlers";
 import { getProjects } from "../features/projects/projectsState";
+import { resetProjectsDraftState } from "../features/projects/projectsDraftState";
 import { createItemsController } from "../features/items/itemsController";
 import { createItemsHandlers } from "../features/items/itemsHandlers";
+import { resetItemsDraftState } from "../features/items/itemsDraftState";
 import { createBackupController } from "../features/backup/backupController";
 import { createBackupHandlers } from "../features/backup/backupHandlers";
 
@@ -209,11 +211,13 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   // Injected into backupController as deps.onImported. The database
-  // was fully replaced, so all transient state is stale: reset
-  // selection + panel, then reload projects from storage
+  // was fully replaced, so all transient state is stale: reset selection + drafts + panel,
+  // then reload projects from storage
   // (projectsController.load re-renders via its onStateChange).
   async function reloadAfterImport(): Promise<void> {
     itemsController.clearSelection();
+    resetItemsDraftState();
+    resetProjectsDraftState();
     setSelectedItemId(null);
     setSelectedProjectId(null);
     openPanel("projects");

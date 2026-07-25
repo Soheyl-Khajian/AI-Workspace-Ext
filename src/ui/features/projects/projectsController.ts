@@ -35,6 +35,7 @@ import {
   getSelectedProjectId,
   setSelectedProjectId,
 } from "../../core/sessionState";
+import { clearCreateProjectNameDraft } from "./projectsDraftState";
 import { loadProjects } from "./loadProjects";
 import {
   createProject,
@@ -127,6 +128,9 @@ export function createProjectsController(
       notify(toErrorMessage(error, "Couldn't create project."));
       return;
     }
+
+    clearCreateProjectNameDraft();
+
     await loadProjects();
     onStateChange();
   }

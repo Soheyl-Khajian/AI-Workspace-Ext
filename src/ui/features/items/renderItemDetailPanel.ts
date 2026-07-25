@@ -26,6 +26,10 @@ import { getSelectedItemId } from "../../core/sessionState";
 import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell";
 import { createPanelState } from "../../shared/createPanelState";
 import { getItems } from "./itemsState";
+import {
+  getItemDetailTitleDraft,
+  getItemDetailContentDraft,
+} from "./itemsDraftState";
 
 export function renderItemDetailPanel(
   containerEl: HTMLElement,
@@ -91,11 +95,13 @@ export function renderItemDetailPanel(
     const titleInputEl = document.createElement("input");
     titleInputEl.className = "aiw-item-detail-title";
     titleInputEl.type = "text";
-    titleInputEl.value = item.title;
+    // Draft wins over the stored value; ?? keeps a deliberately
+    // cleared ("") draft from resurrecting the old text
+    titleInputEl.value = getItemDetailTitleDraft(item.id) ?? item.title;
 
     const contentInputEl = document.createElement("textarea");
     contentInputEl.className = "aiw-item-detail-content";
-    contentInputEl.value = item.content;
+    contentInputEl.value = getItemDetailContentDraft(item.id) ?? item.content;
 
     const buttonEl = document.createElement("button");
     buttonEl.className = "aiw-item-detail-save";

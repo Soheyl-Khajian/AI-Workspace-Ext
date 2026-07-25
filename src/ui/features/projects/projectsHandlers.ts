@@ -6,7 +6,7 @@
 // Responsibility:
 //
 // - own the projects panel's DOM event handlers
-//   (select / deselect / create / rename / delete)
+//   (select / deselect / create / rename / delete / draft capture)
 // - own the projects selector constants + dataset key
 // - contribute EventBinding[] to the floating controller's
 //   declarative add/remove table via createProjectsHandlers()
@@ -27,6 +27,7 @@
 import type { ProjectsController } from "./projectsController";
 import type { EventBinding } from "../../core/eventBindings";
 import { asListener } from "../../core/eventBindings";
+import { setCreateProjectNameDraft } from "./projectsDraftState";
 
 // ------------------------------------------------------------
 // CONSTANTS
@@ -37,8 +38,8 @@ const PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
 const PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
 const PROJECT_ID_DATASET_KEY = "projectId";
 const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
+const PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
 const PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
-
 const PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
 export const PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
 
@@ -113,7 +114,7 @@ export function createProjectsHandlers(
       return;
     }
 
-    const input = deps.panelsEl.querySelector(".aiw-create-project-input");
+    const input = deps.panelsEl.querySelector(PROJECT_CREATE_INPUT_SELECTOR);
     if (!(input instanceof HTMLInputElement)) {
       return;
     }
@@ -223,6 +224,28 @@ export function createProjectsHandlers(
   }
 
   // ----------------------------------------------------------
+  // DRAFT CAPTURE HANDLER (typed-text survival)
+  //
+  // Writes keystrokes into draft state WITHOUT requestRender —
+  // the DOM already shows the text. The rename input also fires
+  // "input" here but doesn't match this selector, so it's ignored.
+  // ----------------------------------------------------------
+
+  function handleCreateProjectInput(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (
+      target instanceof HTMLInputElement &&
+      target.matches(PROJECT_CREATE_INPUT_SELECTOR)
+    ) {
+      setCreateProjectNameDraft(target.value);
+    }
+  }
+
+  // ----------------------------------------------------------
   // EVENT BINDINGS
   // ----------------------------------------------------------
   const eventBindings: EventBinding[] = [
@@ -231,6 +254,7 @@ export function createProjectsHandlers(
     [deps.panelsEl, "click", asListener(handleCreateProject)],
     [deps.panelsEl, "click", asListener(handleRenameProject)],
     [deps.panelsEl, "click", asListener(handleDeleteProject)],
+    [deps.panelsEl, "input", asListener(handleCreateProjectInput)],
   ];
 
   return eventBindings;
