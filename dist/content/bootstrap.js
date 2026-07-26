@@ -1086,6 +1086,9 @@
   function isItemsLoading() {
     return state4.loading;
   }
+  function isItemsLoadingIndicatorVisible() {
+    return state4.loadingIndicatorVisible;
+  }
   function getItemsError() {
     return state4.error;
   }
@@ -1094,6 +1097,9 @@
   }
   function setItemsLoading(loading) {
     state4.loading = loading;
+  }
+  function setItemsLoadingIndicatorVisible(visible) {
+    state4.loadingIndicatorVisible = visible;
   }
   function setItemsError(error) {
     state4.error = error;
@@ -1105,6 +1111,7 @@
       state4 = {
         items: [],
         loading: false,
+        loadingIndicatorVisible: false,
         error: null
       };
     }
@@ -1202,6 +1209,7 @@
     const selectedProjectId = getSelectedProjectId();
     const selectedItemId = getSelectedItemId();
     const loading = isItemsLoading();
+    const loadingIndicatorVisible = isItemsLoadingIndicatorVisible();
     const error = getItemsError();
     const items = getItems();
     const isEmpty = items.length === 0;
@@ -1234,11 +1242,13 @@
       });
       shell.bodyEl.append(placeholderStateEl);
     } else if (loading) {
-      const loadingStateEl = createPanelState({
-        variant: "loading",
-        message: "Loading items..."
-      });
-      shell.bodyEl.append(loadingStateEl);
+      if (loadingIndicatorVisible) {
+        const loadingStateEl = createPanelState({
+          variant: "loading",
+          message: "Loading items..."
+        });
+        shell.bodyEl.append(loadingStateEl);
+      }
     } else if (error !== null) {
       const errorStateEl = createPanelState({
         variant: "error",
@@ -1917,9 +1927,15 @@
     async function load(projectId) {
       setItemsLoading(true);
       onStateChange();
+      const indicatorTimer = window.setTimeout(() => {
+        setItemsLoadingIndicatorVisible(true);
+        onStateChange();
+      }, LOADING_INDICATOR_DELAY_MS);
       try {
         await loadItems(projectId);
       } finally {
+        window.clearTimeout(indicatorTimer);
+        setItemsLoadingIndicatorVisible(false);
         onStateChange();
       }
     }
@@ -2012,6 +2028,7 @@
       deleteItem: deleteItem2
     };
   }
+  var LOADING_INDICATOR_DELAY_MS;
   var init_itemsController = __esm({
     "src/ui/features/items/itemsController.ts"() {
       "use strict";
@@ -2025,6 +2042,7 @@
       init_itemsDraftState();
       init_buildContextPack();
       init_copyToClipboard();
+      LOADING_INDICATOR_DELAY_MS = 150;
     }
   });
 

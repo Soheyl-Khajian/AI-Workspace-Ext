@@ -44,6 +44,7 @@ import type { Item } from "../../../models/item";
 type ItemsState = {
   items: Item[];
   loading: boolean;
+  loadingIndicatorVisible: boolean;
   error: string | null;
 };
 
@@ -59,6 +60,7 @@ type ItemsState = {
 const state: ItemsState = {
   items: [],
   loading: false,
+  loadingIndicatorVisible: false,
   error: null,
 };
 
@@ -85,6 +87,16 @@ export function isItemsLoading(): boolean {
   return state.loading;
 }
 
+/*
+  loading is the TRUTH ("a load is running").
+  loadingIndicatorVisible is PRESENTATION ("running long enough
+  to be worth showing") — flipped by the controller's delay timer
+  so fast loads never render a loading frame.
+*/
+export function isItemsLoadingIndicatorVisible(): boolean {
+  return state.loadingIndicatorVisible;
+}
+
 export function getItemsError(): string | null {
   return state.error;
 }
@@ -107,6 +119,10 @@ export function setItems(itemsList: Item[]): void {
 
 export function setItemsLoading(loading: boolean): void {
   state.loading = loading;
+}
+
+export function setItemsLoadingIndicatorVisible(visible: boolean): void {
+  state.loadingIndicatorVisible = visible;
 }
 
 export function setItemsError(error: string | null): void {
@@ -141,5 +157,6 @@ export function clearItems(): void {
 export function resetItemsState(): void {
   state.items = [];
   state.loading = false;
+  state.loadingIndicatorVisible = false;
   state.error = null;
 }

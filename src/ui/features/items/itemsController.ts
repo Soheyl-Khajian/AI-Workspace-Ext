@@ -34,7 +34,11 @@
 // ------------------------------------------------------------
 
 import type { Item, ItemType } from "../../../models/item";
-import { getItems, setItemsLoading } from "./itemsState";
+import {
+  getItems,
+  setItemsLoading,
+  setItemsLoadingIndicatorVisible,
+} from "./itemsState";
 import { loadItems } from "./loadItems";
 import {
   createItem,
@@ -57,6 +61,16 @@ import { clearCreateItemDraft, clearItemDetailDraft } from "./itemsDraftState";
 
 import { buildContextPack } from "./buildContextPack";
 import { copyToClipboard } from "../../shared/copyToClipboard";
+
+// ------------------------------------------------------------
+// CONSTANTS
+// ------------------------------------------------------------
+
+/*
+  Waits below ~100-200ms read as "instant" — an indicator shown
+  inside that window is perceived as flicker, not feedback.
+*/
+const LOADING_INDICATOR_DELAY_MS = 150;
 
 // ------------------------------------------------------------
 // DEPENDENCIES
@@ -109,6 +123,17 @@ export function createItemsController(
 
     onStateChange();
 
+    /*
+    Delayed indicator: reveal "Loading..." only if the load is
+    still running after the delay. Fast IndexedDB reads finish
+    first and cancel the timer, so no loading frame ever renders
+    — the flash was the frame, not the wait.
+  */
+    const indicatorTimer = window.setTimeout(() => {
+      setItemsLoadingIndicatorVisible(true);
+      onStateChange();
+    }, LOADING_INDICATOR_DELAY_MS);
+
     try {
       /*
         Execute async loading workflow.
@@ -121,11 +146,14 @@ export function createItemsController(
       await loadItems(projectId);
     } finally {
       /*
-        Always trigger final UI refresh after async lifecycle.
-
-        finally() guarantees render consistency even if
-        loading fails internally.
+        Cancel + hide unconditionally so the indicator can never
+        outlive its load. finally() guarantees this cleanup and
+        the final render even if loading fails internally, so the
+        UI always shows the real outcome.
       */
+      window.clearTimeout(indicatorTimer);
+      setItemsLoadingIndicatorVisible(false);
+
       onStateChange();
     }
   }

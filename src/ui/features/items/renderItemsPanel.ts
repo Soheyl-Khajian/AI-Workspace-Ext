@@ -25,7 +25,12 @@ import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell"
 import { createItemRow } from "./createItemRow";
 import { createPanelState } from "../../shared/createPanelState";
 
-import { getItems, getItemsError, isItemsLoading } from "./itemsState";
+import {
+  getItems,
+  getItemsError,
+  isItemsLoading,
+  isItemsLoadingIndicatorVisible,
+} from "./itemsState";
 import {
   getCreateItemTitleDraft,
   getCreateItemContentDraft,
@@ -49,6 +54,7 @@ export function renderItemsPanel(
   const selectedItemId = getSelectedItemId();
 
   const loading = isItemsLoading();
+  const loadingIndicatorVisible = isItemsLoadingIndicatorVisible();
   const error = getItemsError();
   const items = getItems();
 
@@ -111,12 +117,20 @@ export function renderItemsPanel(
 
     shell.bodyEl.append(placeholderStateEl);
   } else if (loading) {
-    const loadingStateEl = createPanelState({
-      variant: "loading",
-      message: "Loading items...",
-    });
+    /*
+    Quiet window: loading, but the indicator delay hasn't
+    elapsed. Render an intentionally empty body — fast loads
+    finish inside this window, so content replaces content
+    with no intermediate frame.
+  */
+    if (loadingIndicatorVisible) {
+      const loadingStateEl = createPanelState({
+        variant: "loading",
+        message: "Loading items...",
+      });
 
-    shell.bodyEl.append(loadingStateEl);
+      shell.bodyEl.append(loadingStateEl);
+    }
   } else if (error !== null) {
     const errorStateEl = createPanelState({
       variant: "error",
