@@ -899,41 +899,12 @@
     }
   });
 
-  // src/ui/features/projects/createProjectRow.ts
-  function createProjectRow(project, selected) {
-    const rowEl = document.createElement("div");
-    rowEl.className = "aiw-project-row";
-    const projectTextEl = document.createElement("span");
-    projectTextEl.className = "aiw-project-text";
-    projectTextEl.textContent = project.name;
-    rowEl.append(projectTextEl);
-    rowEl.dataset.projectId = project.id;
-    if (selected) {
-      rowEl.classList.add("aiw-project-row--selected");
-    }
-    if (selected) {
-      const deselectButtonEl = document.createElement("button");
-      deselectButtonEl.type = "button";
-      deselectButtonEl.className = "aiw-project-deselect";
-      deselectButtonEl.textContent = "\u23CF";
-      rowEl.append(deselectButtonEl);
-    }
-    const renameButtonEl = document.createElement("button");
-    renameButtonEl.type = "button";
-    renameButtonEl.className = "aiw-project-rename";
-    renameButtonEl.textContent = "\u270E";
-    renameButtonEl.dataset.projectId = project.id;
-    const deleteButtonEl = document.createElement("button");
-    deleteButtonEl.type = "button";
-    deleteButtonEl.className = "aiw-project-delete";
-    deleteButtonEl.textContent = "\xD7";
-    deleteButtonEl.dataset.projectId = project.id;
-    rowEl.append(renameButtonEl, deleteButtonEl);
-    return rowEl;
-  }
-  var init_createProjectRow = __esm({
-    "src/ui/features/projects/createProjectRow.ts"() {
+  // src/ui/core/eventBindings.ts
+  var asListener;
+  var init_eventBindings = __esm({
+    "src/ui/core/eventBindings.ts"() {
       "use strict";
+      asListener = (handler) => handler;
     }
   });
 
@@ -960,6 +931,256 @@
     }
   });
 
+  // src/ui/features/projects/projectsRenameState.ts
+  function getEditingProjectId() {
+    return state4.editingProjectId;
+  }
+  function getRenameDraft() {
+    return state4.draftName;
+  }
+  function setRenameDraft(value) {
+    state4.draftName = value;
+  }
+  function startRenameEditing(projectId) {
+    state4.editingProjectId = projectId;
+    state4.draftName = null;
+  }
+  function stopRenameEditing() {
+    state4.editingProjectId = null;
+    state4.draftName = null;
+  }
+  function resetProjectsRenameState() {
+    state4.editingProjectId = null;
+    state4.draftName = null;
+  }
+  var state4;
+  var init_projectsRenameState = __esm({
+    "src/ui/features/projects/projectsRenameState.ts"() {
+      "use strict";
+      state4 = { editingProjectId: null, draftName: null };
+    }
+  });
+
+  // src/ui/features/projects/projectsHandlers.ts
+  function createProjectsHandlers(deps) {
+    function handleSelectProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(PROJECT_DESELECT_SELECTOR)) return;
+      if (target.closest(PROJECT_RENAME_SELECTOR)) return;
+      if (target.closest(PROJECT_DELETE_SELECTOR)) return;
+      if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
+      const row = target.closest(PROJECT_ROW_SELECTOR);
+      if (!(row instanceof HTMLElement)) {
+        return;
+      }
+      const projectId = row.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      deps.projectsController.selectProject(projectId);
+    }
+    function handleDeselectProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const deselectButton = target.closest(PROJECT_DESELECT_SELECTOR);
+      if (!(deselectButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      deps.projectsController.deselectProject();
+    }
+    async function handleCreateProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const submitButton = target.closest(PROJECT_CREATE_BUTTON_SELECTOR);
+      if (!(submitButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const input = deps.panelsEl.querySelector(PROJECT_CREATE_INPUT_SELECTOR);
+      if (!(input instanceof HTMLInputElement)) {
+        return;
+      }
+      const trimmedNewProjectName = input.value.trim();
+      if (trimmedNewProjectName.length === 0) {
+        deps.notify("Project name can't be empty");
+        return;
+      }
+      await deps.projectsController.create(trimmedNewProjectName);
+    }
+    function handleStartProjectRename(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
+      if (!(renameButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      startRenameEditing(projectId);
+      deps.requestRender();
+    }
+    async function commitOrCancelRename(inputEl) {
+      const editingProjectId = getEditingProjectId();
+      if (editingProjectId === null) {
+        return;
+      }
+      const currentName = getProjects().find((candidate) => candidate.id === editingProjectId)?.name ?? "";
+      const trimmedValue = inputEl.value.trim();
+      if (trimmedValue.length > 0 && trimmedValue !== currentName) {
+        await deps.projectsController.renameProject(
+          editingProjectId,
+          trimmedValue
+        );
+        return;
+      }
+      stopRenameEditing();
+      deps.requestRender();
+    }
+    async function handleRenameKeydown(event) {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || !target.matches(PROJECT_RENAME_INPUT_SELECTOR)) {
+        return;
+      }
+      if (event.key === "Enter") {
+        await commitOrCancelRename(target);
+      }
+      if (event.key === "Escape") {
+        stopRenameEditing();
+        deps.requestRender();
+      }
+    }
+    async function handleRenameFocusOut(event) {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement) || !target.matches(PROJECT_RENAME_INPUT_SELECTOR)) {
+        return;
+      }
+      await commitOrCancelRename(target);
+    }
+    function handleRenameInput(event) {
+      const target = event.target;
+      if (target instanceof HTMLInputElement && target.matches(PROJECT_RENAME_INPUT_SELECTOR)) {
+        setRenameDraft(target.value);
+      }
+    }
+    async function handleDeleteProject(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
+      if (!(deleteButton instanceof HTMLElement)) {
+        return;
+      }
+      const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      if (!window.confirm("Delete this project and all its items?")) return;
+      await deps.projectsController.deleteProject(projectId);
+    }
+    function handleCreateProjectInput(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target instanceof HTMLInputElement && target.matches(PROJECT_CREATE_INPUT_SELECTOR)) {
+        setCreateProjectNameDraft(target.value);
+      }
+    }
+    const eventBindings = [
+      // clicks
+      [deps.panelsEl, "click", asListener(handleSelectProject)],
+      [deps.panelsEl, "click", asListener(handleDeselectProject)],
+      [deps.panelsEl, "click", asListener(handleCreateProject)],
+      [deps.panelsEl, "click", asListener(handleStartProjectRename)],
+      [deps.panelsEl, "click", asListener(handleDeleteProject)],
+      // rename editing lifecycle
+      [deps.panelsEl, "keydown", asListener(handleRenameKeydown)],
+      [deps.panelsEl, "focusout", asListener(handleRenameFocusOut)],
+      // draft capture
+      [deps.panelsEl, "input", asListener(handleCreateProjectInput)],
+      [deps.panelsEl, "input", asListener(handleRenameInput)]
+    ];
+    return eventBindings;
+  }
+  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_CREATE_INPUT_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
+  var init_projectsHandlers = __esm({
+    "src/ui/features/projects/projectsHandlers.ts"() {
+      "use strict";
+      init_eventBindings();
+      init_projectsDraftState();
+      init_projectsRenameState();
+      init_projectsState();
+      PROJECT_ROW_SELECTOR = ".aiw-project-row";
+      PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
+      PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
+      PROJECT_ID_DATASET_KEY = "projectId";
+      PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
+      PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
+      PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
+      PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
+      PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
+    }
+  });
+
+  // src/ui/features/projects/createProjectRow.ts
+  function createProjectRow(project, flags) {
+    const rowEl = document.createElement("div");
+    rowEl.className = "aiw-project-row";
+    rowEl.dataset.projectId = project.id;
+    if (flags.selected) {
+      rowEl.classList.add("aiw-project-row--selected");
+    }
+    if (flags.editing) {
+      const renameInputEl = document.createElement("input");
+      renameInputEl.type = "text";
+      renameInputEl.className = PROJECT_RENAME_INPUT_CLASS;
+      renameInputEl.value = getRenameDraft() ?? project.name;
+      rowEl.append(renameInputEl);
+    } else {
+      const projectTextEl = document.createElement("span");
+      projectTextEl.className = "aiw-project-text";
+      projectTextEl.textContent = project.name;
+      rowEl.append(projectTextEl);
+    }
+    if (flags.selected) {
+      const deselectButtonEl = document.createElement("button");
+      deselectButtonEl.type = "button";
+      deselectButtonEl.className = "aiw-project-deselect";
+      deselectButtonEl.textContent = "\u23CF";
+      rowEl.append(deselectButtonEl);
+    }
+    const renameButtonEl = document.createElement("button");
+    renameButtonEl.type = "button";
+    renameButtonEl.className = "aiw-project-rename";
+    renameButtonEl.textContent = "\u270E";
+    renameButtonEl.dataset.projectId = project.id;
+    const deleteButtonEl = document.createElement("button");
+    deleteButtonEl.type = "button";
+    deleteButtonEl.className = "aiw-project-delete";
+    deleteButtonEl.textContent = "\xD7";
+    deleteButtonEl.dataset.projectId = project.id;
+    rowEl.append(renameButtonEl, deleteButtonEl);
+    return rowEl;
+  }
+  var init_createProjectRow = __esm({
+    "src/ui/features/projects/createProjectRow.ts"() {
+      "use strict";
+      init_projectsHandlers();
+      init_projectsRenameState();
+    }
+  });
+
   // src/ui/features/projects/renderProjectsPanel.ts
   function renderProjectsPanel(containerEl) {
     const shell = createFloatingPanelShell("Projects");
@@ -967,13 +1188,16 @@
     const error = getProjectsError();
     const projects = getProjects();
     const selectedProjectId = getSelectedProjectId();
+    const editingProjectId = getEditingProjectId();
+    const renameDraft = getRenameDraft();
     const isEmpty = projects.length === 0;
     function renderProjectsList(projectsList) {
       const listEl = document.createElement("div");
       listEl.className = "aiw-projects-list";
       for (const project of projectsList) {
         const selected = project.id === selectedProjectId;
-        const rowEl = createProjectRow(project, selected);
+        const editing = project.id === editingProjectId;
+        const rowEl = createProjectRow(project, { selected, editing });
         listEl.append(rowEl);
       }
       shell.bodyEl.append(listEl);
@@ -1010,6 +1234,15 @@
     formEl.append(inputEl, buttonEl);
     shell.panelEl.append(formEl);
     containerEl.append(shell.panelEl);
+    const renameInputEl = shell.panelEl.querySelector(
+      PROJECT_RENAME_INPUT_SELECTOR
+    );
+    if (renameInputEl instanceof HTMLInputElement) {
+      renameInputEl.focus();
+      if (renameDraft === null) {
+        renameInputEl.select();
+      }
+    }
     return shell.panelEl;
   }
   var init_renderProjectsPanel = __esm({
@@ -1017,10 +1250,12 @@
       "use strict";
       init_createFloatingPanelShell();
       init_createPanelState();
+      init_sessionState();
       init_createProjectRow();
       init_projectsState();
       init_projectsDraftState();
-      init_sessionState();
+      init_projectsRenameState();
+      init_projectsHandlers();
     }
   });
 
@@ -1081,34 +1316,34 @@
 
   // src/ui/features/items/itemsState.ts
   function getItems() {
-    return [...state4.items];
+    return [...state5.items];
   }
   function isItemsLoading() {
-    return state4.loading;
+    return state5.loading;
   }
   function isItemsLoadingIndicatorVisible() {
-    return state4.loadingIndicatorVisible;
+    return state5.loadingIndicatorVisible;
   }
   function getItemsError() {
-    return state4.error;
+    return state5.error;
   }
   function setItems(itemsList) {
-    state4.items = [...itemsList];
+    state5.items = [...itemsList];
   }
   function setItemsLoading(loading) {
-    state4.loading = loading;
+    state5.loading = loading;
   }
   function setItemsLoadingIndicatorVisible(visible) {
-    state4.loadingIndicatorVisible = visible;
+    state5.loadingIndicatorVisible = visible;
   }
   function setItemsError(error) {
-    state4.error = error;
+    state5.error = error;
   }
-  var state4;
+  var state5;
   var init_itemsState = __esm({
     "src/ui/features/items/itemsState.ts"() {
       "use strict";
-      state4 = {
+      state5 = {
         items: [],
         loading: false,
         loadingIndicatorVisible: false,
@@ -1119,56 +1354,56 @@
 
   // src/ui/features/items/itemsDraftState.ts
   function getCreateItemTitleDraft() {
-    return state5.createTitle;
+    return state6.createTitle;
   }
   function getCreateItemContentDraft() {
-    return state5.createContent;
+    return state6.createContent;
   }
   function setCreateItemTitleDraft(value) {
-    state5.createTitle = value;
+    state6.createTitle = value;
   }
   function setCreateItemContentDraft(value) {
-    state5.createContent = value;
+    state6.createContent = value;
   }
   function clearCreateItemDraft() {
-    state5.createTitle = null;
-    state5.createContent = null;
+    state6.createTitle = null;
+    state6.createContent = null;
   }
   function getItemDetailTitleDraft(itemId) {
-    return state5.detailDrafts.get(itemId)?.title ?? null;
+    return state6.detailDrafts.get(itemId)?.title ?? null;
   }
   function getItemDetailContentDraft(itemId) {
-    return state5.detailDrafts.get(itemId)?.content ?? null;
+    return state6.detailDrafts.get(itemId)?.content ?? null;
   }
   function setItemDetailTitleDraft(itemId, value) {
-    const draft = state5.detailDrafts.get(itemId) ?? {
+    const draft = state6.detailDrafts.get(itemId) ?? {
       title: null,
       content: null
     };
     draft.title = value;
-    state5.detailDrafts.set(itemId, draft);
+    state6.detailDrafts.set(itemId, draft);
   }
   function setItemDetailContentDraft(itemId, value) {
-    const draft = state5.detailDrafts.get(itemId) ?? {
+    const draft = state6.detailDrafts.get(itemId) ?? {
       title: null,
       content: null
     };
     draft.content = value;
-    state5.detailDrafts.set(itemId, draft);
+    state6.detailDrafts.set(itemId, draft);
   }
   function clearItemDetailDraft(itemId) {
-    state5.detailDrafts.delete(itemId);
+    state6.detailDrafts.delete(itemId);
   }
   function resetItemsDraftState() {
-    state5.createTitle = null;
-    state5.createContent = null;
-    state5.detailDrafts.clear();
+    state6.createTitle = null;
+    state6.createContent = null;
+    state6.detailDrafts.clear();
   }
-  var state5;
+  var state6;
   var init_itemsDraftState = __esm({
     "src/ui/features/items/itemsDraftState.ts"() {
       "use strict";
-      state5 = {
+      state6 = {
         createTitle: null,
         createContent: null,
         detailDrafts: /* @__PURE__ */ new Map()
@@ -1443,48 +1678,39 @@
 
   // src/ui/core/floatingUiState.ts
   function isOrbExpanded() {
-    return state6.orbExpanded;
+    return state7.orbExpanded;
   }
   function getActivePanel() {
-    return state6.activePanel;
+    return state7.activePanel;
   }
   function expandOrb() {
-    state6.orbExpanded = true;
+    state7.orbExpanded = true;
   }
   function collapseOrb() {
-    state6.orbExpanded = false;
-    state6.activePanel = null;
+    state7.orbExpanded = false;
+    state7.activePanel = null;
   }
   function openPanel(panel) {
-    state6.activePanel = panel;
-    state6.orbExpanded = true;
+    state7.activePanel = panel;
+    state7.orbExpanded = true;
   }
   function togglePanel(panel) {
-    const current = state6.activePanel;
+    const current = state7.activePanel;
     if (current === panel) {
-      state6.activePanel = null;
+      state7.activePanel = null;
     } else {
-      state6.activePanel = panel;
-      state6.orbExpanded = true;
+      state7.activePanel = panel;
+      state7.orbExpanded = true;
     }
   }
-  var state6;
+  var state7;
   var init_floatingUiState = __esm({
     "src/ui/core/floatingUiState.ts"() {
       "use strict";
-      state6 = {
+      state7 = {
         orbExpanded: false,
         activePanel: null
       };
-    }
-  });
-
-  // src/ui/core/eventBindings.ts
-  var asListener;
-  var init_eventBindings = __esm({
-    "src/ui/core/eventBindings.ts"() {
-      "use strict";
-      asListener = (handler) => handler;
     }
   });
 
@@ -1626,6 +1852,7 @@
         notify(toErrorMessage(error, "Couldn't rename project."));
         return;
       }
+      stopRenameEditing();
       await loadProjects();
       onStateChange();
     }
@@ -1659,168 +1886,10 @@
       init_floatingUiState();
       init_sessionState();
       init_projectsDraftState();
+      init_projectsRenameState();
       init_loadProjects();
       init_storage();
       init_toErrorMessage();
-    }
-  });
-
-  // src/ui/features/projects/projectsHandlers.ts
-  function createProjectsHandlers(deps) {
-    function handleSelectProject(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      if (target.closest(PROJECT_DESELECT_SELECTOR)) return;
-      if (target.closest(PROJECT_RENAME_SELECTOR)) return;
-      if (target.closest(PROJECT_DELETE_SELECTOR)) return;
-      if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
-      const row = target.closest(PROJECT_ROW_SELECTOR);
-      if (!(row instanceof HTMLElement)) {
-        return;
-      }
-      const projectId = row.dataset[PROJECT_ID_DATASET_KEY];
-      if (!projectId) {
-        return;
-      }
-      deps.projectsController.selectProject(projectId);
-    }
-    function handleDeselectProject(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const deselectButton = target.closest(PROJECT_DESELECT_SELECTOR);
-      if (!(deselectButton instanceof HTMLButtonElement)) {
-        return;
-      }
-      deps.projectsController.deselectProject();
-    }
-    async function handleCreateProject(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const submitButton = target.closest(PROJECT_CREATE_BUTTON_SELECTOR);
-      if (!(submitButton instanceof HTMLButtonElement)) {
-        return;
-      }
-      const input = deps.panelsEl.querySelector(PROJECT_CREATE_INPUT_SELECTOR);
-      if (!(input instanceof HTMLInputElement)) {
-        return;
-      }
-      const trimmedNewProjectName = input.value.trim();
-      if (trimmedNewProjectName.length === 0) {
-        deps.notify("Project name can't be empty");
-        return;
-      }
-      await deps.projectsController.create(trimmedNewProjectName);
-    }
-    function handleRenameProject(event) {
-      let committed = false;
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
-      if (!(renameButton instanceof HTMLButtonElement)) {
-        return;
-      }
-      const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
-      if (!projectId) {
-        return;
-      }
-      const row = renameButton.closest(PROJECT_ROW_SELECTOR);
-      if (!(row instanceof HTMLElement)) {
-        return;
-      }
-      const span = row.querySelector(".aiw-project-text");
-      if (!(span instanceof HTMLSpanElement)) {
-        return;
-      }
-      const currentName = span.textContent ?? "";
-      const renameInputEl = document.createElement("input");
-      renameInputEl.value = currentName;
-      renameInputEl.className = PROJECT_RENAME_INPUT_CLASS;
-      span.replaceWith(renameInputEl);
-      renameInputEl.focus();
-      renameInputEl.select();
-      renameInputEl.addEventListener("keydown", async (event2) => {
-        if (event2.key === "Enter") {
-          committed = true;
-          const trimmedValue = renameInputEl.value.trim();
-          if (trimmedValue) {
-            await deps.projectsController.renameProject(projectId, trimmedValue);
-          } else {
-            deps.requestRender();
-          }
-        }
-        if (event2.key === "Escape") {
-          committed = true;
-          deps.requestRender();
-        }
-      });
-      renameInputEl.addEventListener("blur", async () => {
-        if (committed) return;
-        const trimmedValue = renameInputEl.value.trim();
-        if (trimmedValue && trimmedValue !== currentName) {
-          await deps.projectsController.renameProject(projectId, trimmedValue);
-        } else {
-          deps.requestRender();
-        }
-      });
-    }
-    async function handleDeleteProject(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
-      if (!(deleteButton instanceof HTMLElement)) {
-        return;
-      }
-      const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
-      if (!projectId) {
-        return;
-      }
-      if (!window.confirm("Delete this project and all its items?")) return;
-      await deps.projectsController.deleteProject(projectId);
-    }
-    function handleCreateProjectInput(event) {
-      const target = event.target;
-      if (!(target instanceof Element)) {
-        return;
-      }
-      if (target instanceof HTMLInputElement && target.matches(PROJECT_CREATE_INPUT_SELECTOR)) {
-        setCreateProjectNameDraft(target.value);
-      }
-    }
-    const eventBindings = [
-      [deps.panelsEl, "click", asListener(handleSelectProject)],
-      [deps.panelsEl, "click", asListener(handleDeselectProject)],
-      [deps.panelsEl, "click", asListener(handleCreateProject)],
-      [deps.panelsEl, "click", asListener(handleRenameProject)],
-      [deps.panelsEl, "click", asListener(handleDeleteProject)],
-      [deps.panelsEl, "input", asListener(handleCreateProjectInput)]
-    ];
-    return eventBindings;
-  }
-  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_CREATE_INPUT_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
-  var init_projectsHandlers = __esm({
-    "src/ui/features/projects/projectsHandlers.ts"() {
-      "use strict";
-      init_eventBindings();
-      init_projectsDraftState();
-      PROJECT_ROW_SELECTOR = ".aiw-project-row";
-      PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
-      PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
-      PROJECT_ID_DATASET_KEY = "projectId";
-      PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
-      PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
-      PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
-      PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
-      PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
     }
   });
 
@@ -2567,10 +2636,7 @@
       handleOrbAction(actionId, actionsContext);
     }
     function hasActiveInlineEdit() {
-      const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
-        PROJECT_RENAME_INPUT_SELECTOR
-      );
-      return activeProjectRenameInput instanceof HTMLInputElement;
+      return getEditingProjectId() !== null;
     }
     function resolveProjectName(projectId) {
       const project = getProjects().find(
@@ -2582,6 +2648,7 @@
       itemsController.clearSelection();
       resetItemsDraftState();
       resetProjectsDraftState();
+      resetProjectsRenameState();
       setSelectedItemId(null);
       setSelectedProjectId(null);
       openPanel("projects");
@@ -2619,6 +2686,7 @@
       init_projectsHandlers();
       init_projectsState();
       init_projectsDraftState();
+      init_projectsRenameState();
       init_itemsController();
       init_itemsHandlers();
       init_itemsDraftState();

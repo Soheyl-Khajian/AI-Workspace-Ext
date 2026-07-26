@@ -7,6 +7,7 @@
 //
 // - orchestrate projects feature lifecycle
 // - coordinate async loading workflows
+// - end transient edit/draft modes at their success points
 // - trigger UI refresh cycles after state changes
 //
 // IMPORTANT ARCHITECTURE RULES:
@@ -36,6 +37,7 @@ import {
   setSelectedProjectId,
 } from "../../core/sessionState";
 import { clearCreateProjectNameDraft } from "./projectsDraftState";
+import { stopRenameEditing } from "./projectsRenameState";
 import { loadProjects } from "./loadProjects";
 import {
   createProject,
@@ -97,9 +99,7 @@ export function createProjectsController(
 
   function selectProject(projectId: string): void {
     setSelectedProjectId(projectId);
-
     openPanel("items");
-
     itemsController.clearSelection();
     itemsController.load(projectId);
   }
@@ -110,9 +110,7 @@ export function createProjectsController(
 
   function deselectProject(): void {
     setSelectedProjectId(null);
-
     itemsController.clearSelection();
-
     onStateChange();
   }
 
@@ -143,9 +141,16 @@ export function createProjectsController(
     try {
       await storageRenameProject(projectId, name);
     } catch (error) {
+      // Surface the failure and keep the editor open (editing
+      // state untouched) so the user can fix the name and retry.
       notify(toErrorMessage(error, "Couldn't rename project."));
       return;
     }
+
+    // Success ends the edit mode; the next render swaps the
+    // input back to the name span.
+    stopRenameEditing();
+
     await loadProjects();
     onStateChange();
   }
@@ -156,6 +161,7 @@ export function createProjectsController(
 
   async function deleteProject(projectId: string): Promise<void> {
     const selectedProjectId = getSelectedProjectId();
+
     try {
       await deleteProjectCascade(projectId);
     } catch (error) {
@@ -163,10 +169,12 @@ export function createProjectsController(
       notify(toErrorMessage(error, "Couldn't delete project."));
       return;
     }
+
     if (selectedProjectId === projectId) {
       setSelectedProjectId(null);
       openPanel("projects");
     }
+
     await loadProjects();
     onStateChange();
   }

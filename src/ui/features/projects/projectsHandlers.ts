@@ -13,21 +13,32 @@
 // - handleSelectProject treats ANY click inside a row as "select"
 //   unless guarded: every interactive element added inside a row
 //   MUST be excluded there (deselect / rename / delete / inputs)
+// - rename editing is STATE-DRIVEN: the click handler only flips
+//   projectsRenameState, the renderer draws the input, and
+//   commit / cancel / draft capture are permanent delegated
+//   bindings in the table below
 //
 // IMPORTANT ARCHITECTURE RULES:
 //
 // - NO direct storage access (delegates to projectsController)
 // - NO rendering logic (requests re-render via deps.requestRender)
 // - NO global DOM queries (scoped to deps.panelsEl)
-// - listener lifecycle is owned by the CALLER (register + teardown);
-//   only the rename input's transient keydown/blur listeners are
-//   attached here, and they die with the input element
+// - NO element-attached listeners — listener lifecycle is owned
+//   by the CALLER (register + teardown), with no exceptions
 // ------------------------------------------------------------
 
 import type { ProjectsController } from "./projectsController";
 import type { EventBinding } from "../../core/eventBindings";
+
 import { asListener } from "../../core/eventBindings";
 import { setCreateProjectNameDraft } from "./projectsDraftState";
+import {
+  getEditingProjectId,
+  setRenameDraft,
+  startRenameEditing,
+  stopRenameEditing,
+} from "./projectsRenameState";
+import { getProjects } from "./projectsState";
 
 // ------------------------------------------------------------
 // CONSTANTS
@@ -40,7 +51,8 @@ const PROJECT_ID_DATASET_KEY = "projectId";
 const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
 const PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
 const PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
-const PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
+
+export const PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
 export const PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
 
 type ProjectsHandlersDependencies = {
@@ -56,9 +68,9 @@ export function createProjectsHandlers(
   // ----------------------------------------------------------
   // PROJECT SELECTION HANDLER
   // ----------------------------------------------------------
+
   function handleSelectProject(event: MouseEvent): void {
     const target = event.target;
-
     if (!(target instanceof Element)) {
       return;
     }
@@ -69,13 +81,11 @@ export function createProjectsHandlers(
     if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
 
     const row = target.closest(PROJECT_ROW_SELECTOR);
-
     if (!(row instanceof HTMLElement)) {
       return;
     }
 
     const projectId = row.dataset[PROJECT_ID_DATASET_KEY];
-
     if (!projectId) {
       return;
     }
@@ -86,6 +96,7 @@ export function createProjectsHandlers(
   // ----------------------------------------------------------
   // PROJECT DESELECTION HANDLER
   // ----------------------------------------------------------
+
   function handleDeselectProject(event: MouseEvent): void {
     const target = event.target;
     if (!(target instanceof Element)) {
@@ -103,6 +114,7 @@ export function createProjectsHandlers(
   // ----------------------------------------------------------
   // PROJECT CREATION HANDLER
   // ----------------------------------------------------------
+
   async function handleCreateProject(event: MouseEvent): Promise<void> {
     const target = event.target;
     if (!(target instanceof Element)) {
@@ -129,11 +141,15 @@ export function createProjectsHandlers(
   }
 
   // ----------------------------------------------------------
-  // PROJECT RENAME HANDLER
+  // PROJECT RENAME HANDLERS (state-driven editing)
+  //
+  // The click handler only flips state; the renderer draws the
+  // input. Commit/cancel are permanent delegated bindings —
+  // note focusout, not blur: blur doesn't bubble, so a
+  // delegated listener would never hear it.
   // ----------------------------------------------------------
-  function handleRenameProject(event: MouseEvent): void {
-    let committed = false;
 
+  function handleStartProjectRename(event: MouseEvent): void {
     const target = event.target;
     if (!(target instanceof Element)) {
       return;
@@ -149,61 +165,105 @@ export function createProjectsHandlers(
       return;
     }
 
-    const row = renameButton.closest(PROJECT_ROW_SELECTOR);
-    if (!(row instanceof HTMLElement)) {
+    startRenameEditing(projectId);
+    deps.requestRender();
+  }
+
+  /*
+  Shared by Enter and focusout. The editing-state guard replaces
+  the old `committed` flag: once a commit/cancel settles the
+  state, the focusout fired by the re-render destroying the
+  input finds editing already null and does nothing.
+
+  KNOWN LIMIT: Chrome also fires focusout when a re-render
+  destroys the input mid-edit (e.g. capturing while renaming).
+  Editing is still active then, so this commits (text changed)
+  or cancels (unchanged) instead of letting the redrawn input
+  carry on. Nothing is lost, and the state guard still prevents
+  a double commit. If background re-renders become common,
+  distinguish "destroyed by render" from "left by user" with a
+  deferred isConnected check.
+*/
+  async function commitOrCancelRename(
+    inputEl: HTMLInputElement,
+  ): Promise<void> {
+    const editingProjectId = getEditingProjectId();
+    if (editingProjectId === null) {
       return;
     }
 
-    const span = row.querySelector(".aiw-project-text");
-    if (!(span instanceof HTMLSpanElement)) {
+    // Resolve the current name from state at commit time (no
+    // closure over render-time DOM, no staleness).
+    const currentName =
+      getProjects().find((candidate) => candidate.id === editingProjectId)
+        ?.name ?? "";
+
+    const trimmedValue = inputEl.value.trim();
+
+    if (trimmedValue.length > 0 && trimmedValue !== currentName) {
+      // Controller stops editing on success; keeps it on failure.
+      await deps.projectsController.renameProject(
+        editingProjectId,
+        trimmedValue,
+      );
       return;
     }
 
-    const currentName = span.textContent ?? "";
+    // Empty or unchanged → cancel, no storage write.
+    stopRenameEditing();
+    deps.requestRender();
+  }
 
-    const renameInputEl = document.createElement("input");
-    renameInputEl.value = currentName;
-    renameInputEl.className = PROJECT_RENAME_INPUT_CLASS;
+  async function handleRenameKeydown(event: KeyboardEvent): Promise<void> {
+    const target = event.target;
+    if (
+      !(target instanceof HTMLInputElement) ||
+      !target.matches(PROJECT_RENAME_INPUT_SELECTOR)
+    ) {
+      return;
+    }
 
-    span.replaceWith(renameInputEl);
+    if (event.key === "Enter") {
+      await commitOrCancelRename(target);
+    }
 
-    renameInputEl.focus();
-    renameInputEl.select();
+    if (event.key === "Escape") {
+      stopRenameEditing();
+      deps.requestRender();
+    }
+  }
 
-    renameInputEl.addEventListener("keydown", async (event) => {
-      if (event.key === "Enter") {
-        committed = true;
-        const trimmedValue = renameInputEl.value.trim();
-        if (trimmedValue) {
-          await deps.projectsController.renameProject(projectId, trimmedValue);
-        } else {
-          deps.requestRender();
-        }
-      }
+  async function handleRenameFocusOut(event: Event): Promise<void> {
+    const target = event.target;
+    if (
+      !(target instanceof HTMLInputElement) ||
+      !target.matches(PROJECT_RENAME_INPUT_SELECTOR)
+    ) {
+      return;
+    }
 
-      if (event.key === "Escape") {
-        committed = true;
-        deps.requestRender();
-      }
-    });
+    await commitOrCancelRename(target);
+  }
 
-    renameInputEl.addEventListener("blur", async () => {
-      if (committed) return;
-      const trimmedValue = renameInputEl.value.trim();
-      if (trimmedValue && trimmedValue !== currentName) {
-        await deps.projectsController.renameProject(projectId, trimmedValue);
-      } else {
-        deps.requestRender();
-      }
-    });
+  // Draft capture: keystrokes → state, no re-render (the DOM
+  // already shows the text; the draft exists to survive OTHER
+  // re-renders).
+  function handleRenameInput(event: Event): void {
+    const target = event.target;
+    if (
+      target instanceof HTMLInputElement &&
+      target.matches(PROJECT_RENAME_INPUT_SELECTOR)
+    ) {
+      setRenameDraft(target.value);
+    }
   }
 
   // ----------------------------------------------------------
   // PROJECT DELETE HANDLER
   // ----------------------------------------------------------
+
   async function handleDeleteProject(event: MouseEvent): Promise<void> {
     const target = event.target;
-
     if (!(target instanceof Element)) {
       return;
     }
@@ -248,13 +308,20 @@ export function createProjectsHandlers(
   // ----------------------------------------------------------
   // EVENT BINDINGS
   // ----------------------------------------------------------
+
   const eventBindings: EventBinding[] = [
+    // clicks
     [deps.panelsEl, "click", asListener(handleSelectProject)],
     [deps.panelsEl, "click", asListener(handleDeselectProject)],
     [deps.panelsEl, "click", asListener(handleCreateProject)],
-    [deps.panelsEl, "click", asListener(handleRenameProject)],
+    [deps.panelsEl, "click", asListener(handleStartProjectRename)],
     [deps.panelsEl, "click", asListener(handleDeleteProject)],
+    // rename editing lifecycle
+    [deps.panelsEl, "keydown", asListener(handleRenameKeydown)],
+    [deps.panelsEl, "focusout", asListener(handleRenameFocusOut)],
+    // draft capture
     [deps.panelsEl, "input", asListener(handleCreateProjectInput)],
+    [deps.panelsEl, "input", asListener(handleRenameInput)],
   ];
 
   return eventBindings;

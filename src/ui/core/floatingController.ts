@@ -9,7 +9,7 @@
 //   controllers, and event-handler factories (dependency injection
 //   happens HERE and only here)
 // - own the render cycle (renderUi) and the initial load
-// - bridge features that must not know about each other
+// // - bridge features that must not know about each other
 //   (cross-feature glue: hasActiveInlineEdit, resolveProjectName,
 //   reloadAfterImport)
 // - own listener lifecycle: register every contributed
@@ -50,12 +50,13 @@ import {
 import { createOrbHandlers } from "./orbHandlers";
 
 import { createProjectsController } from "../features/projects/projectsController";
-import {
-  PROJECT_RENAME_INPUT_SELECTOR,
-  createProjectsHandlers,
-} from "../features/projects/projectsHandlers";
+import { createProjectsHandlers } from "../features/projects/projectsHandlers";
 import { getProjects } from "../features/projects/projectsState";
 import { resetProjectsDraftState } from "../features/projects/projectsDraftState";
+import {
+  getEditingProjectId,
+  resetProjectsRenameState,
+} from "../features/projects/projectsRenameState";
 import { createItemsController } from "../features/items/itemsController";
 import { createItemsHandlers } from "../features/items/itemsHandlers";
 import { resetItemsDraftState } from "../features/items/itemsDraftState";
@@ -186,23 +187,21 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // composition root's job — feature and core modules receive
   // these as injected deps instead of importing across siblings.
   // ----------------------------------------------------------
-
   // Injected into orbHandlers as deps.hasActiveInlineEdit so the
-  // core orb module never imports feature selectors directly —
-  // it asks "is an inline edit in progress?" without knowing WHICH
-  // feature owns the edit. Today that means the projects rename
-  // input; future inline editors extend this predicate, not core.
+  // core orb module never knows WHICH feature owns the edit.
+  // Answered from projectsRenameState instead of a DOM query:
+  // the edit mode is now a recorded fact, not an inference from
+  // whether an input element happens to exist. Future inline
+  // editors extend this predicate, not core.
   function hasActiveInlineEdit(): boolean {
-    const activeProjectRenameInput = dom.orbPanelsEl.querySelector(
-      PROJECT_RENAME_INPUT_SELECTOR,
-    );
-    return activeProjectRenameInput instanceof HTMLInputElement;
+    return getEditingProjectId() !== null;
   }
 
-  // Injected into itemsHandlers as deps.resolveProjectName so the
-  // items feature never imports projectsState directly — bridging
-  // sibling features is the composition root's job, not theirs.
-  // also used in renderUi.
+  // Injected into backupController as deps.onImported. The database
+  // was fully replaced, so all transient state is stale: reset
+  // selection, drafts, rename editing, and panel, then reload
+  // projects from storage (projectsController.load re-renders via
+  // its onStateChange).
   function resolveProjectName(projectId: string): string {
     const project = getProjects().find(
       (candidate) => candidate.id === projectId,
@@ -218,6 +217,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     itemsController.clearSelection();
     resetItemsDraftState();
     resetProjectsDraftState();
+    resetProjectsRenameState();
     setSelectedItemId(null);
     setSelectedProjectId(null);
     openPanel("projects");
