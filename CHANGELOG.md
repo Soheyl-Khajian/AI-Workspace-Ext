@@ -6,6 +6,41 @@ The format is based on
 [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+### Added
+
+- **Project context breadcrumb**: project-scoped panels (Items, Item Detail)
+  show which project they belong to in the panel header; opening Items with no
+  project selected shows a "Select a project" state that links back to the
+  Projects panel.
+- **Deselect strip**: the selected project row shows a control to release the
+  selection without having to select a different project.
+
+### Changed
+
+- **Design system retheme**: all styles tokenized (role-named custom
+  properties, `color-mix()`-derived color families) under an "anchored glass"
+  theme; elliptical action fan anchored to the orb; panels centered on the
+  viewport; build-context bar moved into the items panel header.
+- **Inline project rename is state-driven**: renaming now survives UI
+  re-renders. Enter commits, Escape cancels, clicking away commits changed
+  text and cancels unchanged text; committing an empty or unchanged name
+  cancels instead of writing.
+- **In-flight form text survives re-renders**: create-project, create-item,
+  and item-detail inputs no longer lose typed text when the UI re-renders in
+  the background (e.g. after a capture).
+- **Items loading indicator is delayed**: "Loading items…" appears only when
+  loading exceeds a perception threshold, removing the indicator flash on
+  fast loads.
+
+### Fixed
+
+- `animations.css` was missing from `web_accessible_resources`, silently
+  disabling all entrance animations.
+- Panel entrance animation no longer replays on every same-panel re-render;
+  it plays only when the active panel actually changes.
+
 ## [0.1.0] - 2026-07-20
 
 Initial MVP release.

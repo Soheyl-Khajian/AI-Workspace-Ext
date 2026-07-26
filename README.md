@@ -18,8 +18,13 @@ machine.
 
 - **Floating orb UI** — an unobtrusive orb on `chatgpt.com` that expands into
   action buttons and panels, and collapses when you click away.
-- **Projects** — create, rename, select, and delete projects. Deleting a project
-  cascades to its items so nothing is left orphaned.
+- **Projects** — create, rename (inline — Enter commits, Escape cancels),
+  select, and delete projects. Deleting a project cascades to its items so
+  nothing is left orphaned.
+- **Always-visible context** — project-scoped panels show which project you're
+  working in via a header breadcrumb, and the selected project row carries a
+  one-click deselect control. Selection is session-only by design: a fresh
+  page starts with a clean slate.
 - **Items** — typed items (notes and more) with a title and content. Create them,
   open a detail view to edit and save, select them, and delete them.
 - **Capture from the page** — select text on `chatgpt.com`, right-click, and save
@@ -32,8 +37,9 @@ machine.
 - **Local-first** — all data lives in IndexedDB in your browser; runtime UI state
   is rebuilt from storage on every load.
 - **Resilient** — the UI survives ChatGPT's in-app navigation (auto-remounts if
-  the page detaches it) and guards against double-injection and duplicate-project
-  races.
+  the page detaches it), guards against double-injection and duplicate-project
+  races, and never loses your half-typed text to a background refresh. Loading
+  indicators appear only when loading is actually slow — no flashing.
 
 ## Data & privacy
 
@@ -123,9 +129,13 @@ Storage → Controllers → Runtime State → Renderers → DOM
 
 - **Storage** — persistence only.
 - **Controllers** — orchestrate workflows.
-- **Runtime state** — the current in-memory UI state (selection, active panel);
-  rebuilt from storage on load.
+- **Runtime state** — the current in-memory UI state (selection, active panel,
+  in-flight edits and drafts); rebuilt from storage on load.
 - **Renderers** — turn state into DOM.
+
+Anything that must survive a re-render is state: which panel is open, which
+project is selected, which row is being renamed, even half-typed form text.
+The DOM is treated as a disposable projection of that state.
 
 Storage itself is further layered **facade → repo → IndexedDB**: the facade owns
 validation and domain rules, while the repo layer stays a thin, predictable
@@ -164,6 +174,8 @@ manifest.json   MV3 manifest
 `v0.1.0` is the MVP baseline. Planned next:
 
 - Search across local workspace data (project names, item titles, content)
+- Item triage — move items between projects (get things out of the Inbox)
+- Keyboard basics (Enter submits forms, Escape closes panels)
 - Richer item types and content editing
 - UI/UX polish and theming
 - Pro features

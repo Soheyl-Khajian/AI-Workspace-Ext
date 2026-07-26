@@ -1,7 +1,21 @@
 # AI Workspace — MVP Specification
 
-Version: MVP
-Status: In Development
+Version: MVP (v0.1.0)
+Status: **Frozen — historical record**
+
+> **This document is superseded.** It is the original pre-build specification
+> for the MVP, preserved as a record of intent — it is deliberately NOT
+> updated and no longer describes current behavior. For what the extension
+> does today, see [README.md](../README.md); for how it got there, see
+> [CHANGELOG.md](../CHANGELOG.md).
+>
+> Known drift from the shipped product (examples, not exhaustive): backup
+> export/import shipped despite §2; the Item model gained `type` and `meta`
+> fields; the orb actions are Projects / Backup / Search (§10); selection
+> gained a breadcrumb, deselect control, and deliberate session-ephemerality
+> (§13); rename is state-driven with commit/cancel semantics where an empty
+> name cancels rather than errors (§14); capture routes to a lazily-created
+> Inbox (§22); search (§21, §25) has not shipped yet.
 
 ---
 
