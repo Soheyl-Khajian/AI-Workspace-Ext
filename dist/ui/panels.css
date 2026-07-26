@@ -135,13 +135,6 @@
    PANEL STATES (placeholder / loading / empty / error)
 ------------------------------------------------------------ */
 
-.aiw-floating-panel__placeholder {
-  margin: 0;
-  font-size: var(--aiw-fs-md);
-  line-height: 1.5;
-  color: var(--aiw-text-muted);
-}
-
 .aiw-panel-state {
   display: flex;
   align-items: center;
