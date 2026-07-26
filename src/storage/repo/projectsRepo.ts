@@ -145,12 +145,16 @@ export async function getProjectById(id: string): Promise<Project | undefined> {
  * Semantics:
  * - Match is by exact `name`. The projects store has no name index in v0, so
  *   we scan getAll() inside the transaction (fine for v0's small dataset).
- * - Returns the existing project if found; otherwise inserts `candidate`.
+ * - Duplicate names are legal. If multiple projects share the name, the
+ *   OLDEST wins (smallest createdAt); equal createdAt breaks the tie by
+ *   ascending id. Resolution is therefore deterministic (e.g. duplicate
+ *   "Inbox" projects always resolve to the same one).
+ * - Returns the resolved project if found; otherwise inserts `candidate`.
  *
  * IMPORTANT: do NOT introduce an await of any non-IDB promise between the
  * getAll and the put — that would let the transaction auto-commit and the
- * put would throw TransactionInactiveError. Only synchronous work (the find)
- * sits between them.
+ * put would throw TransactionInactiveError. Only synchronous work (the
+ * match scan) sits between them.
  *
  * Failure behavior:
  * - Any IndexedDB error rejects the promise.
@@ -166,7 +170,20 @@ export async function getOrInsertProjectByName(
     const store = tx.objectStore(STORE_PROJECTS);
 
     const existing: Project[] = await requestToPromise(store.getAll());
-    const match = existing.find((p) => p.name === name);
+    let match: Project | undefined;
+    for (const project of existing) {
+      if (project.name !== name) {
+        continue;
+      }
+
+      if (
+        match === undefined ||
+        project.createdAt < match.createdAt ||
+        (project.createdAt === match.createdAt && project.id < match.id)
+      ) {
+        match = project;
+      }
+    }
 
     let result: Project;
     if (match !== undefined) {
