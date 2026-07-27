@@ -947,6 +947,7 @@
     return state4.draftName;
   }
   function setRenameDraft(value) {
+    if (state4.editingProjectId === null) return;
     state4.draftName = value;
   }
   function startRenameEditing(projectId) {
