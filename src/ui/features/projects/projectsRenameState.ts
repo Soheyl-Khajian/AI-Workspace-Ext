@@ -13,6 +13,9 @@
 // - INVARIANT: draftName is null whenever editingProjectId is
 //   null. Both fields change ONLY through start/stop/set below —
 //   that is what makes the invariant structural, not conventional.
+// - setRenameDraft is a NO-OP while not editing — the guarded
+//   door is what upgrades the invariant from convention to
+//   structure; callers get no error, the write is ignored
 // - null and "" are DIFFERENT facts:
 //   null = "no draft — hydrate from the stored project name"
 //   ""   = "user deliberately cleared the field — keep it empty"
@@ -54,6 +57,7 @@ export function getRenameDraft(): string | null {
 // MUTATIONS
 // ------------------------------------------------------------
 export function setRenameDraft(value: string): void {
+  if (state.editingProjectId === null) return;
   state.draftName = value;
 }
 
