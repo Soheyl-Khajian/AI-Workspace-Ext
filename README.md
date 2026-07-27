@@ -4,7 +4,7 @@
 > of ChatGPT — organize captured information into projects and items without
 > leaving the chat.
 
-**Status:** MVP · `v0.1.0` · source-available (all rights reserved — see [License](#license))
+**Status:** MVP · `v0.2.0` · source-available (all rights reserved — see [License](#license))
 
 AI Workspace injects a lightweight floating UI onto `chatgpt.com` where you can
 keep project notes and snippets right next to your conversations. Everything is

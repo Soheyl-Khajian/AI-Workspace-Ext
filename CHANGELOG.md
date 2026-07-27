@@ -8,6 +8,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-07-27
+
 ### Added
 
 - **Project context breadcrumb**: project-scoped panels (Items, Item Detail)
@@ -40,6 +42,9 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   disabling all entrance animations.
 - Panel entrance animation no longer replays on every same-panel re-render;
   it plays only when the active panel actually changes.
+- Duplicate project names (e.g. two "Inbox" projects) now resolve
+  deterministically to the oldest project instead of an arbitrary match, so
+  captures always land in the same Inbox.
 
 ## [0.1.0] - 2026-07-20
 
@@ -65,4 +70,6 @@ Initial MVP release.
   automatically re-mounting the UI, guards against duplicate content-script
   injection, and makes Inbox creation atomic to prevent duplicate projects.
 
+[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/releases/tag/v0.1.0

@@ -187,7 +187,15 @@
       const tx = db.transaction(STORE_PROJECTS, "readwrite");
       const store = tx.objectStore(STORE_PROJECTS);
       const existing = await requestToPromise(store.getAll());
-      const match = existing.find((p) => p.name === name);
+      let match;
+      for (const project of existing) {
+        if (project.name !== name) {
+          continue;
+        }
+        if (match === void 0 || project.createdAt < match.createdAt || project.createdAt === match.createdAt && project.id < match.id) {
+          match = project;
+        }
+      }
       let result;
       if (match !== void 0) {
         result = match;
