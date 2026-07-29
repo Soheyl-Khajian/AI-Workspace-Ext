@@ -65,7 +65,7 @@ export async function insertItem(item: Item): Promise<void> {
  * - Resolves only after the transaction fully commits.
  *
  * Intended use:
- * - Full-data export / backup snapshots.
+ * - Full-data reads: export snapshots, workspace-wide search
  */
 export async function getAllItems(): Promise<Item[]> {
   const db = await openDb();

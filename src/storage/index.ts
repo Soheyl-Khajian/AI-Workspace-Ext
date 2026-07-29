@@ -33,7 +33,6 @@ import type { Item, ItemMeta, ItemType } from "../models/item";
 /* -------------------------------------------------------
    TYPES
 ------------------------------------------------------- */
-
 /**
  * A raw, format-free snapshot of the entire dataset.
  * Used by export/import; wrapping it into a versioned backup
@@ -47,7 +46,6 @@ export type WorkspaceSnapshot = {
 /* -------------------------------------------------------
    PROJECTS
 ------------------------------------------------------- */
-
 export async function createProject(
   name: string,
   description?: string,
@@ -111,7 +109,6 @@ export async function deleteProjectCascade(projectId: string): Promise<void> {
   }
 
   const trimmedProjectId = projectId.trim();
-
   if (trimmedProjectId.length === 0) {
     throw new Error("project id cannot be empty");
   }
@@ -163,7 +160,6 @@ export async function renameProject(
 /* -------------------------------------------------------
    ITEMS
 ------------------------------------------------------- */
-
 export async function createItem(
   projectId: string,
   type: ItemType,
@@ -189,7 +185,6 @@ export async function createItem(
   }
 
   const normalizedTitle = (title ?? "").trim();
-
   const normalizedContent = content ?? "";
 
   const item: Item = {
@@ -206,13 +201,31 @@ export async function createItem(
   return item;
 }
 
+/**
+ * Retrieve every item across all projects, newest-first.
+ *
+ * - Sorting lives here because the repo's getAllItems() is
+ *   deliberately unordered; newest-first matches the per-project
+ *   listing so the UI never disagrees with itself about order.
+ * - Consumers: workspace-wide search snapshot (and any future
+ *   cross-project views).
+ */
+export async function listAllItems(): Promise<Item[]> {
+  const items = await getAllItems();
+
+  // .sort() mutates in place; safe here because the array is a
+  // fresh repo read that no other caller holds.
+  items.sort((a, b) => b.createdAt - a.createdAt);
+
+  return items;
+}
+
 export async function listItemsByProject(projectId: string): Promise<Item[]> {
   if (projectId == null) {
     throw new Error("projectId is required (null/undefined)");
   }
 
   const trimmedProjectId = projectId.trim();
-
   if (trimmedProjectId.length === 0) {
     throw new Error("projectId cannot be empty");
   }
@@ -287,7 +300,6 @@ export async function deleteItem(id: string): Promise<void> {
   }
 
   const trimmedId = id.trim();
-
   if (trimmedId.length === 0) {
     throw new Error("item id cannot be empty");
   }
@@ -298,7 +310,6 @@ export async function deleteItem(id: string): Promise<void> {
 /* -------------------------------------------------------
    BACKUP (export / import)
 ------------------------------------------------------- */
-
 /**
  * Read the entire dataset as a raw snapshot (all projects + all items).
  *
