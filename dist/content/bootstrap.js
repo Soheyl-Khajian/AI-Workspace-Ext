@@ -1448,6 +1448,7 @@
     rowEl.type = "button";
     rowEl.className = "aiw-search-result-row";
     rowEl.dataset.itemId = item.id;
+    rowEl.dataset.projectId = item.projectId;
     const textEl = document.createElement("span");
     textEl.className = "aiw-search-result-text";
     if (item.title.length > 0) {
@@ -2814,18 +2815,35 @@
         deps.renderResults();
       }, SEARCH_DEBOUNCE_MS);
     }
+    function handleSearchResultRowClick(event) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      const row = target.closest(SEARCH_RESULT_ROW_SELECTOR);
+      if (!(row instanceof HTMLButtonElement)) {
+        return;
+      }
+      const projectId = row.dataset.projectId;
+      if (!projectId) {
+        return;
+      }
+      deps.openProject(projectId);
+    }
     const eventBindings = [
-      [deps.panelsEl, "input", asListener(handleSearchInput)]
+      [deps.panelsEl, "input", asListener(handleSearchInput)],
+      [deps.panelsEl, "click", asListener(handleSearchResultRowClick)]
     ];
     return eventBindings;
   }
-  var SEARCH_INPUT_SELECTOR, SEARCH_DEBOUNCE_MS;
+  var SEARCH_INPUT_SELECTOR, SEARCH_RESULT_ROW_SELECTOR, SEARCH_DEBOUNCE_MS;
   var init_searchHandlers = __esm({
     "src/ui/features/search/searchHandlers.ts"() {
       "use strict";
       init_eventBindings();
       init_searchDraftState();
       SEARCH_INPUT_SELECTOR = ".aiw-search-input";
+      SEARCH_RESULT_ROW_SELECTOR = ".aiw-search-result-row";
       SEARCH_DEBOUNCE_MS = 200;
     }
   });
@@ -2874,7 +2892,8 @@
     });
     const searchBindings = createSearchHandlers({
       panelsEl: dom.orbPanelsEl,
-      renderResults: renderSearchResultsRegion
+      renderResults: renderSearchResultsRegion,
+      openProject
     });
     const actionsContext = {
       togglePanel: toggleFloatingPanel
@@ -2932,6 +2951,9 @@
         return;
       }
       renderSearchResults(resultsEl);
+    }
+    function openProject(projectId) {
+      projectsController.selectProject(projectId);
     }
     async function reloadAfterImport() {
       itemsController.clearSelection();

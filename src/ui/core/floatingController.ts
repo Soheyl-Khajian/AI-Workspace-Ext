@@ -11,7 +11,7 @@
 // - own the render cycle (renderUi) and the initial load
 // - bridge features that must not know about each other
 //   (cross-feature glue: hasActiveInlineEdit, resolveProjectName,
-//   renderSearchResultsRegion, reloadAfterImport)
+//   renderSearchResultsRegion, openProject, reloadAfterImport)
 // - own listener lifecycle: register every contributed
 //   EventBinding and return a teardown that removes them
 //   symmetrically
@@ -133,6 +133,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   const searchBindings = createSearchHandlers({
     panelsEl: dom.orbPanelsEl,
     renderResults: renderSearchResultsRegion,
+    openProject,
   });
 
   const actionsContext: OrbActionContext = {
@@ -252,6 +253,18 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     }
 
     renderSearchResults(resultsEl);
+  }
+
+  /*
+  Injected into searchHandlers as deps.openProject. Search result
+  rows navigate to a project's Items panel — a workflow the
+  projects feature already owns end to end (selectProject: set
+  selection, open the items panel, clear item multi-select, load
+  items). The narrow function hands search exactly that one door
+  instead of the whole projectsController.
+*/
+  function openProject(projectId: string): void {
+    projectsController.selectProject(projectId);
   }
 
   // Injected into backupController as deps.onImported. The database

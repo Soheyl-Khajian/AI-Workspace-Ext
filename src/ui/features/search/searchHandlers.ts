@@ -6,6 +6,7 @@
 // Responsibility:
 //
 // - own the search panel's DOM event handlers (query input)
+// - own result-row navigation
 // - own the search selector constants + debounce delay
 // - contribute EventBinding[] to the floating controller's
 //   declarative add/remove table via createSearchHandlers()
@@ -15,6 +16,8 @@
 // - NO direct storage access (keystrokes filter in memory only)
 // - NO rendering logic: the scoped results re-render is injected
 //   as deps.renderResults — the composition root owns locating
+// - Navigation is injected as deps.openProject - the composition
+//   root owns navigation
 //   the results container and calling the renderer
 // - NO global DOM queries (delegation is scoped to deps.panelsEl)
 // - listener lifecycle is owned by the CALLER (register + teardown)
@@ -36,6 +39,7 @@ import { setSearchQueryDraft } from "./searchDraftState";
 // ------------------------------------------------------------
 
 const SEARCH_INPUT_SELECTOR = ".aiw-search-input";
+const SEARCH_RESULT_ROW_SELECTOR = ".aiw-search-result-row";
 
 /*
   Below ~150ms barely debounces (most inter-keystroke gaps are
@@ -50,6 +54,7 @@ const SEARCH_DEBOUNCE_MS = 200;
 type SearchHandlersDependencies = {
   panelsEl: HTMLElement;
   renderResults: () => void;
+  openProject: (projectId: string) => void;
 };
 
 export function createSearchHandlers(
@@ -98,11 +103,35 @@ export function createSearchHandlers(
   }
 
   // ----------------------------------------------------------
+  // RESULT ROW CLICK HANDLER (navigation)
+  // ----------------------------------------------------------
+
+  function handleSearchResultRowClick(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    const row = target.closest(SEARCH_RESULT_ROW_SELECTOR);
+    if (!(row instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const projectId = row.dataset.projectId;
+    if (!projectId) {
+      return;
+    }
+
+    deps.openProject(projectId);
+  }
+
+  // ----------------------------------------------------------
   // BINDINGS TABLE
   // ----------------------------------------------------------
 
   const eventBindings: EventBinding[] = [
     [deps.panelsEl, "input", asListener(handleSearchInput)],
+    [deps.panelsEl, "click", asListener(handleSearchResultRowClick)],
   ];
 
   return eventBindings;

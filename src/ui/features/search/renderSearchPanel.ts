@@ -196,8 +196,9 @@ function createSectionHeading(label: string): HTMLElement {
 
 /*
   Rows are buttons from day one (keyboard reachable, obvious
-  interaction affordance) and carry dataset ids so a future
-  navigation handler can delegate without renderer changes.
+  interaction affordance) and carry dataset ids so the
+  navigation handler in searchHandlers can delegate without renderer
+  knowledge.
   They deliberately do NOT reuse .aiw-project-row / .aiw-item-row:
   those classes are behavior hooks owned by sibling features'
   delegated handlers — sharing them would let projects/items
@@ -224,6 +225,7 @@ function createItemResultRow(item: Item): HTMLElement {
   rowEl.type = "button";
   rowEl.className = "aiw-search-result-row";
   rowEl.dataset.itemId = item.id;
+  rowEl.dataset.projectId = item.projectId;
 
   const textEl = document.createElement("span");
   textEl.className = "aiw-search-result-text";
