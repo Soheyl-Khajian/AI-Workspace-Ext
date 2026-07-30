@@ -6,10 +6,10 @@
   STRUCTURE OF THIS FILE:
   1. Panel shell (root, shell, header, body, states)
   2. Shared components, grouped by ROLE:
-     - list rows        (.aiw-project-row, .aiw-item-row)
+  - list rows        (.aiw-project-row, .aiw-item-row, search rows)
      - row side buttons (.aiw-project-delete, .aiw-item-delete, rename)
      - footer forms     (create project / create item / item detail)
-     - text inputs      (all five inputs/textareas)
+     - text inputs      (all six inputs/textareas)
      - solid buttons    (submit / save)
      - tinted buttons   (build context, export, import)
   3. Feature-specific one-offs
@@ -243,7 +243,8 @@
 ------------------------------------------------------------ */
 
 .aiw-projects-list,
-.aiw-items-list {
+.aiw-items-list,
+.aiw-search-results {
   display: flex;
   flex-direction: column;
   gap: var(--aiw-space-sm);
@@ -259,7 +260,8 @@
 */
 
 .aiw-project-row,
-.aiw-item-row {
+.aiw-item-row,
+.aiw-search-result-row {
   border: 1px solid var(--aiw-border);
   width: 100%;
   display: flex;
@@ -289,7 +291,8 @@
 }
 
 .aiw-project-row:focus-visible,
-.aiw-item-row:focus-visible {
+.aiw-item-row:focus-visible,
+.aiw-search-result-row:focus-visible {
   outline: none;
   box-shadow: var(--aiw-focus-ring);
 }
@@ -301,7 +304,8 @@
 }
 
 .aiw-project-row--selected:hover,
-.aiw-item-row--selected:hover {
+.aiw-item-row--selected:hover,
+.aiw-search-result-row:hover {
   background: var(--aiw-surface-row-selected-hover);
   transform: translateY(-1px);
 }
@@ -311,12 +315,14 @@
 ------------------------------------------------------------ */
 
 .aiw-project-text,
-.aiw-item-text {
+.aiw-item-text,
+.aiw-search-result-text {
   padding: var(--aiw-space-md) var(--aiw-space-lg);
   flex: 1;
 }
 
-.aiw-item-text--untitled {
+.aiw-item-text--untitled,
+.aiw-search-result-text--untitled {
   color: var(--aiw-text-faint);
   font-style: italic;
 }
@@ -474,7 +480,8 @@
 .aiw-create-item-title,
 .aiw-create-item-content,
 .aiw-item-detail-title,
-.aiw-item-detail-content {
+.aiw-item-detail-content,
+.aiw-search-input {
   padding: var(--aiw-space-sm) var(--aiw-space-md);
   border-radius: var(--aiw-radius-control);
   border: 1px solid var(--aiw-border);
@@ -493,7 +500,8 @@
 .aiw-create-item-title::placeholder,
 .aiw-create-item-content::placeholder,
 .aiw-item-detail-title::placeholder,
-.aiw-item-detail-content::placeholder {
+.aiw-item-detail-content::placeholder,
+.aiw-search-input::placeholder {
   color: var(--aiw-text-faint);
 }
 
@@ -501,14 +509,16 @@
 .aiw-create-item-title:focus,
 .aiw-create-item-content:focus,
 .aiw-item-detail-title:focus,
-.aiw-item-detail-content:focus {
+.aiw-item-detail-content:focus,
+.aiw-search-input:focus {
   border-color: var(--aiw-accent-border);
 }
 
 /* Single-line inputs take the remaining row/column width. */
 .aiw-create-project-input,
 .aiw-create-item-title,
-.aiw-item-detail-title {
+.aiw-item-detail-title,
+.aiw-search-input {
   flex: 1;
 }
 
@@ -638,6 +648,46 @@
 
   /* Brand the native checkbox tick/fill */
   accent-color: var(--aiw-accent);
+}
+
+/* ------------------------------------------------------------
+   SEARCH PANEL
+------------------------------------------------------------ */
+/*
+  The search bar is pinned between header and scrollable body —
+  same anatomy as footer forms, but border-bottom instead of
+  border-top because it leads the content instead of closing it.
+*/
+
+.aiw-search-bar {
+  display: flex;
+  flex-shrink: 0;
+  padding: var(--aiw-space-md) var(--aiw-space-lg);
+  border-bottom: 1px solid var(--aiw-separator);
+}
+
+/*
+  Result rows share the list-row groups above but are <button>
+  elements (unlike project/item rows), so reset the button-only
+  UA styles the shared rule never needed to handle.
+*/
+.aiw-search-result-row {
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+}
+
+.aiw-search-section-heading {
+  margin: var(--aiw-space-sm) 0 0;
+  font-size: var(--aiw-fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aiw-text-faint);
+}
+
+.aiw-search-section-heading:first-child {
+  margin-top: 0;
 }
 
 /* ------------------------------------------------------------

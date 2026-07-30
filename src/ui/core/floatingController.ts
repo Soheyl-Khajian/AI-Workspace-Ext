@@ -9,9 +9,9 @@
 //   controllers, and event-handler factories (dependency injection
 //   happens HERE and only here)
 // - own the render cycle (renderUi) and the initial load
-// // - bridge features that must not know about each other
+// - bridge features that must not know about each other
 //   (cross-feature glue: hasActiveInlineEdit, resolveProjectName,
-//   reloadAfterImport)
+//   renderSearchResultsRegion, reloadAfterImport)
 // - own listener lifecycle: register every contributed
 //   EventBinding and return a teardown that removes them
 //   symmetrically
@@ -62,6 +62,14 @@ import { createItemsHandlers } from "../features/items/itemsHandlers";
 import { resetItemsDraftState } from "../features/items/itemsDraftState";
 import { createBackupController } from "../features/backup/backupController";
 import { createBackupHandlers } from "../features/backup/backupHandlers";
+import { createSearchController } from "../features/search/searchController";
+import { createSearchHandlers } from "../features/search/searchHandlers";
+import {
+  renderSearchResults,
+  SEARCH_RESULTS_SELECTOR,
+} from "../features/search/renderSearchPanel";
+import { resetSearchState } from "../features/search/searchState";
+import { resetSearchDraftState } from "../features/search/searchDraftState";
 
 import { showToast } from "../shared/showToast";
 
@@ -91,6 +99,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     onImported: reloadAfterImport,
   });
 
+  const searchController = createSearchController({
+    onStateChange: renderUi,
+  });
+
   const orbBindings = createOrbHandlers({
     rootEl: dom.rootEl,
     panelsEl: dom.orbPanelsEl,
@@ -116,6 +128,11 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   const backupBindings = createBackupHandlers({
     panelsEl: dom.orbPanelsEl,
     backupController,
+  });
+
+  const searchBindings = createSearchHandlers({
+    panelsEl: dom.orbPanelsEl,
+    renderResults: renderSearchResultsRegion,
   });
 
   const actionsContext: OrbActionContext = {
@@ -173,6 +190,18 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // ----------------------------------------------------------
   function toggleFloatingPanel(panelId: OrbActionId): void {
     togglePanel(panelId);
+
+    /*
+      Opening the search panel (re)loads its workspace snapshot.
+      The trigger lives HERE, on the panel-open door, not inside
+      renderUi — the render cycle must stay a pure state → DOM
+      sync with no side effects. Reopening refreshes the snapshot;
+      keystrokes while the panel is open never touch storage.
+    */
+    if (getActivePanel() === "search") {
+      void searchController.load();
+    }
+
     renderUi();
   }
 
@@ -197,11 +226,9 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     return getEditingProjectId() !== null;
   }
 
-  // Injected into backupController as deps.onImported. The database
-  // was fully replaced, so all transient state is stale: reset
-  // selection, drafts, rename editing, and panel, then reload
-  // projects from storage (projectsController.load re-renders via
-  // its onStateChange).
+  // Injected into itemsHandlers as deps.resolveProjectName so the
+  // items feature can label its panels without importing sibling
+  // projectsState. Also used by renderUi for the header context.
   function resolveProjectName(projectId: string): string {
     const project = getProjects().find(
       (candidate) => candidate.id === projectId,
@@ -209,15 +236,36 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     return project ? project.name : "Untitled project";
   }
 
+  /*
+    Injected into searchHandlers as deps.renderResults. The debounced
+    input handler must re-render ONLY the results region — a full
+    panel render would destroy the input mid-typing — but handler
+    modules do no rendering, so the composition root locates the
+    live container and invokes the scoped renderer. No-op when the
+    search panel isn't mounted (e.g. a debounce countdown that
+    fires just after the panel closed).
+  */
+  function renderSearchResultsRegion(): void {
+    const resultsEl = dom.orbPanelsEl.querySelector(SEARCH_RESULTS_SELECTOR);
+    if (!(resultsEl instanceof HTMLElement)) {
+      return;
+    }
+
+    renderSearchResults(resultsEl);
+  }
+
   // Injected into backupController as deps.onImported. The database
-  // was fully replaced, so all transient state is stale: reset selection + drafts + panel,
-  // then reload projects from storage
+  // was fully replaced, so all transient state is stale: reset
+  // selection, drafts, rename editing, search snapshot + query,
+  // and panel, then reload projects from storage
   // (projectsController.load re-renders via its onStateChange).
   async function reloadAfterImport(): Promise<void> {
     itemsController.clearSelection();
     resetItemsDraftState();
     resetProjectsDraftState();
     resetProjectsRenameState();
+    resetSearchState();
+    resetSearchDraftState();
     setSelectedItemId(null);
     setSelectedProjectId(null);
     openPanel("projects");
@@ -240,6 +288,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     ...projectsBindings,
     ...itemsBindings,
     ...backupBindings,
+    ...searchBindings,
   ];
 
   for (const [target, type, listener] of eventBindings) {

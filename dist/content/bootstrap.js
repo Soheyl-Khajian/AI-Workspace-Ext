@@ -457,6 +457,11 @@
     await insertItem(item);
     return item;
   }
+  async function listAllItems() {
+    const items = await getAllItems();
+    items.sort((a, b) => b.createdAt - a.createdAt);
+    return items;
+  }
   async function listItemsByProject(projectId) {
     if (projectId == null) {
       throw new Error("projectId is required (null/undefined)");
@@ -1268,22 +1273,203 @@
     }
   });
 
+  // src/ui/features/search/searchFilter.ts
+  function filterWorkspace(query, projects, items) {
+    const normalizedQuery = query.trim().toLowerCase();
+    if (normalizedQuery === "") {
+      return { projects: [], items: [] };
+    }
+    return {
+      projects: projects.filter(
+        (project) => project.name.toLowerCase().includes(normalizedQuery)
+      ),
+      items: items.filter(
+        (item) => item.title.toLowerCase().includes(normalizedQuery) || item.content.toLowerCase().includes(normalizedQuery)
+      )
+    };
+  }
+  var init_searchFilter = __esm({
+    "src/ui/features/search/searchFilter.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/features/search/searchDraftState.ts
+  function getSearchQueryDraft() {
+    return state5.query;
+  }
+  function setSearchQueryDraft(value) {
+    state5.query = value;
+  }
+  function resetSearchDraftState() {
+    state5.query = null;
+  }
+  var state5;
+  var init_searchDraftState = __esm({
+    "src/ui/features/search/searchDraftState.ts"() {
+      "use strict";
+      state5 = {
+        query: null
+      };
+    }
+  });
+
+  // src/ui/features/search/searchState.ts
+  function getSearchProjects() {
+    return state6.projects;
+  }
+  function getSearchItems() {
+    return state6.items;
+  }
+  function setSearchSnapshot(projects, items) {
+    state6.projects = projects;
+    state6.items = items;
+  }
+  function isSearchLoading() {
+    return state6.loading;
+  }
+  function setSearchLoading(loading) {
+    state6.loading = loading;
+  }
+  function isSearchLoadingIndicatorVisible() {
+    return state6.loadingIndicatorVisible;
+  }
+  function setSearchLoadingIndicatorVisible(visible) {
+    state6.loadingIndicatorVisible = visible;
+  }
+  function getSearchError() {
+    return state6.error;
+  }
+  function setSearchError(message) {
+    state6.error = message;
+  }
+  function resetSearchState() {
+    state6.projects = [];
+    state6.items = [];
+    state6.loading = false;
+    state6.loadingIndicatorVisible = false;
+    state6.error = null;
+  }
+  var state6;
+  var init_searchState = __esm({
+    "src/ui/features/search/searchState.ts"() {
+      "use strict";
+      state6 = {
+        projects: [],
+        items: [],
+        loading: false,
+        loadingIndicatorVisible: false,
+        error: null
+      };
+    }
+  });
+
   // src/ui/features/search/renderSearchPanel.ts
   function renderSearchPanel(containerEl) {
     const shell = createFloatingPanelShell("Search");
-    const panelStateEl = createPanelState({
-      variant: "placeholder",
-      message: "Nothing here yet"
-    });
-    shell.bodyEl.append(panelStateEl);
+    const searchBarEl = document.createElement("div");
+    searchBarEl.className = "aiw-search-bar";
+    const inputEl = document.createElement("input");
+    inputEl.className = "aiw-search-input";
+    inputEl.type = "text";
+    inputEl.placeholder = "Search projects and items";
+    inputEl.value = getSearchQueryDraft() ?? "";
+    searchBarEl.append(inputEl);
+    shell.panelEl.insertBefore(searchBarEl, shell.bodyEl);
+    const resultsEl = document.createElement("div");
+    resultsEl.className = SEARCH_RESULTS_CLASS;
+    shell.bodyEl.append(resultsEl);
+    renderSearchResults(resultsEl);
     containerEl.append(shell.panelEl);
     return shell.panelEl;
   }
+  function renderSearchResults(resultsEl) {
+    resultsEl.textContent = "";
+    if (isSearchLoading()) {
+      if (isSearchLoadingIndicatorVisible()) {
+        resultsEl.append(
+          createPanelState({ variant: "loading", message: "Loading..." })
+        );
+      }
+      return;
+    }
+    const error = getSearchError();
+    if (error !== null) {
+      resultsEl.append(createPanelState({ variant: "error", message: error }));
+      return;
+    }
+    const query = getSearchQueryDraft() ?? "";
+    if (query.trim().length === 0) {
+      resultsEl.append(
+        createPanelState({ variant: "placeholder", message: "Type to search" })
+      );
+      return;
+    }
+    const results = filterWorkspace(query, getSearchProjects(), getSearchItems());
+    const isEmpty = results.projects.length === 0 && results.items.length === 0;
+    if (isEmpty) {
+      resultsEl.append(
+        createPanelState({ variant: "empty", message: "No results" })
+      );
+      return;
+    }
+    if (results.projects.length > 0) {
+      resultsEl.append(createSectionHeading("Projects"));
+      for (const project of results.projects) {
+        resultsEl.append(createProjectResultRow(project));
+      }
+    }
+    if (results.items.length > 0) {
+      resultsEl.append(createSectionHeading("Items"));
+      for (const item of results.items) {
+        resultsEl.append(createItemResultRow(item));
+      }
+    }
+  }
+  function createSectionHeading(label) {
+    const headingEl = document.createElement("h3");
+    headingEl.className = "aiw-search-section-heading";
+    headingEl.textContent = label;
+    return headingEl;
+  }
+  function createProjectResultRow(project) {
+    const rowEl = document.createElement("button");
+    rowEl.type = "button";
+    rowEl.className = "aiw-search-result-row";
+    rowEl.dataset.projectId = project.id;
+    const textEl = document.createElement("span");
+    textEl.className = "aiw-search-result-text";
+    textEl.textContent = project.name;
+    rowEl.append(textEl);
+    return rowEl;
+  }
+  function createItemResultRow(item) {
+    const rowEl = document.createElement("button");
+    rowEl.type = "button";
+    rowEl.className = "aiw-search-result-row";
+    rowEl.dataset.itemId = item.id;
+    const textEl = document.createElement("span");
+    textEl.className = "aiw-search-result-text";
+    if (item.title.length > 0) {
+      textEl.textContent = item.title;
+    } else {
+      textEl.textContent = "Untitled";
+      textEl.classList.add("aiw-search-result-text--untitled");
+    }
+    rowEl.append(textEl);
+    return rowEl;
+  }
+  var SEARCH_RESULTS_CLASS, SEARCH_RESULTS_SELECTOR;
   var init_renderSearchPanel = __esm({
     "src/ui/features/search/renderSearchPanel.ts"() {
       "use strict";
       init_createFloatingPanelShell();
       init_createPanelState();
+      init_searchFilter();
+      init_searchDraftState();
+      init_searchState();
+      SEARCH_RESULTS_CLASS = "aiw-search-results";
+      SEARCH_RESULTS_SELECTOR = `.${SEARCH_RESULTS_CLASS}`;
     }
   });
 
@@ -1325,34 +1511,34 @@
 
   // src/ui/features/items/itemsState.ts
   function getItems() {
-    return [...state5.items];
+    return [...state7.items];
   }
   function isItemsLoading() {
-    return state5.loading;
+    return state7.loading;
   }
   function isItemsLoadingIndicatorVisible() {
-    return state5.loadingIndicatorVisible;
+    return state7.loadingIndicatorVisible;
   }
   function getItemsError() {
-    return state5.error;
+    return state7.error;
   }
   function setItems(itemsList) {
-    state5.items = [...itemsList];
+    state7.items = [...itemsList];
   }
   function setItemsLoading(loading) {
-    state5.loading = loading;
+    state7.loading = loading;
   }
   function setItemsLoadingIndicatorVisible(visible) {
-    state5.loadingIndicatorVisible = visible;
+    state7.loadingIndicatorVisible = visible;
   }
   function setItemsError(error) {
-    state5.error = error;
+    state7.error = error;
   }
-  var state5;
+  var state7;
   var init_itemsState = __esm({
     "src/ui/features/items/itemsState.ts"() {
       "use strict";
-      state5 = {
+      state7 = {
         items: [],
         loading: false,
         loadingIndicatorVisible: false,
@@ -1363,56 +1549,56 @@
 
   // src/ui/features/items/itemsDraftState.ts
   function getCreateItemTitleDraft() {
-    return state6.createTitle;
+    return state8.createTitle;
   }
   function getCreateItemContentDraft() {
-    return state6.createContent;
+    return state8.createContent;
   }
   function setCreateItemTitleDraft(value) {
-    state6.createTitle = value;
+    state8.createTitle = value;
   }
   function setCreateItemContentDraft(value) {
-    state6.createContent = value;
+    state8.createContent = value;
   }
   function clearCreateItemDraft() {
-    state6.createTitle = null;
-    state6.createContent = null;
+    state8.createTitle = null;
+    state8.createContent = null;
   }
   function getItemDetailTitleDraft(itemId) {
-    return state6.detailDrafts.get(itemId)?.title ?? null;
+    return state8.detailDrafts.get(itemId)?.title ?? null;
   }
   function getItemDetailContentDraft(itemId) {
-    return state6.detailDrafts.get(itemId)?.content ?? null;
+    return state8.detailDrafts.get(itemId)?.content ?? null;
   }
   function setItemDetailTitleDraft(itemId, value) {
-    const draft = state6.detailDrafts.get(itemId) ?? {
+    const draft = state8.detailDrafts.get(itemId) ?? {
       title: null,
       content: null
     };
     draft.title = value;
-    state6.detailDrafts.set(itemId, draft);
+    state8.detailDrafts.set(itemId, draft);
   }
   function setItemDetailContentDraft(itemId, value) {
-    const draft = state6.detailDrafts.get(itemId) ?? {
+    const draft = state8.detailDrafts.get(itemId) ?? {
       title: null,
       content: null
     };
     draft.content = value;
-    state6.detailDrafts.set(itemId, draft);
+    state8.detailDrafts.set(itemId, draft);
   }
   function clearItemDetailDraft(itemId) {
-    state6.detailDrafts.delete(itemId);
+    state8.detailDrafts.delete(itemId);
   }
   function resetItemsDraftState() {
-    state6.createTitle = null;
-    state6.createContent = null;
-    state6.detailDrafts.clear();
+    state8.createTitle = null;
+    state8.createContent = null;
+    state8.detailDrafts.clear();
   }
-  var state6;
+  var state8;
   var init_itemsDraftState = __esm({
     "src/ui/features/items/itemsDraftState.ts"() {
       "use strict";
-      state6 = {
+      state8 = {
         createTitle: null,
         createContent: null,
         detailDrafts: /* @__PURE__ */ new Map()
@@ -1687,36 +1873,36 @@
 
   // src/ui/core/floatingUiState.ts
   function isOrbExpanded() {
-    return state7.orbExpanded;
+    return state9.orbExpanded;
   }
   function getActivePanel() {
-    return state7.activePanel;
+    return state9.activePanel;
   }
   function expandOrb() {
-    state7.orbExpanded = true;
+    state9.orbExpanded = true;
   }
   function collapseOrb() {
-    state7.orbExpanded = false;
-    state7.activePanel = null;
+    state9.orbExpanded = false;
+    state9.activePanel = null;
   }
   function openPanel(panel) {
-    state7.activePanel = panel;
-    state7.orbExpanded = true;
+    state9.activePanel = panel;
+    state9.orbExpanded = true;
   }
   function togglePanel(panel) {
-    const current = state7.activePanel;
+    const current = state9.activePanel;
     if (current === panel) {
-      state7.activePanel = null;
+      state9.activePanel = null;
     } else {
-      state7.activePanel = panel;
-      state7.orbExpanded = true;
+      state9.activePanel = panel;
+      state9.orbExpanded = true;
     }
   }
-  var state7;
+  var state9;
   var init_floatingUiState = __esm({
     "src/ui/core/floatingUiState.ts"() {
       "use strict";
-      state7 = {
+      state9 = {
         orbExpanded: false,
         activePanel: null
       };
@@ -2567,6 +2753,83 @@
     }
   });
 
+  // src/ui/features/search/searchController.ts
+  function createSearchController(dependencies) {
+    const { onStateChange } = dependencies;
+    async function load() {
+      setSearchLoading(true);
+      onStateChange();
+      const indicatorTimer = window.setTimeout(() => {
+        setSearchLoadingIndicatorVisible(true);
+        onStateChange();
+      }, LOADING_INDICATOR_DELAY_MS2);
+      try {
+        const [projects, items] = await Promise.all([
+          listProjects(),
+          listAllItems()
+        ]);
+        setSearchSnapshot(projects, items);
+        setSearchError(null);
+      } catch (error) {
+        setSearchError(toErrorMessage(error, "Couldn't load search data."));
+      } finally {
+        window.clearTimeout(indicatorTimer);
+        setSearchLoadingIndicatorVisible(false);
+        setSearchLoading(false);
+        onStateChange();
+      }
+    }
+    return {
+      load
+    };
+  }
+  var LOADING_INDICATOR_DELAY_MS2;
+  var init_searchController = __esm({
+    "src/ui/features/search/searchController.ts"() {
+      "use strict";
+      init_searchState();
+      init_storage();
+      init_toErrorMessage();
+      LOADING_INDICATOR_DELAY_MS2 = 150;
+    }
+  });
+
+  // src/ui/features/search/searchHandlers.ts
+  function createSearchHandlers(deps) {
+    let debounceTimer = null;
+    function handleSearchInput(event) {
+      const target = event.target;
+      if (!(target instanceof HTMLInputElement)) {
+        return;
+      }
+      if (!target.matches(SEARCH_INPUT_SELECTOR)) {
+        return;
+      }
+      setSearchQueryDraft(target.value);
+      if (debounceTimer !== null) {
+        window.clearTimeout(debounceTimer);
+      }
+      debounceTimer = window.setTimeout(() => {
+        debounceTimer = null;
+        deps.renderResults();
+      }, SEARCH_DEBOUNCE_MS);
+    }
+    const eventBindings = [
+      [deps.panelsEl, "input", asListener(handleSearchInput)]
+    ];
+    return eventBindings;
+  }
+  var SEARCH_INPUT_SELECTOR, SEARCH_DEBOUNCE_MS;
+  var init_searchHandlers = __esm({
+    "src/ui/features/search/searchHandlers.ts"() {
+      "use strict";
+      init_eventBindings();
+      init_searchDraftState();
+      SEARCH_INPUT_SELECTOR = ".aiw-search-input";
+      SEARCH_DEBOUNCE_MS = 200;
+    }
+  });
+
   // src/ui/core/floatingController.ts
   function initFloatingController(rootEl) {
     const dom = createFloatingDom(rootEl);
@@ -2582,6 +2845,9 @@
     const backupController = createBackupController({
       notify: showToast,
       onImported: reloadAfterImport
+    });
+    const searchController = createSearchController({
+      onStateChange: renderUi
     });
     const orbBindings = createOrbHandlers({
       rootEl: dom.rootEl,
@@ -2605,6 +2871,10 @@
     const backupBindings = createBackupHandlers({
       panelsEl: dom.orbPanelsEl,
       backupController
+    });
+    const searchBindings = createSearchHandlers({
+      panelsEl: dom.orbPanelsEl,
+      renderResults: renderSearchResultsRegion
     });
     const actionsContext = {
       togglePanel: toggleFloatingPanel
@@ -2639,6 +2909,9 @@
     }
     function toggleFloatingPanel(panelId) {
       togglePanel(panelId);
+      if (getActivePanel() === "search") {
+        void searchController.load();
+      }
       renderUi();
     }
     function handleOrbActionClick(actionId) {
@@ -2653,11 +2926,20 @@
       );
       return project ? project.name : "Untitled project";
     }
+    function renderSearchResultsRegion() {
+      const resultsEl = dom.orbPanelsEl.querySelector(SEARCH_RESULTS_SELECTOR);
+      if (!(resultsEl instanceof HTMLElement)) {
+        return;
+      }
+      renderSearchResults(resultsEl);
+    }
     async function reloadAfterImport() {
       itemsController.clearSelection();
       resetItemsDraftState();
       resetProjectsDraftState();
       resetProjectsRenameState();
+      resetSearchState();
+      resetSearchDraftState();
       setSelectedItemId(null);
       setSelectedProjectId(null);
       openPanel("projects");
@@ -2667,7 +2949,8 @@
       ...orbBindings,
       ...projectsBindings,
       ...itemsBindings,
-      ...backupBindings
+      ...backupBindings,
+      ...searchBindings
     ];
     for (const [target, type, listener] of eventBindings) {
       target.addEventListener(type, listener);
@@ -2701,6 +2984,11 @@
       init_itemsDraftState();
       init_backupController();
       init_backupHandlers();
+      init_searchController();
+      init_searchHandlers();
+      init_renderSearchPanel();
+      init_searchState();
+      init_searchDraftState();
       init_showToast();
     }
   });
