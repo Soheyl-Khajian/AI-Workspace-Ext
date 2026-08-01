@@ -12,7 +12,11 @@
 // - items: creation normalization (generated id, trimmed title,
 //   stamped createdAt), per-project filtering, newest-first
 //   cross-project listing, partial update with immutable
-//   id/projectId/createdAt (the contract v0.3 will revisit)
+//   id/projectId/createdAt
+// - move: moveItemToProject is the ONLY door that changes an
+//   item's projectId (updateItem deliberately ignores it). Moves
+//   touch projectId and updatedAt only, require an existing
+//   target project, and are no-ops when the item is already there
 // - backup: exportAllData/replaceAllData restore a snapshot
 //   verbatim and wipe whatever was there before
 //
@@ -50,6 +54,7 @@ import {
   listAllItems,
   listItemsByProject,
   listProjects,
+  moveItemToProject,
   renameProject,
   replaceAllData,
   updateItem,
@@ -220,6 +225,69 @@ describe("storage facade", () => {
     await expect(updateItem("missing-id", {})).rejects.toThrow(
       "Item not found: missing-id",
     );
+  });
+
+  // ------------------------------------------------------------
+  // ITEMS: MOVE
+  // ------------------------------------------------------------
+
+  it("moveItemToProject moves the item to the target project and stamps updatedAt", async () => {
+    const projectA = await createProject("Project-A");
+    const projectB = await createProject("Project-B");
+
+    // Deliberately distinctive meta (not the fixture default): the
+    // spread-form assertion below then proves a move PRESERVES meta
+    // rather than fabricating it. A fixture-uniform meta could hide
+    // that class of bug.
+    vi.setSystemTime(new Date("2026-01-01T10:00:00.000Z"));
+    const item = await createItem(
+      projectA.id,
+      "note",
+      "Item-1",
+      "Item-1 content",
+      { createdFrom: "selection", sourceUrl: "https://example.com/article" },
+    );
+
+    vi.setSystemTime(new Date("2026-01-01T12:00:00.000Z"));
+    const movedItem = await moveItemToProject(item.id, projectB.id);
+
+    // Everything as created, except exactly what a move may touch.
+    expect(movedItem).toEqual({
+      ...item,
+      projectId: projectB.id,
+      updatedAt: Date.parse("2026-01-01T12:00:00.000Z"),
+    });
+    await expect(listItemsByProject(projectA.id)).resolves.toEqual([]);
+    await expect(listItemsByProject(projectB.id)).resolves.toEqual([movedItem]);
+  });
+
+  it("moveItemToProject returns the item unchanged when it is already in the target project", async () => {
+    const projectA = await createProject("Project-A");
+    const item = await createNote(projectA.id, "Item-1");
+
+    const movedItem = await moveItemToProject(item.id, projectA.id);
+
+    // "Unchanged" includes updatedAt: a same-target move must not
+    // rewrite the record.
+    expect(movedItem).toEqual(item);
+    await expect(listItemsByProject(projectA.id)).resolves.toEqual([item]);
+  });
+
+  it("moveItemToProject rejects when the item doesn't exist", async () => {
+    const project = await createProject("Project-A");
+
+    await expect(moveItemToProject("missing-id", project.id)).rejects.toThrow(
+      "Item not found: missing-id",
+    );
+  });
+
+  it("moveItemToProject rejects when the target project doesn't exist", async () => {
+    const projectA = await createProject("Project-A");
+    const item = await createNote(projectA.id, "Item-1");
+
+    await expect(
+      moveItemToProject(item.id, "missing-project-id"),
+    ).rejects.toThrow("Project not found: missing-project-id");
   });
 
   // ------------------------------------------------------------

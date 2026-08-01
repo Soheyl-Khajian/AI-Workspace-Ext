@@ -294,6 +294,56 @@ export async function updateItem(
   return merged;
 }
 
+export async function moveItemToProject(
+  itemId: string,
+  targetProjectId: string,
+): Promise<Item> {
+  if (itemId == null) {
+    throw new Error("item id is required (null/undefined)");
+  }
+  const trimmedId = itemId.trim();
+  if (trimmedId.length === 0) {
+    throw new Error("item id cannot be empty");
+  }
+
+  if (targetProjectId == null) {
+    throw new Error("target project id is required (null/undefined)");
+  }
+  const trimmedTargetProjectId = targetProjectId.trim();
+  if (trimmedTargetProjectId.length === 0) {
+    throw new Error("target project id cannot be empty");
+  }
+
+  const existingItem = await getItemById(trimmedId);
+  if (existingItem === undefined) {
+    throw new Error(`Item not found: ${itemId}`);
+  }
+
+  const existingTargetProject = await getProjectById(trimmedTargetProjectId);
+  if (existingTargetProject === undefined) {
+    throw new Error(`Project not found: ${targetProjectId}`);
+  }
+
+  // Same-target move: the desired end state already holds — succeed
+  // without rewriting the record, so updatedAt only changes when the
+  // item actually moved.
+  if (trimmedTargetProjectId === existingItem.projectId) {
+    return existingItem;
+  }
+
+  // A move touches projectId and updatedAt — nothing else. Everything
+  // else rides through from the stored record.
+  const merged: Item = {
+    ...existingItem,
+    projectId: existingTargetProject.id,
+    updatedAt: Date.now(),
+  };
+
+  await insertItem(merged);
+
+  return merged;
+}
+
 export async function deleteItem(id: string): Promise<void> {
   if (id == null) {
     throw new Error("item id is required (null/undefined)");
