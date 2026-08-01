@@ -174,6 +174,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
     const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId, {
       projectName,
+      projects: getProjects(),
     });
 
     if (panelChanged && panelEl !== null) {

@@ -501,6 +501,40 @@
     await insertItem(merged);
     return merged;
   }
+  async function moveItemToProject(itemId, targetProjectId) {
+    if (itemId == null) {
+      throw new Error("item id is required (null/undefined)");
+    }
+    const trimmedId = itemId.trim();
+    if (trimmedId.length === 0) {
+      throw new Error("item id cannot be empty");
+    }
+    if (targetProjectId == null) {
+      throw new Error("target project id is required (null/undefined)");
+    }
+    const trimmedTargetProjectId = targetProjectId.trim();
+    if (trimmedTargetProjectId.length === 0) {
+      throw new Error("target project id cannot be empty");
+    }
+    const existingItem = await getItemById(trimmedId);
+    if (existingItem === void 0) {
+      throw new Error(`Item not found: ${itemId}`);
+    }
+    const existingTargetProject = await getProjectById(trimmedTargetProjectId);
+    if (existingTargetProject === void 0) {
+      throw new Error(`Project not found: ${targetProjectId}`);
+    }
+    if (trimmedTargetProjectId === existingItem.projectId) {
+      return existingItem;
+    }
+    const merged = {
+      ...existingItem,
+      projectId: existingTargetProject.id,
+      updatedAt: Date.now()
+    };
+    await insertItem(merged);
+    return merged;
+  }
   async function deleteItem(id) {
     if (id == null) {
       throw new Error("item id is required (null/undefined)");
@@ -1742,7 +1776,7 @@
   });
 
   // src/ui/features/items/renderItemDetailPanel.ts
-  function renderItemDetailPanel(containerEl, projectName) {
+  function renderItemDetailPanel(containerEl, projectName, projects) {
     const selectedItemId = getSelectedItemId();
     const items = getItems();
     let muted = false;
@@ -1788,7 +1822,23 @@
       buttonEl.type = "button";
       buttonEl.textContent = "Save";
       buttonEl.dataset.itemId = item.id;
-      formEl.append(titleInputEl, contentInputEl, buttonEl);
+      const projectRowEl = document.createElement("div");
+      projectRowEl.className = "aiw-item-detail-project-row";
+      const projectLabelEl = document.createElement("span");
+      projectLabelEl.className = "aiw-item-detail-project-label";
+      projectLabelEl.textContent = "Project:";
+      const projectSelectEl = document.createElement("select");
+      projectSelectEl.className = "aiw-item-detail-project-select";
+      projectSelectEl.dataset.itemId = item.id;
+      for (const project of projects) {
+        const optionEl = document.createElement("option");
+        optionEl.value = project.id;
+        optionEl.textContent = project.name;
+        optionEl.selected = project.id === item.projectId;
+        projectSelectEl.append(optionEl);
+      }
+      projectRowEl.append(projectLabelEl, projectSelectEl);
+      formEl.append(titleInputEl, contentInputEl, projectRowEl, buttonEl);
       shell.panelEl.append(formEl);
     }
     containerEl.append(shell.panelEl);
@@ -1849,7 +1899,11 @@
       case "items":
         return renderItemsPanel(containerEl, context.projectName);
       case "itemDetail":
-        return renderItemDetailPanel(containerEl, context.projectName);
+        return renderItemDetailPanel(
+          containerEl,
+          context.projectName,
+          context.projects
+        );
       case "backup":
         return renderBackupPanel(containerEl);
       case "search":
@@ -2247,6 +2301,25 @@
       await loadItems(selectedProjectId);
       onStateChange();
     }
+    async function moveItem(itemId, targetProjectId, targetProjectName) {
+      const selectedProjectId = getSelectedProjectId();
+      if (selectedProjectId === null) {
+        return;
+      }
+      try {
+        await moveItemToProject(itemId, targetProjectId);
+      } catch (error) {
+        notify(toErrorMessage(error, "Couldn't move item."));
+        return;
+      }
+      if (getSelectedItemId() === itemId) {
+        setSelectedItemId(null);
+      }
+      openPanel("items");
+      notify(`Moved to ${targetProjectName}`);
+      await loadItems(selectedProjectId);
+      onStateChange();
+    }
     async function copyContextPack(projectName) {
       const selectedIds = getSelectedItemIds();
       if (selectedIds.length === 0) {
@@ -2289,6 +2362,7 @@
       clearSelection,
       create,
       updateItem: updateItem2,
+      moveItem,
       copyContextPack,
       deleteItem: deleteItem2
     };
@@ -2412,6 +2486,26 @@
         itemContent
       );
     }
+    async function handleMoveItem(event) {
+      const target = event.target;
+      if (!(target instanceof HTMLSelectElement)) {
+        return;
+      }
+      if (!target.matches(ITEM_DETAIL_PROJECT_SELECT_SELECTOR)) {
+        return;
+      }
+      const itemId = target.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      const targetProjectId = target.value;
+      const targetProjectName = deps.resolveProjectName(targetProjectId);
+      await deps.itemsController.moveItem(
+        itemId,
+        targetProjectId,
+        targetProjectName
+      );
+    }
     async function handleBuildContext(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -2485,12 +2579,13 @@
       [deps.panelsEl, "click", asListener(handleUpdateItem)],
       [deps.panelsEl, "click", asListener(handleBuildContext)],
       [deps.panelsEl, "click", asListener(handleDeleteItem)],
+      [deps.panelsEl, "change", asListener(handleMoveItem)],
       [deps.panelsEl, "input", asListener(handleCreateItemInput)],
       [deps.panelsEl, "input", asListener(handleItemDetailInput)]
     ];
     return eventBindings;
   }
-  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR;
+  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR;
   var init_itemsHandlers = __esm({
     "src/ui/features/items/itemsHandlers.ts"() {
       "use strict";
@@ -2507,6 +2602,7 @@
       ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
       ITEM_DETAIL_TITLE_SELECTOR = ".aiw-item-detail-title";
       ITEM_DETAIL_CONTENT_SELECTOR = ".aiw-item-detail-content";
+      ITEM_DETAIL_PROJECT_SELECT_SELECTOR = ".aiw-item-detail-project-select";
       ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
     }
   });
@@ -2919,7 +3015,8 @@
         handleOrbActionClick
       );
       const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId, {
-        projectName
+        projectName,
+        projects: getProjects()
       });
       if (panelChanged && panelEl !== null) {
         panelEl.classList.add("aiw-floating-panel--enter");

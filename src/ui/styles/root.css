@@ -71,6 +71,10 @@
   --aiw-surface-hover: rgba(255, 255, 255, 0.1); /* generic hover */
   --aiw-surface-active: rgba(255, 255, 255, 0.14); /* generic press */
 
+  /* Native popups (select dropdowns): rendered by the browser,
+   never composited over our glass, so this one must be OPAQUE. */
+  --aiw-surface-menu: rgb(28, 31, 39);
+
   /* ---------- BORDERS ---------- */
   --aiw-border: rgba(255, 255, 255, 0.1); /* controls, rows */
   --aiw-border-strong: rgba(255, 255, 255, 0.18); /* glass edges */

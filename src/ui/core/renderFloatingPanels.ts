@@ -44,7 +44,11 @@ export function renderFloatingPanels(
     case "items":
       return renderItemsPanel(containerEl, context.projectName);
     case "itemDetail":
-      return renderItemDetailPanel(containerEl, context.projectName);
+      return renderItemDetailPanel(
+        containerEl,
+        context.projectName,
+        context.projects,
+      );
     case "backup":
       return renderBackupPanel(containerEl);
     case "search":

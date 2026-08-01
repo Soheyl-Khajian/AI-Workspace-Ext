@@ -7,6 +7,7 @@
 //
 // - render item detail floating panel
 // - display selected item fields in editable form
+// - render the project select (the move-item control)
 // - mount item detail UI into provided container
 //
 // IMPORTANT:
@@ -22,6 +23,7 @@
 // matched against current items snapshot in itemsState.
 // ------------------------------------------------------------
 
+import type { Project } from "../../../models/project";
 import { getSelectedItemId } from "../../core/sessionState";
 import { createFloatingPanelShell } from "../../shared/createFloatingPanelShell";
 import { createPanelState } from "../../shared/createPanelState";
@@ -34,6 +36,7 @@ import {
 export function renderItemDetailPanel(
   containerEl: HTMLElement,
   projectName: string | null,
+  projects: Project[],
 ): HTMLElement {
   // ------------------------------------------------------------
   // READ RUNTIME STATE SNAPSHOT
@@ -109,7 +112,32 @@ export function renderItemDetailPanel(
     buttonEl.textContent = "Save";
     buttonEl.dataset.itemId = item.id;
 
-    formEl.append(titleInputEl, contentInputEl, buttonEl);
+    // Project row: a fact about the item that doubles as the move
+    // control. The item's current project is pre-selected, so at
+    // rest the select reads as "this item lives in X"; committing
+    // a different option IS the move (handled on "change").
+    const projectRowEl = document.createElement("div");
+    projectRowEl.className = "aiw-item-detail-project-row";
+
+    const projectLabelEl = document.createElement("span");
+    projectLabelEl.className = "aiw-item-detail-project-label";
+    projectLabelEl.textContent = "Project:";
+
+    const projectSelectEl = document.createElement("select");
+    projectSelectEl.className = "aiw-item-detail-project-select";
+    projectSelectEl.dataset.itemId = item.id;
+
+    for (const project of projects) {
+      const optionEl = document.createElement("option");
+      optionEl.value = project.id;
+      optionEl.textContent = project.name;
+      optionEl.selected = project.id === item.projectId;
+      projectSelectEl.append(optionEl);
+    }
+
+    projectRowEl.append(projectLabelEl, projectSelectEl);
+
+    formEl.append(titleInputEl, contentInputEl, projectRowEl, buttonEl);
     shell.panelEl.append(formEl);
   }
 

@@ -43,6 +43,7 @@ import { loadItems } from "./loadItems";
 import {
   createItem,
   deleteItem as storageDeleteItem,
+  moveItemToProject as storageMoveItem,
   updateItem as storageUpdateItem,
 } from "../../../storage";
 import {
@@ -100,6 +101,11 @@ export type ItemsController = {
     itemId: string,
     title?: string,
     content?: string,
+  ) => Promise<void>;
+  moveItem: (
+    itemId: string,
+    targetProjectId: string,
+    targetProjectName: string,
   ) => Promise<void>;
   copyContextPack: (projectName: string) => Promise<void>;
   deleteItem: (itemId: string, projectId: string) => Promise<void>;
@@ -245,6 +251,47 @@ export function createItemsController(
   }
 
   // ----------------------------------------------------------
+  // MOVE ITEM WORKFLOW
+  //
+  // Exit path: stay in the source project. The item just left
+  // the currently-selected project, so the detail panel's
+  // subject is gone from the items snapshot - return to the
+  // items list, which reloads without the moved item; the toast
+  // says where it went. Unsaved detail drafts are keyed by item
+  // id and deliberately survive the move (same typed-text
+  // survival rule as re-renders): they wait for the user to
+  // revisit the item in its new project.
+  // ----------------------------------------------------------
+
+  async function moveItem(
+    itemId: string,
+    targetProjectId: string,
+    targetProjectName: string,
+  ): Promise<void> {
+    const selectedProjectId = getSelectedProjectId();
+    if (selectedProjectId === null) {
+      return;
+    }
+
+    try {
+      await storageMoveItem(itemId, targetProjectId);
+    } catch (error) {
+      notify(toErrorMessage(error, "Couldn't move item."));
+      return;
+    }
+
+    if (getSelectedItemId() === itemId) {
+      setSelectedItemId(null);
+    }
+
+    openPanel("items");
+    notify(`Moved to ${targetProjectName}`);
+
+    await loadItems(selectedProjectId);
+    onStateChange();
+  }
+
+  // ----------------------------------------------------------
   // BUILD CONTEXT PACK WORKFLOW
   // ----------------------------------------------------------
   async function copyContextPack(projectName: string): Promise<void> {
@@ -311,6 +358,7 @@ export function createItemsController(
     clearSelection,
     create,
     updateItem,
+    moveItem,
     copyContextPack,
     deleteItem,
   };
