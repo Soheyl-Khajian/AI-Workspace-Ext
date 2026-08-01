@@ -8,6 +8,39 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-08-01
+
+### Added
+
+- **Workspace search**: a search panel on the orb that matches items across
+  all projects by title and content, backed by a new `listAllItems` storage
+  door and a test-first matching contract.
+- **Search → project navigation**: search result rows are clickable and open
+  the matched item's project directly in the Items panel.
+- **Move items between projects**: the item detail panel shows a project
+  selector alongside the item's fields; picking a different project moves the
+  item, returns to the source project's items list, and confirms with a
+  "Moved to X" toast. Everything except the item's project and `updatedAt` is
+  preserved, and unsaved detail edits survive the move. The native dropdown is
+  pinned to the anchored-glass theme so it stays readable on any host page.
+- **`moveItemToProject` storage door**: the only API that changes an item's
+  `projectId` (`updateItem` deliberately ignores it). Strict target-project
+  validation; moving an item to the project it already lives in is a no-op.
+- **Test harness and contract suites**: Vitest infrastructure with 56 tests
+  across 5 files pinning the rename-draft, form-draft, and search-matching
+  state contracts, the full `parseBackup` validation contract, and the
+  storage facade contract (run against real IndexedDB semantics via
+  `fake-indexeddb`, with per-test database isolation and deterministic
+  clocks).
+- **CI stale-dist guard**: the pipeline fails when the committed `dist/`
+  bundle doesn't match a fresh build.
+
+### Fixed
+
+- Inline project rename no longer breaks when draft updates arrive outside an
+  active rename edit; `setRenameDraft` now guards against calls with no edit
+  in progress.
+
 ## [0.2.0] - 2026-07-27
 
 ### Added
@@ -70,6 +103,7 @@ Initial MVP release.
   automatically re-mounting the UI, guards against duplicate content-script
   injection, and makes Inbox creation atomic to prevent duplicate projects.
 
-[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/releases/tag/v0.1.0

@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "AI Workspace",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Your local AI Workspace",
   "permissions": ["storage", "contextMenus"],
   "host_permissions": ["https://chatgpt.com/*"],

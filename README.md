@@ -4,7 +4,7 @@
 > of ChatGPT — organize captured information into projects and items without
 > leaving the chat.
 
-**Status:** MVP · `v0.2.0` · source-available (all rights reserved — see [License](#license))
+**Status:** MVP · `v0.3.0` · source-available (all rights reserved — see [License](#license))
 
 AI Workspace injects a lightweight floating UI onto `chatgpt.com` where you can
 keep project notes and snippets right next to your conversations. Everything is
@@ -173,8 +173,6 @@ manifest.json   MV3 manifest
 
 `v0.1.0` is the MVP baseline. Planned next:
 
-- Search across local workspace data (project names, item titles, content)
-- Item triage — move items between projects (get things out of the Inbox)
 - Keyboard basics (Enter submits forms, Escape closes panels)
 - Richer item types and content editing
 - UI/UX polish and theming
