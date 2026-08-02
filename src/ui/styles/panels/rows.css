@@ -1,0 +1,141 @@
+/* src/ui/styles/panels/rows.css */
+/*
+  Shared lists + list rows, grouped by ROLE (projects, items,
+  search results): rows, row text, delete strips.
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   2. SHARED: LISTS
+------------------------------------------------------------ */
+
+.aiw-projects-list,
+.aiw-items-list,
+.aiw-search-results {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aiw-space-sm);
+}
+
+/* ------------------------------------------------------------
+   SHARED: LIST ROWS
+------------------------------------------------------------ */
+/*
+  Selection is marked with an inset accent bar (box-shadow), not a
+  border-left — shadows don't participate in layout, so selecting a
+  row can never shift its content by a pixel.
+*/
+
+.aiw-project-row,
+.aiw-item-row,
+.aiw-search-result-row {
+  border: 1px solid var(--aiw-border);
+  width: 100%;
+  display: flex;
+  align-items: center;
+  overflow: hidden;
+  border-radius: var(--aiw-radius-row);
+  background: var(--aiw-surface-row);
+
+  font-size: var(--aiw-fs-md);
+  font-weight: 500;
+  color: var(--aiw-text);
+  cursor: pointer;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    transform var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-project-row {
+  justify-content: space-between;
+}
+
+.aiw-project-row:not(.aiw-project-row--selected):hover,
+.aiw-item-row:not(.aiw-item-row--selected):hover {
+  transform: translateY(-1px);
+  background: var(--aiw-surface-hover);
+}
+
+.aiw-project-row:focus-visible,
+.aiw-item-row:focus-visible,
+.aiw-search-result-row:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
+}
+
+.aiw-project-row--selected,
+.aiw-item-row--selected {
+  background: var(--aiw-surface-row-selected);
+  box-shadow: inset 3px 0 0 var(--aiw-accent);
+}
+
+.aiw-project-row--selected:hover,
+.aiw-item-row--selected:hover,
+.aiw-search-result-row:hover {
+  background: var(--aiw-surface-row-selected-hover);
+  transform: translateY(-1px);
+}
+
+/* ------------------------------------------------------------
+   SHARED: ROW TEXT
+------------------------------------------------------------ */
+
+.aiw-project-text,
+.aiw-item-text,
+.aiw-search-result-text {
+  padding: var(--aiw-space-md) var(--aiw-space-lg);
+  flex: 1;
+}
+
+.aiw-item-text--untitled,
+.aiw-search-result-text--untitled {
+  color: var(--aiw-text-faint);
+  font-style: italic;
+}
+
+/* ------------------------------------------------------------
+   SHARED: ROW DELETE STRIPS (destructive)
+------------------------------------------------------------ */
+/*
+  No own border-radius: the parent row clips via overflow: hidden,
+  so the strip always matches the row's corners exactly.
+*/
+
+.aiw-project-delete,
+.aiw-item-delete {
+  /* Full height of the row */
+  align-self: stretch;
+
+  /* Fixed width strip */
+  width: 40px;
+  flex-shrink: 0;
+
+  background: var(--aiw-danger-soft);
+  border: none;
+  border-left: 1px solid var(--aiw-separator);
+
+  color: var(--aiw-danger-text);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    color var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-project-delete:hover,
+.aiw-item-delete:hover {
+  background: var(--aiw-danger-soft-hover);
+}
+
+.aiw-project-delete:active,
+.aiw-item-delete:active {
+  background: var(--aiw-danger-soft-active);
+}

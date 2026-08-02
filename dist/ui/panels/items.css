@@ -1,0 +1,61 @@
+/* src/ui/styles/panels/items.css */
+/*
+  Item detail one-offs: project move control (native select,
+  opaque menu surface, pinned dark color-scheme).
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   ITEM DETAIL: PROJECT ROW (move control)
+------------------------------------------------------------ */
+
+.aiw-item-detail-project-row {
+  display: flex;
+  align-items: center;
+  gap: var(--aiw-space-sm);
+}
+
+.aiw-item-detail-project-label {
+  flex-shrink: 0;
+  color: var(--aiw-text-faint);
+  font-size: var(--aiw-fs-sm);
+}
+
+.aiw-item-detail-project-select {
+  flex: 1;
+  min-width: 0;
+  padding: var(--aiw-space-sm) var(--aiw-space-md);
+  border-radius: var(--aiw-radius-control);
+  border: 1px solid var(--aiw-border);
+  background: var(--aiw-surface-control);
+
+  color: var(--aiw-text);
+  font-size: var(--aiw-fs-sm);
+  font-family: inherit;
+  cursor: pointer;
+
+  /* Focus is signaled via border-color, not outline */
+  outline: none;
+  transition: border-color var(--aiw-dur-fast) var(--aiw-ease);
+
+  /* The dropdown popup is native browser chrome: it follows the
+     control's color-scheme, NOT our surfaces. Pin it dark so the
+     menu matches the anchored-glass theme on any host page. */
+  color-scheme: dark;
+}
+
+/* Options render inside the native popup: explicit colors, opaque
+   background (our translucent surface tokens would stay white). */
+.aiw-item-detail-project-select option {
+  background: var(--aiw-surface-menu);
+  color: var(--aiw-text);
+}
+
+.aiw-item-detail-project-select:focus {
+  border-color: var(--aiw-accent-border);
+}

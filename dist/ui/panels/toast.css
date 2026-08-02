@@ -1,0 +1,58 @@
+/* src/ui/styles/panels/toast.css */
+/*
+  Toast notification: bottom-center, content-driven sizing.
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   4. TOAST NOTIFICATION
+------------------------------------------------------------ */
+/*
+  Anchored bottom-center, baseline-aligned with the orb (same
+  --aiw-edge-y). Purely informational — never blocks interaction.
+
+  SIZING RULE: the box derives from its content — padding around
+  text, no fixed width/height. A fixed box and a text line have no
+  relationship, which is exactly why the text drifted; content-
+  driven sizing makes drift impossible and fits any message length.
+  Long messages are capped at the gutters and ellipsized.
+*/
+
+.aiw-toast {
+  position: absolute;
+  bottom: var(--aiw-edge-y);
+  left: 50%;
+  max-width: calc(100vw - (var(--aiw-gutter) * 2));
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  /* Centering transform — must match the keyframe end state */
+  transform: translateX(-50%);
+
+  /* Keep above the panel within the floating root */
+  z-index: 1;
+
+  padding: var(--aiw-space-sm) 18px;
+  border-radius: var(--aiw-radius-toast);
+
+  /* Floating glass surface — matches orb action pills */
+  background: var(--aiw-surface-float);
+  backdrop-filter: var(--aiw-blur);
+  -webkit-backdrop-filter: var(--aiw-blur);
+  border: 1px solid var(--aiw-border-strong);
+  box-shadow: var(--aiw-shadow-float);
+
+  color: var(--aiw-text);
+  font-size: var(--aiw-fs-md);
+  font-weight: 500;
+  white-space: nowrap;
+
+  pointer-events: none;
+
+  animation: aiw-toast-enter var(--aiw-dur-med) var(--aiw-ease);
+}

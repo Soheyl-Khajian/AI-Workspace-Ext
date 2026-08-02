@@ -3,7 +3,8 @@
    FLOATING UI STYLESHEET
 ------------------------------------------------------------ */
 /*
-  Import order matters only for readability — no rule here relies
+  Import order matters only for readability (panels/ imports
+  mirror the original panels.css section order) — no rule here relies
   on cascade order between files. root.css must stay first so the
   token definitions read before their usages.
 */
@@ -12,4 +13,13 @@
 @import "./animations.css";
 @import "./orb.css";
 @import "./actions.css";
-@import "./panels.css";
+@import "./panels/base.css";
+@import "./panels/rows.css";
+@import "./panels/projects.css";
+@import "./panels/forms.css";
+@import "./panels/items.css";
+@import "./panels/buttons.css";
+@import "./panels/context.css";
+@import "./panels/search.css";
+@import "./panels/backup.css";
+@import "./panels/toast.css";

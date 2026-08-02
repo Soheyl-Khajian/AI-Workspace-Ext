@@ -1,0 +1,106 @@
+/* src/ui/styles/panels/forms.css */
+/*
+  Shared footer forms + text inputs (all panels).
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   SHARED: FOOTER FORMS
+------------------------------------------------------------ */
+/*
+  Pinned footer forms outside the scrollable body. Direct children
+  of the panel flex column, so they stay fixed at the bottom
+  regardless of list length.
+*/
+
+.aiw-create-project-form,
+.aiw-create-item-form,
+.aiw-item-detail-form {
+  display: flex;
+  gap: var(--aiw-space-xs);
+
+  /* Never shrink — always visible */
+  flex-shrink: 0;
+  padding: var(--aiw-space-md) var(--aiw-space-lg);
+
+  /* Visual separator from content above */
+  border-top: 1px solid var(--aiw-separator);
+}
+
+/* Single-line form: input + button in a row. */
+.aiw-create-project-form {
+  flex-direction: row;
+  align-items: center;
+}
+
+/* Stacked forms: title, content, button in a column. */
+.aiw-create-item-form,
+.aiw-item-detail-form {
+  flex-direction: column;
+}
+
+/* ------------------------------------------------------------
+   SHARED: TEXT INPUTS
+------------------------------------------------------------ */
+
+.aiw-create-project-input,
+.aiw-create-item-title,
+.aiw-create-item-content,
+.aiw-item-detail-title,
+.aiw-item-detail-content,
+.aiw-search-input {
+  padding: var(--aiw-space-sm) var(--aiw-space-md);
+  border-radius: var(--aiw-radius-control);
+  border: 1px solid var(--aiw-border);
+  background: var(--aiw-surface-control);
+
+  color: var(--aiw-text);
+  font-size: var(--aiw-fs-sm);
+  font-family: inherit;
+
+  /* Focus is signaled via border-color, not outline */
+  outline: none;
+  transition: border-color var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-create-project-input::placeholder,
+.aiw-create-item-title::placeholder,
+.aiw-create-item-content::placeholder,
+.aiw-item-detail-title::placeholder,
+.aiw-item-detail-content::placeholder,
+.aiw-search-input::placeholder {
+  color: var(--aiw-text-faint);
+}
+
+.aiw-create-project-input:focus,
+.aiw-create-item-title:focus,
+.aiw-create-item-content:focus,
+.aiw-item-detail-title:focus,
+.aiw-item-detail-content:focus,
+.aiw-search-input:focus {
+  border-color: var(--aiw-accent-border);
+}
+
+/* Single-line inputs take the remaining row/column width. */
+.aiw-create-project-input,
+.aiw-create-item-title,
+.aiw-item-detail-title,
+.aiw-search-input {
+  flex: 1;
+}
+
+/* Textareas: fixed heights, no manual resize. */
+.aiw-create-item-content {
+  resize: none;
+  height: 72px;
+}
+
+.aiw-item-detail-content {
+  resize: none;
+  height: 120px;
+}

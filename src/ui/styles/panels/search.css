@@ -1,0 +1,51 @@
+/* src/ui/styles/panels/search.css */
+/*
+  Search panel one-offs: pinned search bar, result rows as
+  buttons, section headings.
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   SEARCH PANEL
+------------------------------------------------------------ */
+/*
+  The search bar is pinned between header and scrollable body —
+  same anatomy as footer forms, but border-bottom instead of
+  border-top because it leads the content instead of closing it.
+*/
+
+.aiw-search-bar {
+  display: flex;
+  flex-shrink: 0;
+  padding: var(--aiw-space-md) var(--aiw-space-lg);
+  border-bottom: 1px solid var(--aiw-separator);
+}
+
+/*
+  Result rows share the list-row groups above but are <button>
+  elements (unlike project/item rows), so reset the button-only
+  UA styles the shared rule never needed to handle.
+*/
+.aiw-search-result-row {
+  padding: 0;
+  font-family: inherit;
+  text-align: left;
+}
+
+.aiw-search-section-heading {
+  margin: var(--aiw-space-sm) 0 0;
+  font-size: var(--aiw-fs-sm);
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--aiw-text-faint);
+}
+
+.aiw-search-section-heading:first-child {
+  margin-top: 0;
+}

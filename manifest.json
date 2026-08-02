@@ -23,7 +23,7 @@
         "dist/ui/root.css",
         "dist/ui/orb.css",
         "dist/ui/actions.css",
-        "dist/ui/panels.css",
+        "dist/ui/panels/*.css",
         "dist/ui/animations.css"
       ],
       "matches": ["https://chatgpt.com/*"]

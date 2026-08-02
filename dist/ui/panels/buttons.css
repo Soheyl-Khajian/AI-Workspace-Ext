@@ -1,0 +1,99 @@
+/* src/ui/styles/panels/buttons.css */
+/*
+  Shared buttons, grouped by ROLE: solid accent (primary),
+  accent-tinted glass (secondary).
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   SHARED: SOLID ACCENT BUTTONS (primary actions)
+------------------------------------------------------------ */
+
+.aiw-create-project-submit,
+.aiw-create-item-submit,
+.aiw-item-detail-save {
+  padding: var(--aiw-space-sm) var(--aiw-space-lg);
+  border-radius: var(--aiw-radius-control);
+  border: none;
+
+  background: var(--aiw-accent);
+  color: var(--aiw-text);
+
+  font-size: var(--aiw-fs-sm);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+
+  /* Never collapses when siblings take space */
+  flex-shrink: 0;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    transform var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-create-project-submit:hover,
+.aiw-create-item-submit:hover,
+.aiw-item-detail-save:hover {
+  background: var(--aiw-accent-strong);
+  transform: translateY(-1px);
+}
+
+.aiw-create-project-submit:active,
+.aiw-create-item-submit:active,
+.aiw-item-detail-save:active {
+  transform: scale(0.97);
+}
+
+.aiw-create-project-submit:focus-visible,
+.aiw-create-item-submit:focus-visible,
+.aiw-item-detail-save:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
+}
+
+/* ------------------------------------------------------------
+   SHARED: ACCENT-TINTED GLASS BUTTONS (secondary actions)
+------------------------------------------------------------ */
+
+.aiw-build-context,
+.aiw-backup-export {
+  padding: var(--aiw-space-sm) var(--aiw-space-lg);
+  border-radius: var(--aiw-radius-control);
+
+  /* Accent-tinted glass — distinct from solid primary buttons */
+  background: var(--aiw-accent-soft);
+  border: 1px solid var(--aiw-accent-border);
+  color: var(--aiw-text);
+
+  font-size: var(--aiw-fs-sm);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    transform var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-build-context:hover,
+.aiw-backup-export:hover {
+  background: var(--aiw-accent-soft-hover);
+  transform: translateY(-1px);
+}
+
+.aiw-build-context:active,
+.aiw-backup-export:active {
+  transform: scale(0.97);
+}
+
+.aiw-build-context:focus-visible,
+.aiw-backup-export:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
+}
