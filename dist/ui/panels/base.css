@@ -40,17 +40,9 @@
 .aiw-floating-panel {
   pointer-events: auto;
 
-  /* Size is fully derived: as large as the design allows, never
-   larger than the viewport minus a gutter on each side. */
-  width: min(
-    var(--aiw-panel-max-width),
-    calc(100vw - var(--aiw-gutter) * 2 - var(--aiw-panel-shift) * 2)
-  );
-  min-height: 240px;
-  max-height: min(
-    var(--aiw-panel-max-height),
-    calc(100vh - var(--aiw-gutter) * 2)
-  );
+  /* Fixed frame (v0.4) — tokens carry the size and the clamps. */
+  width: var(--aiw-panel-w);
+  height: var(--aiw-panel-h);
 
   border-radius: var(--aiw-radius-panel);
 

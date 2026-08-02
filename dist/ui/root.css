@@ -149,8 +149,17 @@
    sits left, so the visual center of the content area is right
    of the geometric center */
   --aiw-panel-lift: 4vh;
-  --aiw-panel-max-width: 1050px;
-  --aiw-panel-max-height: 60vh;
+  /* FIXED panel size (v0.4): one deterministic frame for every
+ panel, every open — content never resizes the shell. Viewport
+ clamps live here because GEOMETRY owns all layout math. */
+  --aiw-panel-w: min(
+    1050px,
+    calc(100vw - var(--aiw-gutter) * 2 - var(--aiw-panel-shift) * 2)
+  );
+  --aiw-panel-h: min(
+    680px,
+    calc(100vh - var(--aiw-gutter) * 2 - var(--aiw-panel-lift) * 2)
+  );
 
   /* ---------- TYPOGRAPHY ---------- */
   --aiw-font:
