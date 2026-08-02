@@ -19,8 +19,7 @@
 */
 
 .aiw-create-project-form,
-.aiw-create-item-form,
-.aiw-item-detail-form {
+.aiw-create-item-form {
   display: flex;
   gap: var(--aiw-space-xs);
 
@@ -38,9 +37,8 @@
   align-items: center;
 }
 
-/* Stacked forms: title, content, button in a column. */
-.aiw-create-item-form,
-.aiw-item-detail-form {
+/* Stacked form: title, content, button in a column. */
+.aiw-create-item-form {
   flex-direction: column;
 }
 
@@ -94,13 +92,10 @@
   flex: 1;
 }
 
-/* Textareas: fixed heights, no manual resize. */
+/* Create textarea: fixed height, no manual resize. (The detail
+   textarea is elastic - it fills the detail column; see
+   panels/items.css.) */
 .aiw-create-item-content {
   resize: none;
   height: 72px;
-}
-
-.aiw-item-detail-content {
-  resize: none;
-  height: 120px;
 }

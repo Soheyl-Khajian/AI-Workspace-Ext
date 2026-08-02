@@ -27,7 +27,6 @@ import { asListener } from "./eventBindings";
 import {
   collapseOrb,
   expandOrb,
-  getActivePanel,
   isOrbExpanded,
   openPanel,
 } from "./floatingUiState";
@@ -111,12 +110,9 @@ export function createOrbHandlers(
       return;
     }
 
-    const currentPanel = getActivePanel();
-    if (currentPanel === "itemDetail") {
-      openPanel("items");
-    } else {
-      openPanel("projects");
-    }
+    // Items is the only panel with a back button now: back always
+    // returns to the projects list and drops the item selection.
+    openPanel("projects");
 
     setSelectedItemId(null);
     deps.requestRender();

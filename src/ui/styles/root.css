@@ -151,8 +151,8 @@
    of the geometric center */
   --aiw-panel-lift: 4vh;
   /* FIXED panel size (v0.4): one deterministic frame for every
- panel, every open — content never resizes the shell. Viewport
- clamps live here because GEOMETRY owns all layout math. */
+   panel, every open — content never resizes the shell. Viewport
+   clamps live here because GEOMETRY owns all layout math. */
   --aiw-panel-w: min(
     1050px,
     calc(100vw - var(--aiw-gutter) * 2 - var(--aiw-panel-shift) * 2)
@@ -161,6 +161,10 @@
     680px,
     calc(100vh - var(--aiw-gutter) * 2 - var(--aiw-panel-lift) * 2)
   );
+
+  /* Items master-detail split */
+  --aiw-col-list-w: 320px;
+  --aiw-item-row-h: 44px;
 
   /* ---------- TYPOGRAPHY ---------- */
   --aiw-font:

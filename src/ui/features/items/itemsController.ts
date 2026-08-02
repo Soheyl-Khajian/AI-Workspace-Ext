@@ -51,7 +51,6 @@ import {
   getSelectedProjectId,
   setSelectedItemId,
 } from "../../core/sessionState";
-import { openPanel } from "../../core/floatingUiState";
 import { toErrorMessage } from "../../shared/toErrorMessage";
 import {
   clearItemSelection,
@@ -166,12 +165,14 @@ export function createItemsController(
 
   // ----------------------------------------------------------
   // SELECT ITEM WORKFLOW
+  //
+  // Swaps the detail column's subject in place - selection is
+  // no longer panel navigation (the standalone itemDetail panel
+  // retired with the v0.4 master-detail layout).
   // ----------------------------------------------------------
 
   function selectItem(itemId: string): void {
     setSelectedItemId(itemId);
-
-    openPanel("itemDetail");
 
     onStateChange();
   }
@@ -254,10 +255,11 @@ export function createItemsController(
   // MOVE ITEM WORKFLOW
   //
   // Exit path: stay in the source project. The item just left
-  // the currently-selected project, so the detail panel's
-  // subject is gone from the items snapshot - return to the
-  // items list, which reloads without the moved item; the toast
-  // says where it went. Unsaved detail drafts are keyed by item
+  // the currently-selected project, so the detail column's
+  // subject is gone from the items snapshot - drop the item
+  // selection (the detail column falls back to its empty state);
+  // the list reloads without the moved item and the toast says
+  // where it went. Unsaved detail drafts are keyed by item
   // id and deliberately survive the move (same typed-text
   // survival rule as re-renders): they wait for the user to
   // revisit the item in its new project.
@@ -284,7 +286,6 @@ export function createItemsController(
       setSelectedItemId(null);
     }
 
-    openPanel("items");
     notify(`Moved to ${targetProjectName}`);
 
     await loadItems(selectedProjectId);

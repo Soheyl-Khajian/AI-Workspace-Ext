@@ -113,6 +113,15 @@
   background-clip: content-box;
 }
 
+/* Split body (items master-detail): the columns own padding and
+   scrolling, so the shared body contributes neither. */
+.aiw-floating-panel__body--split {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
 /* ------------------------------------------------------------
    PANEL STATES (placeholder / loading / empty / error)
 ------------------------------------------------------------ */
