@@ -1009,6 +1009,27 @@
     }
   });
 
+  // src/ui/features/projects/projectsMenuState.ts
+  function getOpenProjectMenuId() {
+    return openMenuProjectId;
+  }
+  function openProjectMenu(projectId) {
+    openMenuProjectId = projectId;
+  }
+  function closeProjectMenu() {
+    openMenuProjectId = null;
+  }
+  function resetProjectsMenuState() {
+    openMenuProjectId = null;
+  }
+  var openMenuProjectId;
+  var init_projectsMenuState = __esm({
+    "src/ui/features/projects/projectsMenuState.ts"() {
+      "use strict";
+      openMenuProjectId = null;
+    }
+  });
+
   // src/ui/features/projects/projectsHandlers.ts
   function createProjectsHandlers(deps) {
     function handleSelectProject(event) {
@@ -1017,8 +1038,8 @@
         return;
       }
       if (target.closest(PROJECT_DESELECT_SELECTOR)) return;
-      if (target.closest(PROJECT_RENAME_SELECTOR)) return;
-      if (target.closest(PROJECT_DELETE_SELECTOR)) return;
+      if (target.closest(ROW_MENU_TRIGGER_SELECTOR)) return;
+      if (target.closest(ROW_MENU_SELECTOR)) return;
       if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
       const row = target.closest(PROJECT_ROW_SELECTOR);
       if (!(row instanceof HTMLElement)) {
@@ -1061,19 +1082,56 @@
       }
       await deps.projectsController.create(trimmedNewProjectName);
     }
+    function handleProjectMenuToggle(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const trigger = target.closest(ROW_MENU_TRIGGER_SELECTOR);
+      if (!(trigger instanceof HTMLButtonElement)) {
+        return;
+      }
+      const projectId = trigger.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      if (getEditingProjectId() !== null) {
+        return;
+      }
+      if (getOpenProjectMenuId() === projectId) {
+        closeProjectMenu();
+      } else {
+        openProjectMenu(projectId);
+      }
+      deps.requestRender();
+    }
+    function handleProjectMenuDismiss(event) {
+      if (getOpenProjectMenuId() === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(ROW_MENU_TRIGGER_SELECTOR)) return;
+      if (target.closest(ROW_MENU_SELECTOR)) return;
+      closeProjectMenu();
+      deps.requestRender();
+    }
     function handleStartProjectRename(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
         return;
       }
-      const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
-      if (!(renameButton instanceof HTMLButtonElement)) {
+      const renameItem = target.closest(PROJECT_MENU_RENAME_SELECTOR);
+      if (!(renameItem instanceof HTMLButtonElement)) {
         return;
       }
-      const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
+      const projectId = renameItem.dataset[PROJECT_ID_DATASET_KEY];
       if (!projectId) {
         return;
       }
+      closeProjectMenu();
       startRenameEditing(projectId);
       deps.requestRender();
     }
@@ -1125,14 +1183,16 @@
       if (!(target instanceof Element)) {
         return;
       }
-      const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
-      if (!(deleteButton instanceof HTMLElement)) {
+      const deleteItem2 = target.closest(PROJECT_MENU_DELETE_SELECTOR);
+      if (!(deleteItem2 instanceof HTMLElement)) {
         return;
       }
-      const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
+      const projectId = deleteItem2.dataset[PROJECT_ID_DATASET_KEY];
       if (!projectId) {
         return;
       }
+      closeProjectMenu();
+      deps.requestRender();
       if (!window.confirm("Delete this project and all its items?")) return;
       await deps.projectsController.deleteProject(projectId);
     }
@@ -1150,6 +1210,8 @@
       [deps.panelsEl, "click", asListener(handleSelectProject)],
       [deps.panelsEl, "click", asListener(handleDeselectProject)],
       [deps.panelsEl, "click", asListener(handleCreateProject)],
+      [deps.panelsEl, "click", asListener(handleProjectMenuToggle)],
+      [deps.panelsEl, "click", asListener(handleProjectMenuDismiss)],
       [deps.panelsEl, "click", asListener(handleStartProjectRename)],
       [deps.panelsEl, "click", asListener(handleDeleteProject)],
       // rename editing lifecycle
@@ -1161,7 +1223,7 @@
     ];
     return eventBindings;
   }
-  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_CREATE_INPUT_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
+  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_CREATE_INPUT_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR, ROW_MENU_TRIGGER_SELECTOR, ROW_MENU_SELECTOR, PROJECT_MENU_RENAME_SELECTOR, PROJECT_MENU_DELETE_SELECTOR;
   var init_projectsHandlers = __esm({
     "src/ui/features/projects/projectsHandlers.ts"() {
       "use strict";
@@ -1169,15 +1231,18 @@
       init_projectsDraftState();
       init_projectsRenameState();
       init_projectsState();
+      init_projectsMenuState();
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
       PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
-      PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
       PROJECT_ID_DATASET_KEY = "projectId";
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
       PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
-      PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
       PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
       PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
+      ROW_MENU_TRIGGER_SELECTOR = ".aiw-row-menu-trigger";
+      ROW_MENU_SELECTOR = ".aiw-row-menu";
+      PROJECT_MENU_RENAME_SELECTOR = ".aiw-project-menu-rename";
+      PROJECT_MENU_DELETE_SELECTOR = ".aiw-project-menu-delete";
     }
   });
 
@@ -1188,6 +1253,9 @@
     rowEl.dataset.projectId = project.id;
     if (flags.selected) {
       rowEl.classList.add("aiw-project-row--selected");
+    }
+    if (flags.menuOpen) {
+      rowEl.classList.add("aiw-project-row--menu-open");
     }
     if (flags.editing) {
       const renameInputEl = document.createElement("input");
@@ -1208,17 +1276,28 @@
       deselectButtonEl.textContent = "\u23CF";
       rowEl.append(deselectButtonEl);
     }
-    const renameButtonEl = document.createElement("button");
-    renameButtonEl.type = "button";
-    renameButtonEl.className = "aiw-project-rename";
-    renameButtonEl.textContent = "\u270E";
-    renameButtonEl.dataset.projectId = project.id;
-    const deleteButtonEl = document.createElement("button");
-    deleteButtonEl.type = "button";
-    deleteButtonEl.className = "aiw-project-delete";
-    deleteButtonEl.textContent = "\xD7";
-    deleteButtonEl.dataset.projectId = project.id;
-    rowEl.append(renameButtonEl, deleteButtonEl);
+    const menuTriggerEl = document.createElement("button");
+    menuTriggerEl.type = "button";
+    menuTriggerEl.className = "aiw-row-menu-trigger";
+    menuTriggerEl.textContent = "\u2026";
+    menuTriggerEl.dataset.projectId = project.id;
+    rowEl.append(menuTriggerEl);
+    if (flags.menuOpen) {
+      const menuEl = document.createElement("div");
+      menuEl.className = "aiw-row-menu";
+      const renameItemEl = document.createElement("button");
+      renameItemEl.type = "button";
+      renameItemEl.className = "aiw-row-menu-item aiw-project-menu-rename";
+      renameItemEl.textContent = "Rename";
+      renameItemEl.dataset.projectId = project.id;
+      const deleteItemEl = document.createElement("button");
+      deleteItemEl.type = "button";
+      deleteItemEl.className = "aiw-row-menu-item aiw-row-menu-item--danger aiw-project-menu-delete";
+      deleteItemEl.textContent = "Delete";
+      deleteItemEl.dataset.projectId = project.id;
+      menuEl.append(renameItemEl, deleteItemEl);
+      rowEl.append(menuEl);
+    }
     return rowEl;
   }
   var init_createProjectRow = __esm({
@@ -1238,6 +1317,7 @@
     const selectedProjectId = getSelectedProjectId();
     const editingProjectId = getEditingProjectId();
     const renameDraft = getRenameDraft();
+    const openMenuProjectId2 = getOpenProjectMenuId();
     const isEmpty = projects.length === 0;
     function renderProjectsList(projectsList) {
       const listEl = document.createElement("div");
@@ -1245,7 +1325,8 @@
       for (const project of projectsList) {
         const selected = project.id === selectedProjectId;
         const editing = project.id === editingProjectId;
-        const rowEl = createProjectRow(project, { selected, editing });
+        const menuOpen = project.id === openMenuProjectId2;
+        const rowEl = createProjectRow(project, { selected, editing, menuOpen });
         listEl.append(rowEl);
       }
       shell.bodyEl.append(listEl);
@@ -1303,6 +1384,7 @@
       init_projectsState();
       init_projectsDraftState();
       init_projectsRenameState();
+      init_projectsMenuState();
       init_projectsHandlers();
     }
   });
@@ -1960,6 +2042,7 @@
       deps.requestRender();
     }
     function setOrbCollapsed() {
+      deps.closeAllRowMenus();
       collapseOrb();
       deps.requestRender();
     }
@@ -1983,6 +2066,11 @@
       if (deps.hasActiveInlineEdit()) {
         return;
       }
+      if (deps.hasOpenRowMenu()) {
+        deps.closeAllRowMenus();
+        deps.requestRender();
+        return;
+      }
       setOrbCollapsed();
     }
     function handleBackButtonClick(event) {
@@ -1994,6 +2082,7 @@
       if (!(backButton instanceof HTMLElement)) {
         return;
       }
+      deps.closeAllRowMenus();
       openPanel("projects");
       setSelectedItemId(null);
       deps.requestRender();
@@ -2007,6 +2096,7 @@
       if (!(panelContextButton instanceof HTMLElement)) {
         return;
       }
+      deps.closeAllRowMenus();
       openPanel("projects");
       deps.requestRender();
     }
@@ -2968,7 +3058,9 @@
       panelsEl: dom.orbPanelsEl,
       orbButtonEl: dom.orbButtonEl,
       requestRender: renderUi,
-      hasActiveInlineEdit
+      hasActiveInlineEdit,
+      hasOpenRowMenu,
+      closeAllRowMenus
     });
     const projectsBindings = createProjectsHandlers({
       panelsEl: dom.orbPanelsEl,
@@ -3029,6 +3121,7 @@
       lastRenderedPanel = activePanelId;
     }
     function toggleFloatingPanel(panelId) {
+      closeAllRowMenus();
       togglePanel(panelId);
       if (getActivePanel() === "search") {
         void searchController.load();
@@ -3040,6 +3133,12 @@
     }
     function hasActiveInlineEdit() {
       return getEditingProjectId() !== null;
+    }
+    function hasOpenRowMenu() {
+      return getOpenProjectMenuId() !== null;
+    }
+    function closeAllRowMenus() {
+      closeProjectMenu();
     }
     function resolveProjectName(projectId) {
       const project = getProjects().find(
@@ -3062,6 +3161,7 @@
       resetItemsDraftState();
       resetProjectsDraftState();
       resetProjectsRenameState();
+      resetProjectsMenuState();
       resetSearchState();
       resetSearchDraftState();
       setSelectedItemId(null);
@@ -3103,6 +3203,7 @@
       init_projectsState();
       init_projectsDraftState();
       init_projectsRenameState();
+      init_projectsMenuState();
       init_itemsController();
       init_itemsHandlers();
       init_itemsDraftState();

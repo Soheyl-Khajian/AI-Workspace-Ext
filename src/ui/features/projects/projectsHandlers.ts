@@ -5,18 +5,23 @@
 //
 // Responsibility:
 //
-// - own the projects panel's DOM event handlers
-//   (select / deselect / create / rename / delete / draft capture)
+/// - own the projects panel's DOM event handlers
+//   (select / deselect / create / row menu / rename / delete /
+//   draft capture)
 // - own the projects selector constants + dataset key
 // - contribute EventBinding[] to the floating controller's
 //   declarative add/remove table via createProjectsHandlers()
 // - handleSelectProject treats ANY click inside a row as "select"
 //   unless guarded: every interactive element added inside a row
-//   MUST be excluded there (deselect / rename / delete / inputs)
+//   MUST be excluded there (deselect / menu trigger / menu / inputs)
 // - rename editing is STATE-DRIVEN: the click handler only flips
 //   projectsRenameState, the renderer draws the input, and
 //   commit / cancel / draft capture are permanent delegated
 //   bindings in the table below
+// - the row menu is STATE-DRIVEN the same way: handlers only flip
+//   projectsMenuState, the renderer projects the open menu, and
+//   in-panel dismissal is a delegated click that lets the click
+//   proceed to its normal job (no click-eating veil)
 //
 // IMPORTANT ARCHITECTURE RULES:
 //
@@ -39,6 +44,11 @@ import {
   stopRenameEditing,
 } from "./projectsRenameState";
 import { getProjects } from "./projectsState";
+import {
+  closeProjectMenu,
+  getOpenProjectMenuId,
+  openProjectMenu,
+} from "./projectsMenuState";
 
 // ------------------------------------------------------------
 // CONSTANTS
@@ -46,14 +56,18 @@ import { getProjects } from "./projectsState";
 
 const PROJECT_ROW_SELECTOR = ".aiw-project-row";
 const PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
-const PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
 const PROJECT_ID_DATASET_KEY = "projectId";
 const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
 const PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
-const PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
-
 export const PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
 export const PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
+
+// Shared row-menu classes (role-named: item rows reuse them when
+// the items menu ships)
+const ROW_MENU_TRIGGER_SELECTOR = ".aiw-row-menu-trigger";
+const ROW_MENU_SELECTOR = ".aiw-row-menu";
+const PROJECT_MENU_RENAME_SELECTOR = ".aiw-project-menu-rename";
+const PROJECT_MENU_DELETE_SELECTOR = ".aiw-project-menu-delete";
 
 type ProjectsHandlersDependencies = {
   panelsEl: HTMLElement;
@@ -76,8 +90,8 @@ export function createProjectsHandlers(
     }
 
     if (target.closest(PROJECT_DESELECT_SELECTOR)) return;
-    if (target.closest(PROJECT_RENAME_SELECTOR)) return;
-    if (target.closest(PROJECT_DELETE_SELECTOR)) return;
+    if (target.closest(ROW_MENU_TRIGGER_SELECTOR)) return;
+    if (target.closest(ROW_MENU_SELECTOR)) return;
     if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
 
     const row = target.closest(PROJECT_ROW_SELECTOR);
@@ -141,6 +155,68 @@ export function createProjectsHandlers(
   }
 
   // ----------------------------------------------------------
+  // ROW MENU HANDLERS (state-driven, projected by the renderer)
+  // ----------------------------------------------------------
+
+  function handleProjectMenuToggle(event: MouseEvent): void {
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    const trigger = target.closest(ROW_MENU_TRIGGER_SELECTOR);
+    if (!(trigger instanceof HTMLButtonElement)) {
+      return;
+    }
+
+    const projectId = trigger.dataset[PROJECT_ID_DATASET_KEY];
+    if (!projectId) {
+      return;
+    }
+
+    // No menus while an inline edit is active (locked v0.5 rule).
+    // Same-feature knowledge, so rename state is read directly —
+    // unlike core, which gets hasActiveInlineEdit injected.
+    if (getEditingProjectId() !== null) {
+      return;
+    }
+
+    // Same trigger toggles closed; another row's trigger replaces
+    // (last write wins in the state module).
+    if (getOpenProjectMenuId() === projectId) {
+      closeProjectMenu();
+    } else {
+      openProjectMenu(projectId);
+    }
+
+    deps.requestRender();
+  }
+
+  /*
+  In-panel dismissal: any click that is neither the trigger (the
+  toggle owns it) nor inside the menu (menu items own it) closes
+  the menu and then proceeds to do its normal job — no
+  click-eating veil, per the locked design. Clicks outside the
+  floating UI are layered in core's outside-click handler instead.
+*/
+  function handleProjectMenuDismiss(event: MouseEvent): void {
+    if (getOpenProjectMenuId() === null) {
+      return;
+    }
+
+    const target = event.target;
+    if (!(target instanceof Element)) {
+      return;
+    }
+
+    if (target.closest(ROW_MENU_TRIGGER_SELECTOR)) return;
+    if (target.closest(ROW_MENU_SELECTOR)) return;
+
+    closeProjectMenu();
+    deps.requestRender();
+  }
+
+  // ----------------------------------------------------------
   // PROJECT RENAME HANDLERS (state-driven editing)
   //
   // The click handler only flips state; the renderer draws the
@@ -155,16 +231,19 @@ export function createProjectsHandlers(
       return;
     }
 
-    const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
-    if (!(renameButton instanceof HTMLButtonElement)) {
+    const renameItem = target.closest(PROJECT_MENU_RENAME_SELECTOR);
+    if (!(renameItem instanceof HTMLButtonElement)) {
       return;
     }
 
-    const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
+    const projectId = renameItem.dataset[PROJECT_ID_DATASET_KEY];
     if (!projectId) {
       return;
     }
 
+    // Rename lives in the menu now: close it, then enter the
+    // existing inline edit.
+    closeProjectMenu();
     startRenameEditing(projectId);
     deps.requestRender();
   }
@@ -268,15 +347,20 @@ export function createProjectsHandlers(
       return;
     }
 
-    const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
-    if (!(deleteButton instanceof HTMLElement)) {
+    const deleteItem = target.closest(PROJECT_MENU_DELETE_SELECTOR);
+    if (!(deleteItem instanceof HTMLElement)) {
       return;
     }
 
-    const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
+    const projectId = deleteItem.dataset[PROJECT_ID_DATASET_KEY];
     if (!projectId) {
       return;
     }
+
+    // Close the menu (and re-render) BEFORE the blocking confirm:
+    // a cancelled confirm must not leave the menu open.
+    closeProjectMenu();
+    deps.requestRender();
 
     if (!window.confirm("Delete this project and all its items?")) return;
 
@@ -314,6 +398,8 @@ export function createProjectsHandlers(
     [deps.panelsEl, "click", asListener(handleSelectProject)],
     [deps.panelsEl, "click", asListener(handleDeselectProject)],
     [deps.panelsEl, "click", asListener(handleCreateProject)],
+    [deps.panelsEl, "click", asListener(handleProjectMenuToggle)],
+    [deps.panelsEl, "click", asListener(handleProjectMenuDismiss)],
     [deps.panelsEl, "click", asListener(handleStartProjectRename)],
     [deps.panelsEl, "click", asListener(handleDeleteProject)],
     // rename editing lifecycle

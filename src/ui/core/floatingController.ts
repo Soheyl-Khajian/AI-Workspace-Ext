@@ -10,8 +10,10 @@
 //   happens HERE and only here)
 // - own the render cycle (renderUi) and the initial load
 // - bridge features that must not know about each other
-//   (cross-feature glue: hasActiveInlineEdit, resolveProjectName,
-//   renderSearchResultsRegion, openProject, reloadAfterImport)
+//   (cross-feature glue: hasActiveInlineEdit,
+//   hasOpenRowMenu / closeAllRowMenus — the row-menu coordinator,
+//   resolveProjectName, renderSearchResultsRegion, openProject,
+//   reloadAfterImport)
 // - own listener lifecycle: register every contributed
 //   EventBinding and return a teardown that removes them
 //   symmetrically
@@ -57,6 +59,11 @@ import {
   getEditingProjectId,
   resetProjectsRenameState,
 } from "../features/projects/projectsRenameState";
+import {
+  closeProjectMenu,
+  getOpenProjectMenuId,
+  resetProjectsMenuState,
+} from "../features/projects/projectsMenuState";
 import { createItemsController } from "../features/items/itemsController";
 import { createItemsHandlers } from "../features/items/itemsHandlers";
 import { resetItemsDraftState } from "../features/items/itemsDraftState";
@@ -109,6 +116,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     orbButtonEl: dom.orbButtonEl,
     requestRender: renderUi,
     hasActiveInlineEdit,
+    hasOpenRowMenu,
+    closeAllRowMenus,
   });
 
   const projectsBindings = createProjectsHandlers({
@@ -215,6 +224,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // live and die with the rendered buttons, not with the table.
   // ----------------------------------------------------------
   function toggleFloatingPanel(panelId: OrbActionId): void {
+    // Panel switch door: open row menus must not survive it
+    closeAllRowMenus();
     togglePanel(panelId);
 
     /*
@@ -250,6 +261,30 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // editors extend this predicate, not core.
   function hasActiveInlineEdit(): boolean {
     return getEditingProjectId() !== null;
+  }
+
+  /*
+  ROW-MENU COORDINATOR. "Only one menu open" WITHIN a feature is
+  structural (each menu state is a single variable); ACROSS
+  features it is owned HERE — thin glue, because panel
+  exclusivity (one activePanel) already prevents two menus from
+  being VISIBLE at once. The coordinator's real job is killing
+  stale open state. Contract — any feature adding a row menu
+  must join all three:
+  1. close all menus on every panel switch (toggleFloatingPanel,
+     back button, breadcrumb, orb collapse)
+  2. reset all menu states on import reload
+  3. answer hasOpenRowMenu for the layered outside-click
+     dismissal in orbHandlers (first click closes the menu,
+     second collapses the orb)
+  The items row menu joins in its own commit.
+*/
+  function hasOpenRowMenu(): boolean {
+    return getOpenProjectMenuId() !== null;
+  }
+
+  function closeAllRowMenus(): void {
+    closeProjectMenu();
   }
 
   // Injected into itemsHandlers as deps.resolveProjectName so the
@@ -302,6 +337,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     resetItemsDraftState();
     resetProjectsDraftState();
     resetProjectsRenameState();
+    resetProjectsMenuState();
     resetSearchState();
     resetSearchDraftState();
     setSelectedItemId(null);

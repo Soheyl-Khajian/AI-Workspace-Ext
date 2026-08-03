@@ -107,7 +107,6 @@
   so the strip always matches the row's corners exactly.
 */
 
-.aiw-project-delete,
 .aiw-item-delete {
   /* Full height of the row */
   align-self: stretch;
@@ -130,12 +129,10 @@
     color var(--aiw-dur-fast) var(--aiw-ease);
 }
 
-.aiw-project-delete:hover,
 .aiw-item-delete:hover {
   background: var(--aiw-danger-soft-hover);
 }
 
-.aiw-project-delete:active,
 .aiw-item-delete:active {
   background: var(--aiw-danger-soft-active);
 }

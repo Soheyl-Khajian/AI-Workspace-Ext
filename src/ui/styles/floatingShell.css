@@ -16,6 +16,7 @@
 @import "./panels/base.css";
 @import "./panels/rows.css";
 @import "./panels/projects.css";
+@import "./panels/menus.css";
 @import "./panels/forms.css";
 @import "./panels/items.css";
 @import "./panels/buttons.css";

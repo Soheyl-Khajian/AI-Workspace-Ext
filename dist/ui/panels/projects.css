@@ -1,6 +1,6 @@
 /* src/ui/styles/panels/projects.css */
 /*
-  Projects panel one-offs: rename / deselect strips, inline
+  Projects panel one-offs: deselect strips, inline
   rename input.
 
   DEDUPE RULE (applies across all panels/ files): identical-by-
@@ -11,10 +11,9 @@
 */
 
 /* ------------------------------------------------------------
-   PROJECT DESELECT BUTTON + RENAME BUTTON + INLINE INPUT
+   PROJECT DESELECT BUTTON + RENAME INLINE INPUT
 ------------------------------------------------------------ */
 
-.aiw-project-rename,
 .aiw-project-deselect {
   align-self: stretch;
   width: 36px;
@@ -32,15 +31,6 @@
   transition:
     background-color var(--aiw-dur-fast) var(--aiw-ease),
     color var(--aiw-dur-fast) var(--aiw-ease);
-}
-
-.aiw-project-rename:hover {
-  background: var(--aiw-surface-hover);
-  color: var(--aiw-text-muted);
-}
-
-.aiw-project-rename:active {
-  background: var(--aiw-surface-active);
 }
 
 .aiw-project-rename-input {
