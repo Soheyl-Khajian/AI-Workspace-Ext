@@ -94,17 +94,6 @@
   padding: var(--aiw-space-lg);
 }
 
-.aiw-items-list-scroll::-webkit-scrollbar {
-  width: 10px;
-}
-
-.aiw-items-list-scroll::-webkit-scrollbar-thumb {
-  background: var(--aiw-border-strong);
-  border-radius: var(--aiw-radius-pill);
-  border: 3px solid transparent;
-  background-clip: content-box;
-}
-
 .aiw-item-detail-col {
   display: flex;
   flex-direction: column;
