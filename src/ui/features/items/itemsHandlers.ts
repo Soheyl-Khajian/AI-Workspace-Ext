@@ -37,6 +37,7 @@ import {
   setItemDetailContentDraft,
   setItemDetailTitleDraft,
 } from "./itemsDraftState";
+import { setItemsListScrollTop } from "./itemsState";
 
 // ------------------------------------------------------------
 // CONSTANTS
@@ -57,6 +58,8 @@ const ITEM_DETAIL_CONTENT_SELECTOR = ".aiw-item-detail-content";
 const ITEM_DETAIL_PROJECT_SELECT_SELECTOR = ".aiw-item-detail-project-select";
 
 const ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
+
+const ITEMS_LIST_SCROLL_SELECTOR = ".aiw-items-list-scroll";
 
 type ItemsHandlersDependencies = {
   panelsEl: HTMLElement;
@@ -351,6 +354,30 @@ export function createItemsHandlers(
   }
 
   // ----------------------------------------------------------
+  // LIST SCROLL CAPTURE HANDLER
+  // ----------------------------------------------------------
+
+  /*
+    Captures the list column's scroll position so the renderer can
+    restore it after wipe-rebuild renders. Registered with capture
+    (the binding's 4th slot): "scroll" does not bubble, so the
+    delegated listener on panelsEl only sees it during the capture
+    phase. State write only — no controller call, no re-render.
+  */
+  function handleItemsListScroll(event: Event): void {
+    const target = event.target;
+    if (!(target instanceof HTMLElement)) {
+      return;
+    }
+
+    if (!target.matches(ITEMS_LIST_SCROLL_SELECTOR)) {
+      return;
+    }
+
+    setItemsListScrollTop(target.scrollTop);
+  }
+
+  // ----------------------------------------------------------
   // EVENT BINDINGS
   // ----------------------------------------------------------
 
@@ -364,6 +391,13 @@ export function createItemsHandlers(
     [deps.panelsEl, "change", asListener(handleMoveItem)],
     [deps.panelsEl, "input", asListener(handleCreateItemInput)],
     [deps.panelsEl, "input", asListener(handleItemDetailInput)],
+
+    /*
+      No asListener: the handler already takes a plain Event. The
+      4th slot registers it in the CAPTURE phase (scroll does not
+      bubble up to panelsEl).
+    */
+    [deps.panelsEl, "scroll", handleItemsListScroll, true],
   ];
 
   return eventBindings;

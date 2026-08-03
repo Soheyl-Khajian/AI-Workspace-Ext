@@ -305,8 +305,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     ...searchBindings,
   ];
 
-  for (const [target, type, listener] of eventBindings) {
-    target.addEventListener(type, listener);
+  for (const [target, type, listener, options] of eventBindings) {
+    target.addEventListener(type, listener, options);
   }
 
   // ----------------------------------------------------------
@@ -319,8 +319,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // CLEANUP
   // ----------------------------------------------------------
   return function destroyFloatingController(): void {
-    for (const [target, type, listener] of eventBindings) {
-      target.removeEventListener(type, listener);
+    for (const [target, type, listener, options] of eventBindings) {
+      target.removeEventListener(type, listener, options);
     }
   };
 }

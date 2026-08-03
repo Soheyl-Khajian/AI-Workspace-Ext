@@ -32,6 +32,7 @@ import { renderItemDetailRegion } from "./renderItemDetailRegion";
 import {
   getItems,
   getItemsError,
+  getItemsListScrollTop,
   isItemsLoading,
   isItemsLoadingIndicatorVisible,
 } from "./itemsState";
@@ -244,15 +245,13 @@ export function renderItemsPanel(
 
   /*
     Wipe-rebuild renders reset the list column's scroll position;
-    keep the selected row visible. Presentation-only DOM work on
-    this renderer's own subtree - block: "nearest" never scrolls
-    the host page, because every outer ancestor already shows the
-    panel in full.
+    restore the position captured by the scroll handler. Restoring
+    the REAL position (not scrollIntoView on the selected row) means
+    renders triggered while scrolled away — checkbox toggles, saves —
+    never yank the list back to the selection. Runs after the panel
+    is appended: scrollTop only sticks once the element has layout.
   */
-  const selectedRowEl = listScrollEl.querySelector(".aiw-item-row--selected");
-  if (selectedRowEl instanceof HTMLElement) {
-    selectedRowEl.scrollIntoView({ block: "nearest" });
-  }
+  listScrollEl.scrollTop = getItemsListScrollTop();
 
   return shell.panelEl;
 }

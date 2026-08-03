@@ -1670,6 +1670,9 @@
   function getItemsError() {
     return state8.error;
   }
+  function getItemsListScrollTop() {
+    return state8.listScrollTop;
+  }
   function setItems(itemsList) {
     state8.items = [...itemsList];
   }
@@ -1682,6 +1685,9 @@
   function setItemsError(error) {
     state8.error = error;
   }
+  function setItemsListScrollTop(scrollTop) {
+    state8.listScrollTop = scrollTop;
+  }
   var state8;
   var init_itemsState = __esm({
     "src/ui/features/items/itemsState.ts"() {
@@ -1690,7 +1696,8 @@
         items: [],
         loading: false,
         loadingIndicatorVisible: false,
-        error: null
+        error: null,
+        listScrollTop: 0
       };
     }
   });
@@ -1823,10 +1830,7 @@
     buildContextBarEl.append(buildContextButtonEl);
     shell.headerEl.append(buildContextBarEl);
     containerEl.append(shell.panelEl);
-    const selectedRowEl = listScrollEl.querySelector(".aiw-item-row--selected");
-    if (selectedRowEl instanceof HTMLElement) {
-      selectedRowEl.scrollIntoView({ block: "nearest" });
-    }
+    listScrollEl.scrollTop = getItemsListScrollTop();
     return shell.panelEl;
   }
   var init_renderItemsPanel = __esm({
@@ -2225,6 +2229,7 @@
     const { onStateChange, notify } = dependencies;
     async function load(projectId) {
       setItemsLoading(true);
+      setItemsListScrollTop(0);
       onStateChange();
       const indicatorTimer = window.setTimeout(() => {
         setItemsLoadingIndicatorVisible(true);
@@ -2549,6 +2554,16 @@
         setItemDetailContentDraft(selectedItemId, target.value);
       }
     }
+    function handleItemsListScroll(event) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (!target.matches(ITEMS_LIST_SCROLL_SELECTOR)) {
+        return;
+      }
+      setItemsListScrollTop(target.scrollTop);
+    }
     const eventBindings = [
       [deps.panelsEl, "click", asListener(handleSelectItem)],
       [deps.panelsEl, "click", asListener(handleToggleItemSelection)],
@@ -2558,17 +2573,24 @@
       [deps.panelsEl, "click", asListener(handleDeleteItem)],
       [deps.panelsEl, "change", asListener(handleMoveItem)],
       [deps.panelsEl, "input", asListener(handleCreateItemInput)],
-      [deps.panelsEl, "input", asListener(handleItemDetailInput)]
+      [deps.panelsEl, "input", asListener(handleItemDetailInput)],
+      /*
+        No asListener: the handler already takes a plain Event. The
+        4th slot registers it in the CAPTURE phase (scroll does not
+        bubble up to panelsEl).
+      */
+      [deps.panelsEl, "scroll", handleItemsListScroll, true]
     ];
     return eventBindings;
   }
-  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR;
+  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, ITEMS_LIST_SCROLL_SELECTOR;
   var init_itemsHandlers = __esm({
     "src/ui/features/items/itemsHandlers.ts"() {
       "use strict";
       init_eventBindings();
       init_sessionState();
       init_itemsDraftState();
+      init_itemsState();
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_SELECT_SELECTOR = ".aiw-item-select";
       ITEM_DELETE_SELECTOR = ".aiw-item-delete";
@@ -2581,6 +2603,7 @@
       ITEM_DETAIL_CONTENT_SELECTOR = ".aiw-item-detail-content";
       ITEM_DETAIL_PROJECT_SELECT_SELECTOR = ".aiw-item-detail-project-select";
       ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
+      ITEMS_LIST_SCROLL_SELECTOR = ".aiw-items-list-scroll";
     }
   });
 
@@ -3048,14 +3071,14 @@
       ...backupBindings,
       ...searchBindings
     ];
-    for (const [target, type, listener] of eventBindings) {
-      target.addEventListener(type, listener);
+    for (const [target, type, listener, options] of eventBindings) {
+      target.addEventListener(type, listener, options);
     }
     renderUi();
     void projectsController.load();
     return function destroyFloatingController() {
-      for (const [target, type, listener] of eventBindings) {
-        target.removeEventListener(type, listener);
+      for (const [target, type, listener, options] of eventBindings) {
+        target.removeEventListener(type, listener, options);
       }
     };
   }

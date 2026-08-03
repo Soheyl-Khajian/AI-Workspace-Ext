@@ -38,6 +38,7 @@ import {
   getItems,
   setItemsLoading,
   setItemsLoadingIndicatorVisible,
+  setItemsListScrollTop,
 } from "./itemsState";
 import { loadItems } from "./loadItems";
 import {
@@ -125,6 +126,14 @@ export function createItemsController(
 
   async function load(projectId: string): Promise<void> {
     setItemsLoading(true);
+
+    /*
+      Project-scope load = a brand-new list, so the captured scroll
+      position (which belongs to the previous project's list) starts
+      over at the top. Post-mutation reloads (create / save / move /
+      delete) call loadItems() directly and keep the position.
+    */
+    setItemsListScrollTop(0);
 
     onStateChange();
 
