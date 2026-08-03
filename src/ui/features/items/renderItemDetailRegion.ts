@@ -7,7 +7,6 @@
 //
 // - render the detail column of the master-detail items panel
 // - display the selected item's fields in an editable form
-// - render the project select (the move-item control)
 // - render the column empty state when nothing is selected
 //
 // IMPORTANT:
@@ -25,7 +24,6 @@
 // ------------------------------------------------------------
 
 import type { Item } from "../../../models/item";
-import type { Project } from "../../../models/project";
 
 import { createPanelState } from "../../shared/createPanelState";
 import {
@@ -33,10 +31,7 @@ import {
   getItemDetailContentDraft,
 } from "./itemsDraftState";
 
-export function renderItemDetailRegion(
-  item: Item | undefined,
-  projects: Project[],
-): HTMLElement {
+export function renderItemDetailRegion(item: Item | undefined): HTMLElement {
   const detailColEl = document.createElement("div");
   detailColEl.className = "aiw-item-detail-col";
 
@@ -61,9 +56,9 @@ export function renderItemDetailRegion(
   // ------------------------------------------------------------
   // DETAIL FORM
   //
-  // Fills the column: title and project row keep their content
-  // height, the content textarea absorbs the free space, and
-  // the save button pins to the bottom.
+  // Fills the column: the title keeps its content height, the
+  // content textarea absorbs the free space, and the save button
+  // pins to the bottom.
   // ------------------------------------------------------------
 
   const formEl = document.createElement("div");
@@ -76,31 +71,6 @@ export function renderItemDetailRegion(
   // cleared ("") draft from resurrecting the old text
   titleInputEl.value = getItemDetailTitleDraft(item.id) ?? item.title;
 
-  // Project row: a fact about the item that doubles as the move
-  // control. The item's current project is pre-selected, so at
-  // rest the select reads as "this item lives in X"; committing
-  // a different option IS the move (handled on "change").
-  const projectRowEl = document.createElement("div");
-  projectRowEl.className = "aiw-item-detail-project-row";
-
-  const projectLabelEl = document.createElement("span");
-  projectLabelEl.className = "aiw-item-detail-project-label";
-  projectLabelEl.textContent = "Project:";
-
-  const projectSelectEl = document.createElement("select");
-  projectSelectEl.className = "aiw-item-detail-project-select";
-  projectSelectEl.dataset.itemId = item.id;
-
-  for (const project of projects) {
-    const optionEl = document.createElement("option");
-    optionEl.value = project.id;
-    optionEl.textContent = project.name;
-    optionEl.selected = project.id === item.projectId;
-    projectSelectEl.append(optionEl);
-  }
-
-  projectRowEl.append(projectLabelEl, projectSelectEl);
-
   const contentInputEl = document.createElement("textarea");
   contentInputEl.className = "aiw-item-detail-content";
   contentInputEl.value = getItemDetailContentDraft(item.id) ?? item.content;
@@ -111,7 +81,7 @@ export function renderItemDetailRegion(
   buttonEl.textContent = "Save";
   buttonEl.dataset.itemId = item.id;
 
-  formEl.append(titleInputEl, projectRowEl, contentInputEl, buttonEl);
+  formEl.append(titleInputEl, contentInputEl, buttonEl);
 
   detailColEl.append(formEl);
 

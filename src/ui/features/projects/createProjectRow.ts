@@ -11,14 +11,20 @@
 // - reflect selected state visually
 // - render the deselect strip ONLY on the selected row
 //   (release selection — not a checkbox, not delete)
+// - render the "…" menu trigger, and PROJECT the row menu
+//   (Rename / Delete) when this row's menu is open in state
 // - expose project identity via dataset
 //
 // IMPORTANT:
 //
 // - NO listeners (delegation in projectsHandlers owns all events)
-// - NO state mutation (reads rename draft state for hydration only)
+// - NO state mutation (reads rename/menu state for hydration only)
 // - NO focus management (the panel renderer focuses after attach —
 //   focus() on a detached element is a silent no-op)
+// - the menu is PROJECTED from projectsMenuState, never toggled in
+//   the DOM: a background wipe-rebuild re-creates an open menu
+//   because openness is a recorded fact, not a DOM condition
+//   (DOM-held-state ledger)
 // ------------------------------------------------------------
 
 import type { Project } from "../../../models/project";
@@ -38,6 +44,7 @@ import { getRenameDraft } from "./projectsRenameState";
 type ProjectRowFlags = {
   selected: boolean;
   editing: boolean;
+  menuOpen: boolean;
 };
 
 export function createProjectRow(
@@ -56,6 +63,12 @@ export function createProjectRow(
 
   if (flags.selected) {
     rowEl.classList.add("aiw-project-row--selected");
+  }
+
+  if (flags.menuOpen) {
+    // Positioning anchor + overflow release for the floating menu
+    // (see panels/menus.css)
+    rowEl.classList.add("aiw-project-row--menu-open");
   }
 
   // ----------------------------------------------------------
@@ -94,30 +107,46 @@ export function createProjectRow(
   }
 
   // ----------------------------------------------------------
-  // RENAME BUTTON
+  // MENU TRIGGER ("…")
+  //
+  // Replaces the old rename (✎) and delete (×) strips: the row
+  // actions live in the menu now.
   // ----------------------------------------------------------
 
-  const renameButtonEl = document.createElement("button");
-  renameButtonEl.type = "button";
-  renameButtonEl.className = "aiw-project-rename";
-  renameButtonEl.textContent = "✎";
+  const menuTriggerEl = document.createElement("button");
+  menuTriggerEl.type = "button";
+  menuTriggerEl.className = "aiw-row-menu-trigger";
+  menuTriggerEl.textContent = "…";
 
   // Expose project identity to parent interaction systems
-  renameButtonEl.dataset.projectId = project.id;
+  menuTriggerEl.dataset.projectId = project.id;
+
+  rowEl.append(menuTriggerEl);
 
   // ----------------------------------------------------------
-  // DELETE BUTTON
+  // ROW MENU (projected from state)
   // ----------------------------------------------------------
 
-  const deleteButtonEl = document.createElement("button");
-  deleteButtonEl.type = "button";
-  deleteButtonEl.className = "aiw-project-delete";
-  deleteButtonEl.textContent = "×";
+  if (flags.menuOpen) {
+    const menuEl = document.createElement("div");
+    menuEl.className = "aiw-row-menu";
 
-  // Expose project identity to parent interaction systems
-  deleteButtonEl.dataset.projectId = project.id;
+    const renameItemEl = document.createElement("button");
+    renameItemEl.type = "button";
+    renameItemEl.className = "aiw-row-menu-item aiw-project-menu-rename";
+    renameItemEl.textContent = "Rename";
+    renameItemEl.dataset.projectId = project.id;
 
-  rowEl.append(renameButtonEl, deleteButtonEl);
+    const deleteItemEl = document.createElement("button");
+    deleteItemEl.type = "button";
+    deleteItemEl.className =
+      "aiw-row-menu-item aiw-row-menu-item--danger aiw-project-menu-delete";
+    deleteItemEl.textContent = "Delete";
+    deleteItemEl.dataset.projectId = project.id;
+
+    menuEl.append(renameItemEl, deleteItemEl);
+    rowEl.append(menuEl);
+  }
 
   return rowEl;
 }

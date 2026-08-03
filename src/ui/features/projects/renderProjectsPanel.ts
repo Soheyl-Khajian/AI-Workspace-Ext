@@ -37,6 +37,7 @@ import {
 } from "./projectsState";
 import { getCreateProjectNameDraft } from "./projectsDraftState";
 import { getEditingProjectId, getRenameDraft } from "./projectsRenameState";
+import { getOpenProjectMenuId } from "./projectsMenuState";
 import { PROJECT_RENAME_INPUT_SELECTOR } from "./projectsHandlers";
 
 export function renderProjectsPanel(containerEl: HTMLElement): HTMLElement {
@@ -52,6 +53,7 @@ export function renderProjectsPanel(containerEl: HTMLElement): HTMLElement {
   const selectedProjectId = getSelectedProjectId();
   const editingProjectId = getEditingProjectId();
   const renameDraft = getRenameDraft();
+  const openMenuProjectId = getOpenProjectMenuId();
   const isEmpty = projects.length === 0;
 
   // ------------------------------------------------------------
@@ -65,7 +67,8 @@ export function renderProjectsPanel(containerEl: HTMLElement): HTMLElement {
     for (const project of projectsList) {
       const selected = project.id === selectedProjectId;
       const editing = project.id === editingProjectId;
-      const rowEl = createProjectRow(project, { selected, editing });
+      const menuOpen = project.id === openMenuProjectId;
+      const rowEl = createProjectRow(project, { selected, editing, menuOpen });
       listEl.append(rowEl);
     }
 

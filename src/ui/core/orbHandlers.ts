@@ -15,7 +15,9 @@
 //
 // - core module: NO imports from features/* — feature knowledge is
 //   injected (deps.hasActiveInlineEdit guards outside-click collapse
-//   without knowing WHICH feature has an inline edit open)
+//   without knowing WHICH feature has an inline edit open;
+//   deps.hasOpenRowMenu / deps.closeAllRowMenus layer menu
+//   dismissal without knowing WHICH feature owns the menu)
 // - core UI state (floatingUiState, sessionState) is imported
 //   directly, per the core->core rule
 // - NO rendering logic (requests re-render via deps.requestRender)
@@ -45,6 +47,8 @@ type OrbHandlersDependencies = {
   orbButtonEl: HTMLElement;
   requestRender: () => void;
   hasActiveInlineEdit: () => boolean;
+  hasOpenRowMenu: () => boolean;
+  closeAllRowMenus: () => void;
 };
 
 export function createOrbHandlers(
@@ -59,6 +63,9 @@ export function createOrbHandlers(
   }
 
   function setOrbCollapsed(): void {
+    // collapseOrb() also nulls the active panel, so every collapse
+    // is a panel switch: open row menus must not survive it.
+    deps.closeAllRowMenus();
     collapseOrb();
     deps.requestRender();
   }
@@ -92,6 +99,14 @@ export function createOrbHandlers(
       return;
     }
 
+    if (deps.hasOpenRowMenu()) {
+      // Layered dismissal: the first outside click closes only the
+      // open row menu; the NEXT one reaches setOrbCollapsed.
+      deps.closeAllRowMenus();
+      deps.requestRender();
+      return;
+    }
+
     setOrbCollapsed();
   }
 
@@ -112,6 +127,7 @@ export function createOrbHandlers(
 
     // Items is the only panel with a back button now: back always
     // returns to the projects list and drops the item selection.
+    deps.closeAllRowMenus(); // Panel switch: open row menus must not survive it.
     openPanel("projects");
 
     setSelectedItemId(null);
@@ -132,6 +148,8 @@ export function createOrbHandlers(
       return;
     }
 
+    // Panel switch: open row menus must not survive it.
+    deps.closeAllRowMenus();
     openPanel("projects");
 
     deps.requestRender();

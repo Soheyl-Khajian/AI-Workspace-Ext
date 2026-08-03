@@ -1009,6 +1009,27 @@
     }
   });
 
+  // src/ui/features/projects/projectsMenuState.ts
+  function getOpenProjectMenuId() {
+    return openMenuProjectId;
+  }
+  function openProjectMenu(projectId) {
+    openMenuProjectId = projectId;
+  }
+  function closeProjectMenu() {
+    openMenuProjectId = null;
+  }
+  function resetProjectsMenuState() {
+    openMenuProjectId = null;
+  }
+  var openMenuProjectId;
+  var init_projectsMenuState = __esm({
+    "src/ui/features/projects/projectsMenuState.ts"() {
+      "use strict";
+      openMenuProjectId = null;
+    }
+  });
+
   // src/ui/features/projects/projectsHandlers.ts
   function createProjectsHandlers(deps) {
     function handleSelectProject(event) {
@@ -1017,8 +1038,8 @@
         return;
       }
       if (target.closest(PROJECT_DESELECT_SELECTOR)) return;
-      if (target.closest(PROJECT_RENAME_SELECTOR)) return;
-      if (target.closest(PROJECT_DELETE_SELECTOR)) return;
+      if (target.closest(ROW_MENU_TRIGGER_SELECTOR)) return;
+      if (target.closest(ROW_MENU_SELECTOR)) return;
       if (target.closest(PROJECT_RENAME_INPUT_SELECTOR)) return;
       const row = target.closest(PROJECT_ROW_SELECTOR);
       if (!(row instanceof HTMLElement)) {
@@ -1061,19 +1082,56 @@
       }
       await deps.projectsController.create(trimmedNewProjectName);
     }
+    function handleProjectMenuToggle(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const trigger = target.closest(ROW_MENU_TRIGGER_SELECTOR);
+      if (!(trigger instanceof HTMLButtonElement)) {
+        return;
+      }
+      const projectId = trigger.dataset[PROJECT_ID_DATASET_KEY];
+      if (!projectId) {
+        return;
+      }
+      if (getEditingProjectId() !== null) {
+        return;
+      }
+      if (getOpenProjectMenuId() === projectId) {
+        closeProjectMenu();
+      } else {
+        openProjectMenu(projectId);
+      }
+      deps.requestRender();
+    }
+    function handleProjectMenuDismiss(event) {
+      if (getOpenProjectMenuId() === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(ROW_MENU_TRIGGER_SELECTOR)) return;
+      if (target.closest(ROW_MENU_SELECTOR)) return;
+      closeProjectMenu();
+      deps.requestRender();
+    }
     function handleStartProjectRename(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
         return;
       }
-      const renameButton = target.closest(PROJECT_RENAME_SELECTOR);
-      if (!(renameButton instanceof HTMLButtonElement)) {
+      const renameItem = target.closest(PROJECT_MENU_RENAME_SELECTOR);
+      if (!(renameItem instanceof HTMLButtonElement)) {
         return;
       }
-      const projectId = renameButton.dataset[PROJECT_ID_DATASET_KEY];
+      const projectId = renameItem.dataset[PROJECT_ID_DATASET_KEY];
       if (!projectId) {
         return;
       }
+      closeProjectMenu();
       startRenameEditing(projectId);
       deps.requestRender();
     }
@@ -1125,14 +1183,16 @@
       if (!(target instanceof Element)) {
         return;
       }
-      const deleteButton = target.closest(PROJECT_DELETE_SELECTOR);
-      if (!(deleteButton instanceof HTMLElement)) {
+      const deleteItem2 = target.closest(PROJECT_MENU_DELETE_SELECTOR);
+      if (!(deleteItem2 instanceof HTMLElement)) {
         return;
       }
-      const projectId = deleteButton.dataset[PROJECT_ID_DATASET_KEY];
+      const projectId = deleteItem2.dataset[PROJECT_ID_DATASET_KEY];
       if (!projectId) {
         return;
       }
+      closeProjectMenu();
+      deps.requestRender();
       if (!window.confirm("Delete this project and all its items?")) return;
       await deps.projectsController.deleteProject(projectId);
     }
@@ -1150,6 +1210,8 @@
       [deps.panelsEl, "click", asListener(handleSelectProject)],
       [deps.panelsEl, "click", asListener(handleDeselectProject)],
       [deps.panelsEl, "click", asListener(handleCreateProject)],
+      [deps.panelsEl, "click", asListener(handleProjectMenuToggle)],
+      [deps.panelsEl, "click", asListener(handleProjectMenuDismiss)],
       [deps.panelsEl, "click", asListener(handleStartProjectRename)],
       [deps.panelsEl, "click", asListener(handleDeleteProject)],
       // rename editing lifecycle
@@ -1161,7 +1223,7 @@
     ];
     return eventBindings;
   }
-  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_DELETE_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_CREATE_INPUT_SELECTOR, PROJECT_RENAME_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR;
+  var PROJECT_ROW_SELECTOR, PROJECT_DESELECT_SELECTOR, PROJECT_ID_DATASET_KEY, PROJECT_CREATE_BUTTON_SELECTOR, PROJECT_CREATE_INPUT_SELECTOR, PROJECT_RENAME_INPUT_CLASS, PROJECT_RENAME_INPUT_SELECTOR, ROW_MENU_TRIGGER_SELECTOR, ROW_MENU_SELECTOR, PROJECT_MENU_RENAME_SELECTOR, PROJECT_MENU_DELETE_SELECTOR;
   var init_projectsHandlers = __esm({
     "src/ui/features/projects/projectsHandlers.ts"() {
       "use strict";
@@ -1169,15 +1231,18 @@
       init_projectsDraftState();
       init_projectsRenameState();
       init_projectsState();
+      init_projectsMenuState();
       PROJECT_ROW_SELECTOR = ".aiw-project-row";
       PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
-      PROJECT_DELETE_SELECTOR = ".aiw-project-delete";
       PROJECT_ID_DATASET_KEY = "projectId";
       PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
       PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
-      PROJECT_RENAME_SELECTOR = ".aiw-project-rename";
       PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
       PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
+      ROW_MENU_TRIGGER_SELECTOR = ".aiw-row-menu-trigger";
+      ROW_MENU_SELECTOR = ".aiw-row-menu";
+      PROJECT_MENU_RENAME_SELECTOR = ".aiw-project-menu-rename";
+      PROJECT_MENU_DELETE_SELECTOR = ".aiw-project-menu-delete";
     }
   });
 
@@ -1188,6 +1253,9 @@
     rowEl.dataset.projectId = project.id;
     if (flags.selected) {
       rowEl.classList.add("aiw-project-row--selected");
+    }
+    if (flags.menuOpen) {
+      rowEl.classList.add("aiw-project-row--menu-open");
     }
     if (flags.editing) {
       const renameInputEl = document.createElement("input");
@@ -1208,17 +1276,28 @@
       deselectButtonEl.textContent = "\u23CF";
       rowEl.append(deselectButtonEl);
     }
-    const renameButtonEl = document.createElement("button");
-    renameButtonEl.type = "button";
-    renameButtonEl.className = "aiw-project-rename";
-    renameButtonEl.textContent = "\u270E";
-    renameButtonEl.dataset.projectId = project.id;
-    const deleteButtonEl = document.createElement("button");
-    deleteButtonEl.type = "button";
-    deleteButtonEl.className = "aiw-project-delete";
-    deleteButtonEl.textContent = "\xD7";
-    deleteButtonEl.dataset.projectId = project.id;
-    rowEl.append(renameButtonEl, deleteButtonEl);
+    const menuTriggerEl = document.createElement("button");
+    menuTriggerEl.type = "button";
+    menuTriggerEl.className = "aiw-row-menu-trigger";
+    menuTriggerEl.textContent = "\u2026";
+    menuTriggerEl.dataset.projectId = project.id;
+    rowEl.append(menuTriggerEl);
+    if (flags.menuOpen) {
+      const menuEl = document.createElement("div");
+      menuEl.className = "aiw-row-menu";
+      const renameItemEl = document.createElement("button");
+      renameItemEl.type = "button";
+      renameItemEl.className = "aiw-row-menu-item aiw-project-menu-rename";
+      renameItemEl.textContent = "Rename";
+      renameItemEl.dataset.projectId = project.id;
+      const deleteItemEl = document.createElement("button");
+      deleteItemEl.type = "button";
+      deleteItemEl.className = "aiw-row-menu-item aiw-row-menu-item--danger aiw-project-menu-delete";
+      deleteItemEl.textContent = "Delete";
+      deleteItemEl.dataset.projectId = project.id;
+      menuEl.append(renameItemEl, deleteItemEl);
+      rowEl.append(menuEl);
+    }
     return rowEl;
   }
   var init_createProjectRow = __esm({
@@ -1238,6 +1317,7 @@
     const selectedProjectId = getSelectedProjectId();
     const editingProjectId = getEditingProjectId();
     const renameDraft = getRenameDraft();
+    const openMenuProjectId2 = getOpenProjectMenuId();
     const isEmpty = projects.length === 0;
     function renderProjectsList(projectsList) {
       const listEl = document.createElement("div");
@@ -1245,7 +1325,8 @@
       for (const project of projectsList) {
         const selected = project.id === selectedProjectId;
         const editing = project.id === editingProjectId;
-        const rowEl = createProjectRow(project, { selected, editing });
+        const menuOpen = project.id === openMenuProjectId2;
+        const rowEl = createProjectRow(project, { selected, editing, menuOpen });
         listEl.append(rowEl);
       }
       shell.bodyEl.append(listEl);
@@ -1303,6 +1384,7 @@
       init_projectsState();
       init_projectsDraftState();
       init_projectsRenameState();
+      init_projectsMenuState();
       init_projectsHandlers();
     }
   });
@@ -1509,13 +1591,13 @@
   });
 
   // src/ui/features/items/createItemRow.ts
-  function createItemRow(item, selected, checkboxChecked) {
+  function createItemRow(item, flags, moveTargets) {
     const hasTitle = item.title.trim().length > 0;
     const rowEl = document.createElement("div");
     rowEl.className = "aiw-item-row";
     const checkBoxEl = document.createElement("input");
     checkBoxEl.type = "checkbox";
-    checkBoxEl.checked = checkboxChecked;
+    checkBoxEl.checked = flags.checkboxChecked;
     checkBoxEl.className = "aiw-item-select";
     checkBoxEl.dataset.itemId = item.id;
     rowEl.prepend(checkBoxEl);
@@ -1527,15 +1609,54 @@
     }
     rowEl.append(itemTextEl);
     rowEl.dataset.itemId = item.id;
-    if (selected) {
+    if (flags.selected) {
       rowEl.classList.add("aiw-item-row--selected");
     }
-    const deleteButtonEl = document.createElement("button");
-    deleteButtonEl.type = "button";
-    deleteButtonEl.className = "aiw-item-delete";
-    deleteButtonEl.textContent = "\xD7";
-    deleteButtonEl.dataset.itemId = item.id;
-    rowEl.append(deleteButtonEl);
+    if (flags.menuPage !== null) {
+      rowEl.classList.add("aiw-item-row--menu-open");
+    }
+    const menuTriggerEl = document.createElement("button");
+    menuTriggerEl.type = "button";
+    menuTriggerEl.className = "aiw-row-menu-trigger";
+    menuTriggerEl.textContent = "\u2026";
+    menuTriggerEl.dataset.itemId = item.id;
+    rowEl.append(menuTriggerEl);
+    if (flags.menuPage === "root") {
+      const menuEl = document.createElement("div");
+      menuEl.className = "aiw-row-menu";
+      const moveItemEl = document.createElement("button");
+      moveItemEl.type = "button";
+      moveItemEl.className = "aiw-row-menu-item aiw-item-menu-move";
+      moveItemEl.textContent = "Move to\u2026";
+      moveItemEl.dataset.itemId = item.id;
+      const deleteItemEl = document.createElement("button");
+      deleteItemEl.type = "button";
+      deleteItemEl.className = "aiw-row-menu-item aiw-row-menu-item--danger aiw-item-menu-delete";
+      deleteItemEl.textContent = "Delete";
+      deleteItemEl.dataset.itemId = item.id;
+      menuEl.append(moveItemEl, deleteItemEl);
+      rowEl.append(menuEl);
+    }
+    if (flags.menuPage === "movePicker") {
+      const menuEl = document.createElement("div");
+      menuEl.className = "aiw-row-menu aiw-row-menu--picker";
+      if (moveTargets.length === 0) {
+        const emptyEl = document.createElement("div");
+        emptyEl.className = "aiw-row-menu-empty";
+        emptyEl.textContent = "No other projects";
+        menuEl.append(emptyEl);
+      }
+      for (const project of moveTargets) {
+        const targetEl = document.createElement("button");
+        targetEl.type = "button";
+        targetEl.className = "aiw-row-menu-item aiw-item-menu-move-target";
+        targetEl.textContent = project.name;
+        targetEl.dataset.itemId = item.id;
+        targetEl.dataset.projectId = project.id;
+        menuEl.append(targetEl);
+      }
+      rowEl.append(menuEl);
+    }
     return rowEl;
   }
   var init_createItemRow = __esm({
@@ -1604,7 +1725,7 @@
   });
 
   // src/ui/features/items/renderItemDetailRegion.ts
-  function renderItemDetailRegion(item, projects) {
+  function renderItemDetailRegion(item) {
     const detailColEl = document.createElement("div");
     detailColEl.className = "aiw-item-detail-col";
     if (item === void 0) {
@@ -1621,22 +1742,6 @@
     titleInputEl.className = "aiw-item-detail-title";
     titleInputEl.type = "text";
     titleInputEl.value = getItemDetailTitleDraft(item.id) ?? item.title;
-    const projectRowEl = document.createElement("div");
-    projectRowEl.className = "aiw-item-detail-project-row";
-    const projectLabelEl = document.createElement("span");
-    projectLabelEl.className = "aiw-item-detail-project-label";
-    projectLabelEl.textContent = "Project:";
-    const projectSelectEl = document.createElement("select");
-    projectSelectEl.className = "aiw-item-detail-project-select";
-    projectSelectEl.dataset.itemId = item.id;
-    for (const project of projects) {
-      const optionEl = document.createElement("option");
-      optionEl.value = project.id;
-      optionEl.textContent = project.name;
-      optionEl.selected = project.id === item.projectId;
-      projectSelectEl.append(optionEl);
-    }
-    projectRowEl.append(projectLabelEl, projectSelectEl);
     const contentInputEl = document.createElement("textarea");
     contentInputEl.className = "aiw-item-detail-content";
     contentInputEl.value = getItemDetailContentDraft(item.id) ?? item.content;
@@ -1645,7 +1750,7 @@
     buttonEl.type = "button";
     buttonEl.textContent = "Save";
     buttonEl.dataset.itemId = item.id;
-    formEl.append(titleInputEl, projectRowEl, contentInputEl, buttonEl);
+    formEl.append(titleInputEl, contentInputEl, buttonEl);
     detailColEl.append(formEl);
     return detailColEl;
   }
@@ -1730,6 +1835,32 @@
     }
   });
 
+  // src/ui/features/items/itemsMenuState.ts
+  function getOpenItemMenu() {
+    if (openMenu === null) return null;
+    return { ...openMenu };
+  }
+  function openItemMenu(itemId) {
+    openMenu = { itemId, page: "root" };
+  }
+  function showItemMenuMovePicker() {
+    if (openMenu === null) return;
+    openMenu = { itemId: openMenu.itemId, page: "movePicker" };
+  }
+  function closeItemMenu() {
+    openMenu = null;
+  }
+  function resetItemsMenuState() {
+    openMenu = null;
+  }
+  var openMenu;
+  var init_itemsMenuState = __esm({
+    "src/ui/features/items/itemsMenuState.ts"() {
+      "use strict";
+      openMenu = null;
+    }
+  });
+
   // src/ui/features/items/renderItemsPanel.ts
   function renderItemsPanel(containerEl, projectName, projects) {
     const selectedProjectId = getSelectedProjectId();
@@ -1738,6 +1869,7 @@
     const loadingIndicatorVisible = isItemsLoadingIndicatorVisible();
     const error = getItemsError();
     const items = getItems();
+    const openItemMenu2 = getOpenItemMenu();
     const isEmpty = items.length === 0;
     let muted = false;
     let label = projectName;
@@ -1791,9 +1923,21 @@
     } else {
       const listEl = document.createElement("div");
       listEl.className = "aiw-items-list";
+      const moveTargets = projects.filter(
+        (project) => project.id !== selectedProjectId
+      );
       for (const item of items) {
         const selectedItem = item.id === selectedItemId;
-        const rowEl = createItemRow(item, selectedItem, isItemSelected(item.id));
+        const menuPage = openItemMenu2 !== null && openItemMenu2.itemId === item.id ? openItemMenu2.page : null;
+        const rowEl = createItemRow(
+          item,
+          {
+            selected: selectedItem,
+            checkboxChecked: isItemSelected(item.id),
+            menuPage
+          },
+          moveTargets
+        );
         listEl.append(rowEl);
       }
       listScrollEl.append(listEl);
@@ -1818,7 +1962,7 @@
     const detailItem = items.find(
       (candidate) => candidate.id === selectedItemId
     );
-    layoutEl.append(listColEl, renderItemDetailRegion(detailItem, projects));
+    layoutEl.append(listColEl, renderItemDetailRegion(detailItem));
     shell.bodyEl.append(layoutEl);
     const buildContextBarEl = document.createElement("div");
     buildContextBarEl.className = "aiw-build-context-bar";
@@ -1843,6 +1987,7 @@
       init_itemsState();
       init_itemsDraftState();
       init_itemSelectionState();
+      init_itemsMenuState();
       init_sessionState();
     }
   });
@@ -1960,6 +2105,7 @@
       deps.requestRender();
     }
     function setOrbCollapsed() {
+      deps.closeAllRowMenus();
       collapseOrb();
       deps.requestRender();
     }
@@ -1983,6 +2129,11 @@
       if (deps.hasActiveInlineEdit()) {
         return;
       }
+      if (deps.hasOpenRowMenu()) {
+        deps.closeAllRowMenus();
+        deps.requestRender();
+        return;
+      }
       setOrbCollapsed();
     }
     function handleBackButtonClick(event) {
@@ -1994,6 +2145,7 @@
       if (!(backButton instanceof HTMLElement)) {
         return;
       }
+      deps.closeAllRowMenus();
       openPanel("projects");
       setSelectedItemId(null);
       deps.requestRender();
@@ -2007,6 +2159,7 @@
       if (!(panelContextButton instanceof HTMLElement)) {
         return;
       }
+      deps.closeAllRowMenus();
       openPanel("projects");
       deps.requestRender();
     }
@@ -2230,6 +2383,7 @@
     async function load(projectId) {
       setItemsLoading(true);
       setItemsListScrollTop(0);
+      resetItemsMenuState();
       onStateChange();
       const indicatorTimer = window.setTimeout(() => {
         setItemsLoadingIndicatorVisible(true);
@@ -2356,6 +2510,7 @@
       "use strict";
       init_itemsState();
       init_loadItems();
+      init_itemsMenuState();
       init_storage();
       init_sessionState();
       init_toErrorMessage();
@@ -2375,7 +2530,8 @@
         return;
       }
       if (target.closest(ITEM_SELECT_SELECTOR)) return;
-      if (target.closest(ITEM_DELETE_SELECTOR)) return;
+      if (target.closest(ROW_MENU_TRIGGER_SELECTOR2)) return;
+      if (target.closest(ROW_MENU_SELECTOR2)) return;
       const row = target.closest(ITEM_ROW_SELECTOR);
       if (!(row instanceof HTMLElement)) {
         return;
@@ -2468,24 +2624,76 @@
         itemContent
       );
     }
-    async function handleMoveItem(event) {
+    function handleItemMenuToggle(event) {
       const target = event.target;
-      if (!(target instanceof HTMLSelectElement)) {
+      if (!(target instanceof Element)) {
         return;
       }
-      if (!target.matches(ITEM_DETAIL_PROJECT_SELECT_SELECTOR)) {
+      const trigger = target.closest(ROW_MENU_TRIGGER_SELECTOR2);
+      if (!(trigger instanceof HTMLButtonElement)) {
         return;
       }
-      const itemId = target.dataset[ITEM_ID_DATASET_KEY];
+      const itemId = trigger.dataset[ITEM_ID_DATASET_KEY];
       if (!itemId) {
         return;
       }
-      const targetProjectId = target.value;
-      const targetProjectName = deps.resolveProjectName(targetProjectId);
+      if (deps.hasActiveInlineEdit()) {
+        return;
+      }
+      if (getOpenItemMenu()?.itemId === itemId) {
+        closeItemMenu();
+      } else {
+        openItemMenu(itemId);
+      }
+      deps.requestRender();
+    }
+    function handleItemMenuDismiss(event) {
+      if (getOpenItemMenu() === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(ROW_MENU_TRIGGER_SELECTOR2)) return;
+      if (target.closest(ROW_MENU_SELECTOR2)) return;
+      closeItemMenu();
+      deps.requestRender();
+    }
+    function handleItemMenuShowMovePicker(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const moveButton = target.closest(ITEM_MENU_MOVE_SELECTOR);
+      if (!(moveButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      showItemMenuMovePicker();
+      deps.requestRender();
+    }
+    async function handleItemMenuMoveTarget(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const targetButton = target.closest(ITEM_MENU_MOVE_TARGET_SELECTOR);
+      if (!(targetButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const itemId = targetButton.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      const targetProjectId = targetButton.dataset[PROJECT_ID_DATASET_KEY2];
+      if (!targetProjectId) {
+        return;
+      }
+      closeItemMenu();
       await deps.itemsController.moveItem(
         itemId,
         targetProjectId,
-        targetProjectName
+        deps.resolveProjectName(targetProjectId)
       );
     }
     async function handleBuildContext(event) {
@@ -2513,14 +2721,16 @@
       if (!(target instanceof Element)) {
         return;
       }
-      const deleteButton = target.closest(ITEM_DELETE_SELECTOR);
-      if (!(deleteButton instanceof HTMLElement)) {
+      const deleteMenuItem = target.closest(ITEM_MENU_DELETE_SELECTOR);
+      if (!(deleteMenuItem instanceof HTMLElement)) {
         return;
       }
-      const itemId = deleteButton.dataset[ITEM_ID_DATASET_KEY];
+      const itemId = deleteMenuItem.dataset[ITEM_ID_DATASET_KEY];
       if (!itemId) {
         return;
       }
+      closeItemMenu();
+      deps.requestRender();
       if (!window.confirm("Delete this item?")) return;
       await deps.itemsController.deleteItem(itemId, selectedProjectId);
     }
@@ -2567,11 +2777,14 @@
     const eventBindings = [
       [deps.panelsEl, "click", asListener(handleSelectItem)],
       [deps.panelsEl, "click", asListener(handleToggleItemSelection)],
+      [deps.panelsEl, "click", asListener(handleItemMenuToggle)],
+      [deps.panelsEl, "click", asListener(handleItemMenuDismiss)],
+      [deps.panelsEl, "click", asListener(handleItemMenuShowMovePicker)],
+      [deps.panelsEl, "click", asListener(handleItemMenuMoveTarget)],
       [deps.panelsEl, "click", asListener(handleCreateItem)],
       [deps.panelsEl, "click", asListener(handleUpdateItem)],
       [deps.panelsEl, "click", asListener(handleBuildContext)],
       [deps.panelsEl, "click", asListener(handleDeleteItem)],
-      [deps.panelsEl, "change", asListener(handleMoveItem)],
       [deps.panelsEl, "input", asListener(handleCreateItemInput)],
       [deps.panelsEl, "input", asListener(handleItemDetailInput)],
       /*
@@ -2583,7 +2796,7 @@
     ];
     return eventBindings;
   }
-  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, ITEMS_LIST_SCROLL_SELECTOR;
+  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_ID_DATASET_KEY, PROJECT_ID_DATASET_KEY2, ROW_MENU_TRIGGER_SELECTOR2, ROW_MENU_SELECTOR2, ITEM_MENU_MOVE_SELECTOR, ITEM_MENU_MOVE_TARGET_SELECTOR, ITEM_MENU_DELETE_SELECTOR, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, ITEMS_LIST_SCROLL_SELECTOR;
   var init_itemsHandlers = __esm({
     "src/ui/features/items/itemsHandlers.ts"() {
       "use strict";
@@ -2591,17 +2804,22 @@
       init_sessionState();
       init_itemsDraftState();
       init_itemsState();
+      init_itemsMenuState();
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_SELECT_SELECTOR = ".aiw-item-select";
-      ITEM_DELETE_SELECTOR = ".aiw-item-delete";
       ITEM_ID_DATASET_KEY = "itemId";
+      PROJECT_ID_DATASET_KEY2 = "projectId";
+      ROW_MENU_TRIGGER_SELECTOR2 = ".aiw-row-menu-trigger";
+      ROW_MENU_SELECTOR2 = ".aiw-row-menu";
+      ITEM_MENU_MOVE_SELECTOR = ".aiw-item-menu-move";
+      ITEM_MENU_MOVE_TARGET_SELECTOR = ".aiw-item-menu-move-target";
+      ITEM_MENU_DELETE_SELECTOR = ".aiw-item-menu-delete";
       ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
       ITEM_CREATE_TITLE_SELECTOR = ".aiw-create-item-title";
       ITEM_CREATE_CONTENT_SELECTOR = ".aiw-create-item-content";
       ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
       ITEM_DETAIL_TITLE_SELECTOR = ".aiw-item-detail-title";
       ITEM_DETAIL_CONTENT_SELECTOR = ".aiw-item-detail-content";
-      ITEM_DETAIL_PROJECT_SELECT_SELECTOR = ".aiw-item-detail-project-select";
       ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
       ITEMS_LIST_SCROLL_SELECTOR = ".aiw-items-list-scroll";
     }
@@ -2968,7 +3186,9 @@
       panelsEl: dom.orbPanelsEl,
       orbButtonEl: dom.orbButtonEl,
       requestRender: renderUi,
-      hasActiveInlineEdit
+      hasActiveInlineEdit,
+      hasOpenRowMenu,
+      closeAllRowMenus
     });
     const projectsBindings = createProjectsHandlers({
       panelsEl: dom.orbPanelsEl,
@@ -2980,7 +3200,9 @@
       panelsEl: dom.orbPanelsEl,
       itemsController,
       notify: showToast,
-      resolveProjectName
+      resolveProjectName,
+      requestRender: renderUi,
+      hasActiveInlineEdit
     });
     const backupBindings = createBackupHandlers({
       panelsEl: dom.orbPanelsEl,
@@ -3029,6 +3251,7 @@
       lastRenderedPanel = activePanelId;
     }
     function toggleFloatingPanel(panelId) {
+      closeAllRowMenus();
       togglePanel(panelId);
       if (getActivePanel() === "search") {
         void searchController.load();
@@ -3040,6 +3263,13 @@
     }
     function hasActiveInlineEdit() {
       return getEditingProjectId() !== null;
+    }
+    function hasOpenRowMenu() {
+      return getOpenProjectMenuId() !== null || getOpenItemMenu() !== null;
+    }
+    function closeAllRowMenus() {
+      closeProjectMenu();
+      closeItemMenu();
     }
     function resolveProjectName(projectId) {
       const project = getProjects().find(
@@ -3060,8 +3290,10 @@
     async function reloadAfterImport() {
       itemsController.clearSelection();
       resetItemsDraftState();
+      resetItemsMenuState();
       resetProjectsDraftState();
       resetProjectsRenameState();
+      resetProjectsMenuState();
       resetSearchState();
       resetSearchDraftState();
       setSelectedItemId(null);
@@ -3103,9 +3335,11 @@
       init_projectsState();
       init_projectsDraftState();
       init_projectsRenameState();
+      init_projectsMenuState();
       init_itemsController();
       init_itemsHandlers();
       init_itemsDraftState();
+      init_itemsMenuState();
       init_backupController();
       init_backupHandlers();
       init_searchController();
