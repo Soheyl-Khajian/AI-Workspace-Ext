@@ -2995,6 +2995,8 @@
       togglePanel: toggleFloatingPanel
     };
     let lastRenderedPanel = null;
+    const PANEL_ENTER_REPLAY_WINDOW_MS = 180;
+    let panelEnteredAt = 0;
     function renderUi() {
       const expanded = isOrbExpanded();
       const orbActions2 = getOrbActions();
@@ -3019,6 +3021,9 @@
         projects: getProjects()
       });
       if (panelChanged && panelEl !== null) {
+        panelEl.classList.add("aiw-floating-panel--enter");
+        panelEnteredAt = performance.now();
+      } else if (panelEl !== null && performance.now() - panelEnteredAt < PANEL_ENTER_REPLAY_WINDOW_MS) {
         panelEl.classList.add("aiw-floating-panel--enter");
       }
       lastRenderedPanel = activePanelId;

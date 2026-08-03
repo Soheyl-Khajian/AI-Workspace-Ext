@@ -148,6 +148,15 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // ----------------------------------------------------------
   let lastRenderedPanel: OrbPanelId | null = null;
 
+  /*
+  Entrance replay window. Matches --aiw-dur-med (180ms), the
+  duration of aiw-panel-enter: any same-panel rebuild landing
+  inside this window is mid-animation and must replay the enter
+  class (see renderUi).
+*/
+  const PANEL_ENTER_REPLAY_WINDOW_MS = 180;
+  let panelEnteredAt = 0;
+
   function renderUi(): void {
     const expanded = isOrbExpanded();
     const orbActions = getOrbActions();
@@ -178,6 +187,21 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     });
 
     if (panelChanged && panelEl !== null) {
+      panelEl.classList.add("aiw-floating-panel--enter");
+      panelEnteredAt = performance.now();
+    } else if (
+      panelEl !== null &&
+      performance.now() - panelEnteredAt < PANEL_ENTER_REPLAY_WINDOW_MS
+    ) {
+      /*
+        Same panel rebuilt while its entrance is still playing: a
+        wipe-rebuild render (e.g. the search snapshot load fires
+        onStateChange in the same tick as the panel switch) replaces
+        the animating element with a fresh one that has no enter
+        class, killing the animation before its first painted frame.
+        Re-apply the class inside the replay window so the fresh
+        element replays the entrance instead.
+      */
       panelEl.classList.add("aiw-floating-panel--enter");
     }
 
