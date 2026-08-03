@@ -1725,7 +1725,7 @@
   });
 
   // src/ui/features/items/renderItemDetailRegion.ts
-  function renderItemDetailRegion(item, projects) {
+  function renderItemDetailRegion(item) {
     const detailColEl = document.createElement("div");
     detailColEl.className = "aiw-item-detail-col";
     if (item === void 0) {
@@ -1742,22 +1742,6 @@
     titleInputEl.className = "aiw-item-detail-title";
     titleInputEl.type = "text";
     titleInputEl.value = getItemDetailTitleDraft(item.id) ?? item.title;
-    const projectRowEl = document.createElement("div");
-    projectRowEl.className = "aiw-item-detail-project-row";
-    const projectLabelEl = document.createElement("span");
-    projectLabelEl.className = "aiw-item-detail-project-label";
-    projectLabelEl.textContent = "Project:";
-    const projectSelectEl = document.createElement("select");
-    projectSelectEl.className = "aiw-item-detail-project-select";
-    projectSelectEl.dataset.itemId = item.id;
-    for (const project of projects) {
-      const optionEl = document.createElement("option");
-      optionEl.value = project.id;
-      optionEl.textContent = project.name;
-      optionEl.selected = project.id === item.projectId;
-      projectSelectEl.append(optionEl);
-    }
-    projectRowEl.append(projectLabelEl, projectSelectEl);
     const contentInputEl = document.createElement("textarea");
     contentInputEl.className = "aiw-item-detail-content";
     contentInputEl.value = getItemDetailContentDraft(item.id) ?? item.content;
@@ -1766,7 +1750,7 @@
     buttonEl.type = "button";
     buttonEl.textContent = "Save";
     buttonEl.dataset.itemId = item.id;
-    formEl.append(titleInputEl, projectRowEl, contentInputEl, buttonEl);
+    formEl.append(titleInputEl, contentInputEl, buttonEl);
     detailColEl.append(formEl);
     return detailColEl;
   }
@@ -1978,7 +1962,7 @@
     const detailItem = items.find(
       (candidate) => candidate.id === selectedItemId
     );
-    layoutEl.append(listColEl, renderItemDetailRegion(detailItem, projects));
+    layoutEl.append(listColEl, renderItemDetailRegion(detailItem));
     shell.bodyEl.append(layoutEl);
     const buildContextBarEl = document.createElement("div");
     buildContextBarEl.className = "aiw-build-context-bar";
@@ -2640,26 +2624,6 @@
         itemContent
       );
     }
-    async function handleMoveItem(event) {
-      const target = event.target;
-      if (!(target instanceof HTMLSelectElement)) {
-        return;
-      }
-      if (!target.matches(ITEM_DETAIL_PROJECT_SELECT_SELECTOR)) {
-        return;
-      }
-      const itemId = target.dataset[ITEM_ID_DATASET_KEY];
-      if (!itemId) {
-        return;
-      }
-      const targetProjectId = target.value;
-      const targetProjectName = deps.resolveProjectName(targetProjectId);
-      await deps.itemsController.moveItem(
-        itemId,
-        targetProjectId,
-        targetProjectName
-      );
-    }
     function handleItemMenuToggle(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -2821,7 +2785,6 @@
       [deps.panelsEl, "click", asListener(handleUpdateItem)],
       [deps.panelsEl, "click", asListener(handleBuildContext)],
       [deps.panelsEl, "click", asListener(handleDeleteItem)],
-      [deps.panelsEl, "change", asListener(handleMoveItem)],
       [deps.panelsEl, "input", asListener(handleCreateItemInput)],
       [deps.panelsEl, "input", asListener(handleItemDetailInput)],
       /*
@@ -2833,7 +2796,7 @@
     ];
     return eventBindings;
   }
-  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_ID_DATASET_KEY, PROJECT_ID_DATASET_KEY2, ROW_MENU_TRIGGER_SELECTOR2, ROW_MENU_SELECTOR2, ITEM_MENU_MOVE_SELECTOR, ITEM_MENU_MOVE_TARGET_SELECTOR, ITEM_MENU_DELETE_SELECTOR, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, ITEMS_LIST_SCROLL_SELECTOR;
+  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_ID_DATASET_KEY, PROJECT_ID_DATASET_KEY2, ROW_MENU_TRIGGER_SELECTOR2, ROW_MENU_SELECTOR2, ITEM_MENU_MOVE_SELECTOR, ITEM_MENU_MOVE_TARGET_SELECTOR, ITEM_MENU_DELETE_SELECTOR, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, ITEMS_LIST_SCROLL_SELECTOR;
   var init_itemsHandlers = __esm({
     "src/ui/features/items/itemsHandlers.ts"() {
       "use strict";
@@ -2857,7 +2820,6 @@
       ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
       ITEM_DETAIL_TITLE_SELECTOR = ".aiw-item-detail-title";
       ITEM_DETAIL_CONTENT_SELECTOR = ".aiw-item-detail-content";
-      ITEM_DETAIL_PROJECT_SELECT_SELECTOR = ".aiw-item-detail-project-select";
       ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
       ITEMS_LIST_SCROLL_SELECTOR = ".aiw-items-list-scroll";
     }

@@ -6,7 +6,7 @@
 // Responsibility:
 //
 // - own the items panel's DOM event handlers (select / toggle-selection /
-//   create / update / row menu / move / build-context / delete /
+//   create / update / row menu / build-context / delete /
 //   draft capture)
 // - own the items selector constants + dataset key
 // - contribute EventBinding[] to the floating controller's
@@ -72,7 +72,6 @@ const ITEM_CREATE_CONTENT_SELECTOR = ".aiw-create-item-content";
 const ITEM_DETAIL_SAVE_SELECTOR = ".aiw-item-detail-save";
 const ITEM_DETAIL_TITLE_SELECTOR = ".aiw-item-detail-title";
 const ITEM_DETAIL_CONTENT_SELECTOR = ".aiw-item-detail-content";
-const ITEM_DETAIL_PROJECT_SELECT_SELECTOR = ".aiw-item-detail-project-select";
 
 const ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
 
@@ -224,40 +223,6 @@ export function createItemsHandlers(
       itemId,
       trimmedItemTitle,
       itemContent,
-    );
-  }
-
-  // ----------------------------------------------------------
-  // ITEM MOVE HANDLER
-  //
-  // The project select IS the move control. A native "change"
-  // event only fires when the committed value actually differs,
-  // so a same-target "move" can never reach the controller from
-  // here (the storage door would no-op it anyway).
-  // ----------------------------------------------------------
-
-  async function handleMoveItem(event: Event): Promise<void> {
-    const target = event.target;
-    if (!(target instanceof HTMLSelectElement)) {
-      return;
-    }
-
-    if (!target.matches(ITEM_DETAIL_PROJECT_SELECT_SELECTOR)) {
-      return;
-    }
-
-    const itemId = target.dataset[ITEM_ID_DATASET_KEY];
-    if (!itemId) {
-      return;
-    }
-
-    const targetProjectId = target.value;
-    const targetProjectName = deps.resolveProjectName(targetProjectId);
-
-    await deps.itemsController.moveItem(
-      itemId,
-      targetProjectId,
-      targetProjectName,
     );
   }
 
@@ -534,7 +499,6 @@ export function createItemsHandlers(
     [deps.panelsEl, "click", asListener(handleUpdateItem)],
     [deps.panelsEl, "click", asListener(handleBuildContext)],
     [deps.panelsEl, "click", asListener(handleDeleteItem)],
-    [deps.panelsEl, "change", asListener(handleMoveItem)],
     [deps.panelsEl, "input", asListener(handleCreateItemInput)],
     [deps.panelsEl, "input", asListener(handleItemDetailInput)],
 

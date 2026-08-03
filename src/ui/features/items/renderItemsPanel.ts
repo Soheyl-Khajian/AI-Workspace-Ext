@@ -236,7 +236,7 @@ export function renderItemsPanel(
     (candidate) => candidate.id === selectedItemId,
   );
 
-  layoutEl.append(listColEl, renderItemDetailRegion(detailItem, projects));
+  layoutEl.append(listColEl, renderItemDetailRegion(detailItem));
 
   shell.bodyEl.append(layoutEl);
 
