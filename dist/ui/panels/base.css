@@ -1,0 +1,241 @@
+/* src/ui/styles/panels/base.css */
+/*
+  Panel shell: root anchor, frame, header, body, states,
+  back button, context breadcrumb. Shared by every panel.
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   1. PANELS ROOT
+------------------------------------------------------------ */
+
+/*
+  Command-palette placement: centered on the viewport with a slight
+  upward bias (--aiw-panel-lift), fully independent of the orb and
+  of the host page's DOM. Centered reads as intentional at any
+  window size — and can't be broken by ChatGPT layout changes.
+
+  The centering transform lives HERE, on the wrapper, so the panel
+  itself stays free for its own entrance animation.
+*/
+
+#aiw-orb-panels {
+  position: absolute;
+  left: calc(50% + var(--aiw-panel-shift));
+  top: calc(50% - var(--aiw-panel-lift));
+  transform: translate(-50%, -50%);
+  overflow: visible;
+  pointer-events: none;
+}
+
+/* ------------------------------------------------------------
+   PANEL SHELL
+------------------------------------------------------------ */
+
+.aiw-floating-panel {
+  pointer-events: auto;
+
+  /* Fixed frame (v0.4) — tokens carry the size and the clamps. */
+  width: var(--aiw-panel-w);
+  height: var(--aiw-panel-h);
+
+  border-radius: var(--aiw-radius-panel);
+
+  /* Anchored glass: near-opaque surface guarantees contrast over
+     any host page; blur keeps the edges feeling lit. */
+  background: var(--aiw-surface-panel);
+  backdrop-filter: var(--aiw-blur);
+  -webkit-backdrop-filter: var(--aiw-blur);
+  border: 1px solid var(--aiw-border-strong);
+  box-shadow: var(--aiw-shadow-panel);
+
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.aiw-floating-panel--enter {
+  animation: aiw-panel-enter var(--aiw-dur-med) var(--aiw-ease);
+}
+
+/* ------------------------------------------------------------
+   PANEL HEADER + TITLE
+------------------------------------------------------------ */
+
+.aiw-floating-panel__header {
+  display: flex;
+  height: var(--aiw-panel-header);
+  align-items: center;
+  gap: var(--aiw-space-sm);
+  padding: 0 var(--aiw-space-xl);
+  border-bottom: 1px solid var(--aiw-separator);
+
+  /* Prevent header from shrinking */
+  flex-shrink: 0;
+}
+
+.aiw-floating-panel__title {
+  flex: 1;
+  margin: 0;
+  font-size: var(--aiw-fs-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--aiw-text);
+}
+
+/* ------------------------------------------------------------
+   PANEL BODY + SCROLLBAR
+------------------------------------------------------------ */
+
+.aiw-floating-panel__body {
+  /* Takes all available space between header and footer form */
+  flex: 1;
+  padding: var(--aiw-space-xl);
+  overflow-y: auto;
+
+  /* Prevent body from growing beyond panel bounds */
+  min-height: 0;
+}
+
+/* One scrollbar treatment for EVERY scrollable inside a panel —
+   body, list column, textareas. Scoped to panel descendants so
+   host-page scrollbars are never touched. */
+.aiw-floating-panel ::-webkit-scrollbar {
+  width: 10px;
+}
+
+.aiw-floating-panel ::-webkit-scrollbar-thumb {
+  background: var(--aiw-border-strong);
+  border-radius: var(--aiw-radius-pill);
+  border: 3px solid transparent;
+  background-clip: content-box;
+}
+
+/* Scrollbars are drag surfaces, not click targets: force the arrow
+   cursor. This matters for textareas, whose cursor: text would
+   otherwise show an I-beam over the scrollbar track. */
+.aiw-floating-panel ::-webkit-scrollbar,
+.aiw-floating-panel ::-webkit-scrollbar-thumb {
+  cursor: default;
+}
+
+/* Split body (items master-detail): the columns own padding and
+   scrolling, so the shared body contributes neither. */
+.aiw-floating-panel__body--split {
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+}
+
+/* ------------------------------------------------------------
+   PANEL STATES (placeholder / loading / empty / error)
+------------------------------------------------------------ */
+
+.aiw-panel-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 140px;
+  font-size: var(--aiw-fs-md);
+  line-height: 1.5;
+  color: var(--aiw-text-muted);
+  text-align: center;
+}
+
+.aiw-panel-state--error {
+  color: var(--aiw-danger-text);
+}
+
+/* ------------------------------------------------------------
+   PANEL BACK BUTTON
+------------------------------------------------------------ */
+
+.aiw-panel-back-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  /* Optical centering: the arrow glyph rides low in its em box,
+   so nudge the ink up. Goes away if this becomes an SVG icon. */
+  padding: 0 5px 5px 5px;
+
+  background: none;
+  border: 1px solid var(--aiw-border);
+  border-radius: var(--aiw-radius-sm);
+  cursor: pointer;
+  color: var(--aiw-text);
+  font-size: calc(var(--aiw-fs-lg) * 1.7);
+  font-weight: 900;
+  line-height: 1;
+}
+
+.aiw-panel-back-button:hover {
+  background: var(--aiw-surface-hover);
+}
+
+.aiw-panel-back-button:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
+}
+
+/* ------------------------------------------------------------
+   PANEL CONTEXT SEGMENT (breadcrumb)
+------------------------------------------------------------ */
+/*
+  Project-scope segment before the title. ALWAYS a button: with a
+  project name it navigates to project scope (later: switcher);
+  muted "Select a project" is the same door for the empty state.
+  Quiet by default — the title owns the header's visual weight.
+  Long names ellipsize; the title must never be pushed out.
+*/
+
+.aiw-panel-context {
+  flex-shrink: 0;
+  max-width: 40%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+
+  /* Small vertical inset, like the back button's optical padding */
+  padding: 4px var(--aiw-space-sm);
+  background: none;
+  border: none;
+  border-radius: var(--aiw-radius-sm);
+
+  color: var(--aiw-text-muted);
+  font-size: var(--aiw-fs-md);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    color var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-panel-context:hover {
+  background: var(--aiw-surface-hover);
+  color: var(--aiw-text);
+}
+
+.aiw-panel-context:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-focus-ring);
+}
+
+.aiw-panel-context--muted {
+  color: var(--aiw-text-faint);
+  font-style: italic;
+}
+
+.aiw-panel-context-separator {
+  flex-shrink: 0;
+  color: var(--aiw-text-faint);
+  font-size: var(--aiw-fs-md);
+}

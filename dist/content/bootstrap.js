@@ -1544,99 +1544,160 @@
     }
   });
 
-  // src/ui/features/items/itemsState.ts
-  function getItems() {
-    return [...state7.items];
-  }
-  function isItemsLoading() {
-    return state7.loading;
-  }
-  function isItemsLoadingIndicatorVisible() {
-    return state7.loadingIndicatorVisible;
-  }
-  function getItemsError() {
-    return state7.error;
-  }
-  function setItems(itemsList) {
-    state7.items = [...itemsList];
-  }
-  function setItemsLoading(loading) {
-    state7.loading = loading;
-  }
-  function setItemsLoadingIndicatorVisible(visible) {
-    state7.loadingIndicatorVisible = visible;
-  }
-  function setItemsError(error) {
-    state7.error = error;
-  }
-  var state7;
-  var init_itemsState = __esm({
-    "src/ui/features/items/itemsState.ts"() {
-      "use strict";
-      state7 = {
-        items: [],
-        loading: false,
-        loadingIndicatorVisible: false,
-        error: null
-      };
-    }
-  });
-
   // src/ui/features/items/itemsDraftState.ts
   function getCreateItemTitleDraft() {
-    return state8.createTitle;
+    return state7.createTitle;
   }
   function getCreateItemContentDraft() {
-    return state8.createContent;
+    return state7.createContent;
   }
   function setCreateItemTitleDraft(value) {
-    state8.createTitle = value;
+    state7.createTitle = value;
   }
   function setCreateItemContentDraft(value) {
-    state8.createContent = value;
+    state7.createContent = value;
   }
   function clearCreateItemDraft() {
-    state8.createTitle = null;
-    state8.createContent = null;
+    state7.createTitle = null;
+    state7.createContent = null;
   }
   function getItemDetailTitleDraft(itemId) {
-    return state8.detailDrafts.get(itemId)?.title ?? null;
+    return state7.detailDrafts.get(itemId)?.title ?? null;
   }
   function getItemDetailContentDraft(itemId) {
-    return state8.detailDrafts.get(itemId)?.content ?? null;
+    return state7.detailDrafts.get(itemId)?.content ?? null;
   }
   function setItemDetailTitleDraft(itemId, value) {
-    const draft = state8.detailDrafts.get(itemId) ?? {
+    const draft = state7.detailDrafts.get(itemId) ?? {
       title: null,
       content: null
     };
     draft.title = value;
-    state8.detailDrafts.set(itemId, draft);
+    state7.detailDrafts.set(itemId, draft);
   }
   function setItemDetailContentDraft(itemId, value) {
-    const draft = state8.detailDrafts.get(itemId) ?? {
+    const draft = state7.detailDrafts.get(itemId) ?? {
       title: null,
       content: null
     };
     draft.content = value;
-    state8.detailDrafts.set(itemId, draft);
+    state7.detailDrafts.set(itemId, draft);
   }
   function clearItemDetailDraft(itemId) {
-    state8.detailDrafts.delete(itemId);
+    state7.detailDrafts.delete(itemId);
   }
   function resetItemsDraftState() {
-    state8.createTitle = null;
-    state8.createContent = null;
-    state8.detailDrafts.clear();
+    state7.createTitle = null;
+    state7.createContent = null;
+    state7.detailDrafts.clear();
   }
-  var state8;
+  var state7;
   var init_itemsDraftState = __esm({
     "src/ui/features/items/itemsDraftState.ts"() {
       "use strict";
-      state8 = {
+      state7 = {
         createTitle: null,
         createContent: null,
         detailDrafts: /* @__PURE__ */ new Map()
+      };
+    }
+  });
+
+  // src/ui/features/items/renderItemDetailRegion.ts
+  function renderItemDetailRegion(item, projects) {
+    const detailColEl = document.createElement("div");
+    detailColEl.className = "aiw-item-detail-col";
+    if (item === void 0) {
+      const placeholderStateEl = createPanelState({
+        variant: "placeholder",
+        message: "Select an item"
+      });
+      detailColEl.append(placeholderStateEl);
+      return detailColEl;
+    }
+    const formEl = document.createElement("div");
+    formEl.className = "aiw-item-detail-form";
+    const titleInputEl = document.createElement("input");
+    titleInputEl.className = "aiw-item-detail-title";
+    titleInputEl.type = "text";
+    titleInputEl.value = getItemDetailTitleDraft(item.id) ?? item.title;
+    const projectRowEl = document.createElement("div");
+    projectRowEl.className = "aiw-item-detail-project-row";
+    const projectLabelEl = document.createElement("span");
+    projectLabelEl.className = "aiw-item-detail-project-label";
+    projectLabelEl.textContent = "Project:";
+    const projectSelectEl = document.createElement("select");
+    projectSelectEl.className = "aiw-item-detail-project-select";
+    projectSelectEl.dataset.itemId = item.id;
+    for (const project of projects) {
+      const optionEl = document.createElement("option");
+      optionEl.value = project.id;
+      optionEl.textContent = project.name;
+      optionEl.selected = project.id === item.projectId;
+      projectSelectEl.append(optionEl);
+    }
+    projectRowEl.append(projectLabelEl, projectSelectEl);
+    const contentInputEl = document.createElement("textarea");
+    contentInputEl.className = "aiw-item-detail-content";
+    contentInputEl.value = getItemDetailContentDraft(item.id) ?? item.content;
+    const buttonEl = document.createElement("button");
+    buttonEl.className = "aiw-item-detail-save";
+    buttonEl.type = "button";
+    buttonEl.textContent = "Save";
+    buttonEl.dataset.itemId = item.id;
+    formEl.append(titleInputEl, projectRowEl, contentInputEl, buttonEl);
+    detailColEl.append(formEl);
+    return detailColEl;
+  }
+  var init_renderItemDetailRegion = __esm({
+    "src/ui/features/items/renderItemDetailRegion.ts"() {
+      "use strict";
+      init_createPanelState();
+      init_itemsDraftState();
+    }
+  });
+
+  // src/ui/features/items/itemsState.ts
+  function getItems() {
+    return [...state8.items];
+  }
+  function isItemsLoading() {
+    return state8.loading;
+  }
+  function isItemsLoadingIndicatorVisible() {
+    return state8.loadingIndicatorVisible;
+  }
+  function getItemsError() {
+    return state8.error;
+  }
+  function getItemsListScrollTop() {
+    return state8.listScrollTop;
+  }
+  function setItems(itemsList) {
+    state8.items = [...itemsList];
+  }
+  function setItemsLoading(loading) {
+    state8.loading = loading;
+  }
+  function setItemsLoadingIndicatorVisible(visible) {
+    state8.loadingIndicatorVisible = visible;
+  }
+  function setItemsError(error) {
+    state8.error = error;
+  }
+  function setItemsListScrollTop(scrollTop) {
+    state8.listScrollTop = scrollTop;
+  }
+  var state8;
+  var init_itemsState = __esm({
+    "src/ui/features/items/itemsState.ts"() {
+      "use strict";
+      state8 = {
+        items: [],
+        loading: false,
+        loadingIndicatorVisible: false,
+        error: null,
+        listScrollTop: 0
       };
     }
   });
@@ -1670,7 +1731,7 @@
   });
 
   // src/ui/features/items/renderItemsPanel.ts
-  function renderItemsPanel(containerEl, projectName) {
+  function renderItemsPanel(containerEl, projectName, projects) {
     const selectedProjectId = getSelectedProjectId();
     const selectedItemId = getSelectedItemId();
     const loading = isItemsLoading();
@@ -1690,76 +1751,86 @@
     backButtonEl.className = "aiw-panel-back-button";
     backButtonEl.textContent = "\u2190";
     shell.headerEl.prepend(backButtonEl);
-    function renderItemsList(itemsList) {
-      const listEl = document.createElement("div");
-      listEl.className = "aiw-items-list";
-      for (const item of itemsList) {
-        const selectedItem = item.id === selectedItemId;
-        const rowEl = createItemRow(item, selectedItem, isItemSelected(item.id));
-        listEl.append(rowEl);
-      }
-      shell.bodyEl.append(listEl);
-    }
     if (selectedProjectId === null) {
       const placeholderStateEl = createPanelState({
         variant: "placeholder",
         message: "Select a project to view items"
       });
       shell.bodyEl.append(placeholderStateEl);
-    } else if (loading) {
+      containerEl.append(shell.panelEl);
+      return shell.panelEl;
+    }
+    shell.bodyEl.classList.add("aiw-floating-panel__body--split");
+    const layoutEl = document.createElement("div");
+    layoutEl.className = "aiw-items-layout";
+    const listColEl = document.createElement("div");
+    listColEl.className = "aiw-items-list-col";
+    const listScrollEl = document.createElement("div");
+    listScrollEl.className = "aiw-items-list-scroll";
+    listColEl.append(listScrollEl);
+    if (loading) {
       if (loadingIndicatorVisible) {
         const loadingStateEl = createPanelState({
           variant: "loading",
           message: "Loading items..."
         });
-        shell.bodyEl.append(loadingStateEl);
+        listScrollEl.append(loadingStateEl);
       }
     } else if (error !== null) {
       const errorStateEl = createPanelState({
         variant: "error",
         message: error
       });
-      shell.bodyEl.append(errorStateEl);
+      listScrollEl.append(errorStateEl);
     } else if (isEmpty) {
       const emptyStateEl = createPanelState({
         variant: "empty",
         message: "No items yet"
       });
-      shell.bodyEl.append(emptyStateEl);
+      listScrollEl.append(emptyStateEl);
     } else {
-      renderItemsList(items);
+      const listEl = document.createElement("div");
+      listEl.className = "aiw-items-list";
+      for (const item of items) {
+        const selectedItem = item.id === selectedItemId;
+        const rowEl = createItemRow(item, selectedItem, isItemSelected(item.id));
+        listEl.append(rowEl);
+      }
+      listScrollEl.append(listEl);
     }
-    if (selectedProjectId !== null) {
-      const buildContextBarEl = document.createElement("div");
-      buildContextBarEl.className = "aiw-build-context-bar";
-      const selectedCount = getSelectedItemsCount();
-      const buildContextButtonEl = document.createElement("button");
-      buildContextButtonEl.type = "button";
-      buildContextButtonEl.className = "aiw-build-context";
-      buildContextButtonEl.textContent = `Build context (${selectedCount})`;
-      buildContextBarEl.append(buildContextButtonEl);
-      shell.headerEl.append(buildContextBarEl);
-    }
-    if (selectedProjectId !== null) {
-      const formEl = document.createElement("div");
-      formEl.className = "aiw-create-item-form";
-      const titleInputEl = document.createElement("input");
-      titleInputEl.className = "aiw-create-item-title";
-      titleInputEl.type = "text";
-      titleInputEl.placeholder = "Title";
-      titleInputEl.value = getCreateItemTitleDraft() ?? "";
-      const contentInputEl = document.createElement("textarea");
-      contentInputEl.className = "aiw-create-item-content";
-      contentInputEl.placeholder = "Content";
-      contentInputEl.value = getCreateItemContentDraft() ?? "";
-      const buttonEl = document.createElement("button");
-      buttonEl.className = "aiw-create-item-submit";
-      buttonEl.type = "button";
-      buttonEl.textContent = "Add";
-      formEl.append(titleInputEl, contentInputEl, buttonEl);
-      shell.panelEl.append(formEl);
-    }
+    const formEl = document.createElement("div");
+    formEl.className = "aiw-create-item-form";
+    const titleInputEl = document.createElement("input");
+    titleInputEl.className = "aiw-create-item-title";
+    titleInputEl.type = "text";
+    titleInputEl.placeholder = "Title";
+    titleInputEl.value = getCreateItemTitleDraft() ?? "";
+    const contentInputEl = document.createElement("textarea");
+    contentInputEl.className = "aiw-create-item-content";
+    contentInputEl.placeholder = "Content";
+    contentInputEl.value = getCreateItemContentDraft() ?? "";
+    const buttonEl = document.createElement("button");
+    buttonEl.className = "aiw-create-item-submit";
+    buttonEl.type = "button";
+    buttonEl.textContent = "Add";
+    formEl.append(titleInputEl, contentInputEl, buttonEl);
+    listColEl.append(formEl);
+    const detailItem = items.find(
+      (candidate) => candidate.id === selectedItemId
+    );
+    layoutEl.append(listColEl, renderItemDetailRegion(detailItem, projects));
+    shell.bodyEl.append(layoutEl);
+    const buildContextBarEl = document.createElement("div");
+    buildContextBarEl.className = "aiw-build-context-bar";
+    const selectedCount = getSelectedItemsCount();
+    const buildContextButtonEl = document.createElement("button");
+    buildContextButtonEl.type = "button";
+    buildContextButtonEl.className = "aiw-build-context";
+    buildContextButtonEl.textContent = `Build context (${selectedCount})`;
+    buildContextBarEl.append(buildContextButtonEl);
+    shell.headerEl.append(buildContextBarEl);
     containerEl.append(shell.panelEl);
+    listScrollEl.scrollTop = getItemsListScrollTop();
     return shell.panelEl;
   }
   var init_renderItemsPanel = __esm({
@@ -1768,90 +1839,11 @@
       init_createFloatingPanelShell();
       init_createItemRow();
       init_createPanelState();
+      init_renderItemDetailRegion();
       init_itemsState();
       init_itemsDraftState();
       init_itemSelectionState();
       init_sessionState();
-    }
-  });
-
-  // src/ui/features/items/renderItemDetailPanel.ts
-  function renderItemDetailPanel(containerEl, projectName, projects) {
-    const selectedItemId = getSelectedItemId();
-    const items = getItems();
-    let muted = false;
-    let label = projectName;
-    let panelTitle = "Item Detail";
-    const item = items.find((candidate) => candidate.id === selectedItemId);
-    if (item) {
-      const hasTitle = item.title.trim().length > 0;
-      panelTitle = hasTitle ? item.title : "Untitled";
-    }
-    if (label === null) {
-      muted = true;
-      label = "Select a project";
-    }
-    const shell = createFloatingPanelShell(panelTitle, {
-      label,
-      muted
-    });
-    const backButtonEl = document.createElement("button");
-    backButtonEl.type = "button";
-    backButtonEl.className = "aiw-panel-back-button";
-    backButtonEl.textContent = "\u2190";
-    shell.headerEl.prepend(backButtonEl);
-    if (!item) {
-      const placeholderStateEl = createPanelState({
-        variant: "placeholder",
-        message: "Item not found"
-      });
-      shell.bodyEl.append(placeholderStateEl);
-    }
-    if (item !== void 0) {
-      const formEl = document.createElement("div");
-      formEl.className = "aiw-item-detail-form";
-      const titleInputEl = document.createElement("input");
-      titleInputEl.className = "aiw-item-detail-title";
-      titleInputEl.type = "text";
-      titleInputEl.value = getItemDetailTitleDraft(item.id) ?? item.title;
-      const contentInputEl = document.createElement("textarea");
-      contentInputEl.className = "aiw-item-detail-content";
-      contentInputEl.value = getItemDetailContentDraft(item.id) ?? item.content;
-      const buttonEl = document.createElement("button");
-      buttonEl.className = "aiw-item-detail-save";
-      buttonEl.type = "button";
-      buttonEl.textContent = "Save";
-      buttonEl.dataset.itemId = item.id;
-      const projectRowEl = document.createElement("div");
-      projectRowEl.className = "aiw-item-detail-project-row";
-      const projectLabelEl = document.createElement("span");
-      projectLabelEl.className = "aiw-item-detail-project-label";
-      projectLabelEl.textContent = "Project:";
-      const projectSelectEl = document.createElement("select");
-      projectSelectEl.className = "aiw-item-detail-project-select";
-      projectSelectEl.dataset.itemId = item.id;
-      for (const project of projects) {
-        const optionEl = document.createElement("option");
-        optionEl.value = project.id;
-        optionEl.textContent = project.name;
-        optionEl.selected = project.id === item.projectId;
-        projectSelectEl.append(optionEl);
-      }
-      projectRowEl.append(projectLabelEl, projectSelectEl);
-      formEl.append(titleInputEl, contentInputEl, projectRowEl, buttonEl);
-      shell.panelEl.append(formEl);
-    }
-    containerEl.append(shell.panelEl);
-    return shell.panelEl;
-  }
-  var init_renderItemDetailPanel = __esm({
-    "src/ui/features/items/renderItemDetailPanel.ts"() {
-      "use strict";
-      init_sessionState();
-      init_createFloatingPanelShell();
-      init_createPanelState();
-      init_itemsState();
-      init_itemsDraftState();
     }
   });
 
@@ -1897,9 +1889,7 @@
       case "projects":
         return renderProjectsPanel(containerEl);
       case "items":
-        return renderItemsPanel(containerEl, context.projectName);
-      case "itemDetail":
-        return renderItemDetailPanel(
+        return renderItemsPanel(
           containerEl,
           context.projectName,
           context.projects
@@ -1921,7 +1911,6 @@
       init_renderProjectsPanel();
       init_renderSearchPanel();
       init_renderItemsPanel();
-      init_renderItemDetailPanel();
       init_renderBackupPanel();
     }
   });
@@ -2005,12 +1994,7 @@
       if (!(backButton instanceof HTMLElement)) {
         return;
       }
-      const currentPanel = getActivePanel();
-      if (currentPanel === "itemDetail") {
-        openPanel("items");
-      } else {
-        openPanel("projects");
-      }
+      openPanel("projects");
       setSelectedItemId(null);
       deps.requestRender();
     }
@@ -2245,6 +2229,7 @@
     const { onStateChange, notify } = dependencies;
     async function load(projectId) {
       setItemsLoading(true);
+      setItemsListScrollTop(0);
       onStateChange();
       const indicatorTimer = window.setTimeout(() => {
         setItemsLoadingIndicatorVisible(true);
@@ -2260,7 +2245,6 @@
     }
     function selectItem(itemId) {
       setSelectedItemId(itemId);
-      openPanel("itemDetail");
       onStateChange();
     }
     function toggleSelection(itemId) {
@@ -2315,7 +2299,6 @@
       if (getSelectedItemId() === itemId) {
         setSelectedItemId(null);
       }
-      openPanel("items");
       notify(`Moved to ${targetProjectName}`);
       await loadItems(selectedProjectId);
       onStateChange();
@@ -2375,7 +2358,6 @@
       init_loadItems();
       init_storage();
       init_sessionState();
-      init_floatingUiState();
       init_toErrorMessage();
       init_itemSelectionState();
       init_itemsDraftState();
@@ -2572,6 +2554,16 @@
         setItemDetailContentDraft(selectedItemId, target.value);
       }
     }
+    function handleItemsListScroll(event) {
+      const target = event.target;
+      if (!(target instanceof HTMLElement)) {
+        return;
+      }
+      if (!target.matches(ITEMS_LIST_SCROLL_SELECTOR)) {
+        return;
+      }
+      setItemsListScrollTop(target.scrollTop);
+    }
     const eventBindings = [
       [deps.panelsEl, "click", asListener(handleSelectItem)],
       [deps.panelsEl, "click", asListener(handleToggleItemSelection)],
@@ -2581,17 +2573,24 @@
       [deps.panelsEl, "click", asListener(handleDeleteItem)],
       [deps.panelsEl, "change", asListener(handleMoveItem)],
       [deps.panelsEl, "input", asListener(handleCreateItemInput)],
-      [deps.panelsEl, "input", asListener(handleItemDetailInput)]
+      [deps.panelsEl, "input", asListener(handleItemDetailInput)],
+      /*
+        No asListener: the handler already takes a plain Event. The
+        4th slot registers it in the CAPTURE phase (scroll does not
+        bubble up to panelsEl).
+      */
+      [deps.panelsEl, "scroll", handleItemsListScroll, true]
     ];
     return eventBindings;
   }
-  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR;
+  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, ITEMS_LIST_SCROLL_SELECTOR;
   var init_itemsHandlers = __esm({
     "src/ui/features/items/itemsHandlers.ts"() {
       "use strict";
       init_eventBindings();
       init_sessionState();
       init_itemsDraftState();
+      init_itemsState();
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_SELECT_SELECTOR = ".aiw-item-select";
       ITEM_DELETE_SELECTOR = ".aiw-item-delete";
@@ -2604,6 +2603,7 @@
       ITEM_DETAIL_CONTENT_SELECTOR = ".aiw-item-detail-content";
       ITEM_DETAIL_PROJECT_SELECT_SELECTOR = ".aiw-item-detail-project-select";
       ITEM_BUILD_CONTEXT_SELECTOR = ".aiw-build-context";
+      ITEMS_LIST_SCROLL_SELECTOR = ".aiw-items-list-scroll";
     }
   });
 
@@ -2995,6 +2995,8 @@
       togglePanel: toggleFloatingPanel
     };
     let lastRenderedPanel = null;
+    const PANEL_ENTER_REPLAY_WINDOW_MS = 180;
+    let panelEnteredAt = 0;
     function renderUi() {
       const expanded = isOrbExpanded();
       const orbActions2 = getOrbActions();
@@ -3019,6 +3021,9 @@
         projects: getProjects()
       });
       if (panelChanged && panelEl !== null) {
+        panelEl.classList.add("aiw-floating-panel--enter");
+        panelEnteredAt = performance.now();
+      } else if (panelEl !== null && performance.now() - panelEnteredAt < PANEL_ENTER_REPLAY_WINDOW_MS) {
         panelEl.classList.add("aiw-floating-panel--enter");
       }
       lastRenderedPanel = activePanelId;
@@ -3071,14 +3076,14 @@
       ...backupBindings,
       ...searchBindings
     ];
-    for (const [target, type, listener] of eventBindings) {
-      target.addEventListener(type, listener);
+    for (const [target, type, listener, options] of eventBindings) {
+      target.addEventListener(type, listener, options);
     }
     renderUi();
     void projectsController.load();
     return function destroyFloatingController() {
-      for (const [target, type, listener] of eventBindings) {
-        target.removeEventListener(type, listener);
+      for (const [target, type, listener, options] of eventBindings) {
+        target.removeEventListener(type, listener, options);
       }
     };
   }

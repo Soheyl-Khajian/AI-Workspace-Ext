@@ -46,6 +46,7 @@ type ItemsState = {
   loading: boolean;
   loadingIndicatorVisible: boolean;
   error: string | null;
+  listScrollTop: number;
 };
 
 // ------------------------------------------------------------
@@ -62,6 +63,7 @@ const state: ItemsState = {
   loading: false,
   loadingIndicatorVisible: false,
   error: null,
+  listScrollTop: 0,
 };
 
 // ------------------------------------------------------------
@@ -101,6 +103,17 @@ export function getItemsError(): string | null {
   return state.error;
 }
 
+/*
+  listScrollTop is presentation state for the wipe-rebuild render
+  strategy: the scroll handler captures the list column's position on
+  every scroll event, and the renderer restores it after each rebuild.
+  Without it, any re-render (checkbox toggle, save, delete) silently
+  resets the list column to the top.
+*/
+export function getItemsListScrollTop(): number {
+  return state.listScrollTop;
+}
+
 // ------------------------------------------------------------
 // MUTATIONS
 // ------------------------------------------------------------
@@ -127,6 +140,10 @@ export function setItemsLoadingIndicatorVisible(visible: boolean): void {
 
 export function setItemsError(error: string | null): void {
   state.error = error;
+}
+
+export function setItemsListScrollTop(scrollTop: number): void {
+  state.listScrollTop = scrollTop;
 }
 
 /*
@@ -159,4 +176,5 @@ export function resetItemsState(): void {
   state.loading = false;
   state.loadingIndicatorVisible = false;
   state.error = null;
+  state.listScrollTop = 0;
 }

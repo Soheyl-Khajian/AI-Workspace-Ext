@@ -119,7 +119,7 @@
 ------------------------------------------------------------ */
 
 .aiw-orb-action:hover {
-  background: var(--aiw-surface-active);
+  background: var(--aiw-surface-float-hover);
   box-shadow: var(--aiw-shadow-float-hover);
 }
 

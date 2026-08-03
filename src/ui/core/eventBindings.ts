@@ -3,7 +3,7 @@
 // EVENT BINDING CONTRACT
 //
 // Responsibility:
-// - defines EventBinding: ONE [target, event type, listener] tuple —
+// - defines EventBinding: ONE [target, event type, listener, options?] tuple —
 //   the unit of the controller's declarative add/remove table
 //   (use sites express plurality themselves: EventBinding[])
 // - provides asListener: the single place where specifically-typed
@@ -16,7 +16,20 @@
 // - NO DOM access, NO state, NO business logic — types + one helper
 // ------------------------------------------------------------
 
-export type EventBinding = [EventTarget, string, EventListener];
+/*
+  The optional 4th slot carries addEventListener options. It exists for
+  capture-phase bindings: "scroll" does not bubble, so a delegated
+  listener on panelsEl only sees scroll events during the capture phase.
+  The controller passes the SAME value to removeEventListener — the
+  capture flag is part of a listener's registration identity, and an
+  asymmetric teardown would leak the binding on every re-mount.
+*/
+export type EventBinding = [
+  EventTarget,
+  string,
+  EventListener,
+  (AddEventListenerOptions | boolean)?,
+];
 
 /*
   Handlers are typed to their specific event (MouseEvent/PointerEvent), but

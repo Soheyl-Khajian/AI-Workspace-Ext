@@ -1,0 +1,39 @@
+/* src/ui/styles/panels/context.css */
+/*
+  Context pack controls: build-context bar, item checkbox.
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   3. BUILD CONTEXT BAR (context pack)
+------------------------------------------------------------ */
+
+.aiw-build-context-bar {
+  display: flex;
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------
+   ITEM SELECT CHECKBOX (context pack)
+------------------------------------------------------------ */
+
+.aiw-item-select {
+  /* Fixed-size leading control — never grow or shrink with the row */
+  flex: 0 0 auto;
+  width: 16px;
+  height: 16px;
+  border-radius: var(--aiw-radius-checkbox);
+
+  /* Left breathing room so it isn't jammed against the row border;
+     the title's own left padding handles spacing on the other side */
+  margin: 0 0 0 var(--aiw-space-md);
+  cursor: pointer;
+
+  /* Brand the native checkbox tick/fill */
+  accent-color: var(--aiw-accent);
+}

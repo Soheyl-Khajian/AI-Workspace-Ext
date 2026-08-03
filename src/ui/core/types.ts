@@ -10,7 +10,6 @@ export type OrbActionId = "projects" | "backup" | "search";
 export type OrbPanelId =
   | "projects"
   | "items"
-  | "itemDetail"
   | "backup"
   | "search";
 

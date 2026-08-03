@@ -56,6 +56,7 @@
   /* Near-opaque: contrast is self-contained, host page mode-proof. */
   --aiw-surface-panel: rgba(17, 19, 25, 0.97); /* large panels */
   --aiw-surface-float: rgba(28, 31, 39, 0.96); /* pills, toast */
+  --aiw-surface-float-hover: rgba(40, 44, 54, 0.96); /* pills, toast: hover */
   --aiw-surface-row: rgba(255, 255, 255, 0.04); /* list rows */
   --aiw-surface-row-selected: color-mix(
     in srgb,
@@ -149,8 +150,21 @@
    sits left, so the visual center of the content area is right
    of the geometric center */
   --aiw-panel-lift: 4vh;
-  --aiw-panel-max-width: 1050px;
-  --aiw-panel-max-height: 60vh;
+  /* FIXED panel size (v0.4): one deterministic frame for every
+   panel, every open — content never resizes the shell. Viewport
+   clamps live here because GEOMETRY owns all layout math. */
+  --aiw-panel-w: min(
+    1050px,
+    calc(100vw - var(--aiw-gutter) * 2 - var(--aiw-panel-shift) * 2)
+  );
+  --aiw-panel-h: min(
+    680px,
+    calc(100vh - var(--aiw-gutter) * 2 - var(--aiw-panel-lift) * 2)
+  );
+
+  /* Items master-detail split */
+  --aiw-col-list-w: 320px;
+  --aiw-item-row-h: 40px;
 
   /* ---------- TYPOGRAPHY ---------- */
   --aiw-font:

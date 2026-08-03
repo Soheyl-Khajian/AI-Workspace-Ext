@@ -1,0 +1,61 @@
+/* src/ui/styles/panels/backup.css */
+/*
+  Backup panel one-offs: sections, danger-tinted import.
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   BACKUP PANEL
+------------------------------------------------------------ */
+
+.aiw-backup-section {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--aiw-space-sm);
+  padding: var(--aiw-space-lg);
+}
+
+.aiw-backup-section p {
+  margin: 0;
+  font-size: var(--aiw-fs-sm);
+  color: var(--aiw-text-muted);
+}
+
+/* Import is destructive (replaces ALL data): danger-tinted glass. */
+.aiw-backup-import {
+  padding: var(--aiw-space-sm) var(--aiw-space-lg);
+  border-radius: var(--aiw-radius-control);
+
+  background: var(--aiw-danger-soft);
+  border: 1px solid var(--aiw-danger-border);
+  color: var(--aiw-text);
+
+  font-size: var(--aiw-fs-sm);
+  font-weight: 500;
+  font-family: inherit;
+  cursor: pointer;
+
+  transition:
+    background-color var(--aiw-dur-fast) var(--aiw-ease),
+    transform var(--aiw-dur-fast) var(--aiw-ease);
+}
+
+.aiw-backup-import:hover {
+  background: var(--aiw-danger-soft-hover);
+  transform: translateY(-1px);
+}
+
+.aiw-backup-import:active {
+  transform: scale(0.97);
+}
+
+.aiw-backup-import:focus-visible {
+  outline: none;
+  box-shadow: var(--aiw-danger-ring);
+}

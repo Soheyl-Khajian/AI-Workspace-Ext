@@ -1,0 +1,161 @@
+/* src/ui/styles/panels/items.css */
+/*
+  Item detail one-offs: project move control (native select,
+  opaque menu surface, pinned dark color-scheme).
+
+  DEDUPE RULE (applies across all panels/ files): identical-by-
+  role components share ONE grouped rule. Class names are
+  behavior hooks owned by the TS handlers - never rename here.
+  Files mirror the original panels.css section order; import
+  order in floatingShell.css must match.
+*/
+
+/* ------------------------------------------------------------
+   ITEM DETAIL: PROJECT ROW (move control)
+------------------------------------------------------------ */
+
+.aiw-item-detail-project-row {
+  display: flex;
+  align-items: center;
+  gap: var(--aiw-space-sm);
+}
+
+.aiw-item-detail-project-label {
+  flex-shrink: 0;
+  color: var(--aiw-text-faint);
+  font-size: var(--aiw-fs-sm);
+}
+
+.aiw-item-detail-project-select {
+  flex: 1;
+  min-width: 0;
+  padding: var(--aiw-space-sm) var(--aiw-space-md);
+  border-radius: var(--aiw-radius-control);
+  border: 1px solid var(--aiw-border);
+  background: var(--aiw-surface-control);
+
+  color: var(--aiw-text);
+  font-size: var(--aiw-fs-sm);
+  font-family: inherit;
+  cursor: pointer;
+
+  /* Focus is signaled via border-color, not outline */
+  outline: none;
+  transition: border-color var(--aiw-dur-fast) var(--aiw-ease);
+
+  /* The dropdown popup is native browser chrome: it follows the
+     control's color-scheme, NOT our surfaces. Pin it dark so the
+     menu matches the anchored-glass theme on any host page. */
+  color-scheme: dark;
+}
+
+/* Options render inside the native popup: explicit colors, opaque
+   background (our translucent surface tokens would stay white). */
+.aiw-item-detail-project-select option {
+  background: var(--aiw-surface-menu);
+  color: var(--aiw-text);
+}
+
+.aiw-item-detail-project-select:focus {
+  border-color: var(--aiw-accent-border);
+}
+
+/* ------------------------------------------------------------
+   MASTER-DETAIL LAYOUT (v0.4)
+------------------------------------------------------------ */
+/*
+  One panel, two columns: the list column keeps the rows and the
+  create form; the detail column edits the selected item. Each
+  column scrolls (or pins) independently - the shared panel body
+  is a non-scrolling split container here (base.css --split).
+*/
+
+.aiw-items-layout {
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: minmax(240px, var(--aiw-col-list-w)) minmax(0, 1fr);
+}
+
+.aiw-items-list-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+  border-right: 1px solid var(--aiw-separator);
+}
+
+/* The list column's scroll region: rows live here; the create
+   form below it stays pinned. */
+.aiw-items-list-scroll {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  padding: var(--aiw-space-lg);
+}
+
+.aiw-item-detail-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+
+/* Empty state fills the column so the message centers in the
+   detail area instead of hugging the top edge. */
+.aiw-item-detail-col > .aiw-panel-state {
+  flex: 1;
+}
+
+/* ------------------------------------------------------------
+   ITEM ROWS: FIXED HEIGHT (v0.4)
+------------------------------------------------------------ */
+/*
+  Fixed-height single-line rows: predictable list density, no
+  layout dependence on content length (same law as the fixed
+  panel frame). Long titles ellipsize.
+*/
+
+.aiw-item-row {
+  height: var(--aiw-item-row-h);
+  flex-shrink: 0;
+}
+
+.aiw-item-text {
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ------------------------------------------------------------
+   ITEM DETAIL FORM (fills the detail column)
+------------------------------------------------------------ */
+/*
+  Was a pinned footer form (forms.css group); in the split layout
+  it IS the detail column's content. The elastic inversion: the
+  content textarea absorbs the column's free height instead of
+  claiming a fixed 120px strip.
+*/
+
+.aiw-item-detail-form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aiw-space-sm);
+  flex: 1;
+  min-height: 0;
+  padding: var(--aiw-space-lg);
+}
+
+/* The shared single-line rule (forms.css) gives the title
+   flex: 1; inside a fixed-height column that would make it share
+   the free space with the textarea. Pin it to content height. */
+.aiw-item-detail-title {
+  flex: 0 0 auto;
+}
+
+.aiw-item-detail-content {
+  resize: none;
+  flex: 1;
+  min-height: 0;
+}

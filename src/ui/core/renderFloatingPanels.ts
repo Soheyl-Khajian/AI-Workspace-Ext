@@ -24,7 +24,6 @@ import type { OrbPanelId, RenderContext } from "./types";
 import { renderProjectsPanel } from "../features/projects/renderProjectsPanel";
 import { renderSearchPanel } from "../features/search/renderSearchPanel";
 import { renderItemsPanel } from "../features/items/renderItemsPanel";
-import { renderItemDetailPanel } from "../features/items/renderItemDetailPanel";
 import { renderBackupPanel } from "../features/backup/renderBackupPanel";
 
 export function renderFloatingPanels(
@@ -42,9 +41,7 @@ export function renderFloatingPanels(
     case "projects":
       return renderProjectsPanel(containerEl);
     case "items":
-      return renderItemsPanel(containerEl, context.projectName);
-    case "itemDetail":
-      return renderItemDetailPanel(
+      return renderItemsPanel(
         containerEl,
         context.projectName,
         context.projects,
