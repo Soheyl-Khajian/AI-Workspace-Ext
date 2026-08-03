@@ -1591,13 +1591,13 @@
   });
 
   // src/ui/features/items/createItemRow.ts
-  function createItemRow(item, selected, checkboxChecked) {
+  function createItemRow(item, flags, moveTargets) {
     const hasTitle = item.title.trim().length > 0;
     const rowEl = document.createElement("div");
     rowEl.className = "aiw-item-row";
     const checkBoxEl = document.createElement("input");
     checkBoxEl.type = "checkbox";
-    checkBoxEl.checked = checkboxChecked;
+    checkBoxEl.checked = flags.checkboxChecked;
     checkBoxEl.className = "aiw-item-select";
     checkBoxEl.dataset.itemId = item.id;
     rowEl.prepend(checkBoxEl);
@@ -1609,15 +1609,54 @@
     }
     rowEl.append(itemTextEl);
     rowEl.dataset.itemId = item.id;
-    if (selected) {
+    if (flags.selected) {
       rowEl.classList.add("aiw-item-row--selected");
     }
-    const deleteButtonEl = document.createElement("button");
-    deleteButtonEl.type = "button";
-    deleteButtonEl.className = "aiw-item-delete";
-    deleteButtonEl.textContent = "\xD7";
-    deleteButtonEl.dataset.itemId = item.id;
-    rowEl.append(deleteButtonEl);
+    if (flags.menuPage !== null) {
+      rowEl.classList.add("aiw-item-row--menu-open");
+    }
+    const menuTriggerEl = document.createElement("button");
+    menuTriggerEl.type = "button";
+    menuTriggerEl.className = "aiw-row-menu-trigger";
+    menuTriggerEl.textContent = "\u2026";
+    menuTriggerEl.dataset.itemId = item.id;
+    rowEl.append(menuTriggerEl);
+    if (flags.menuPage === "root") {
+      const menuEl = document.createElement("div");
+      menuEl.className = "aiw-row-menu";
+      const moveItemEl = document.createElement("button");
+      moveItemEl.type = "button";
+      moveItemEl.className = "aiw-row-menu-item aiw-item-menu-move";
+      moveItemEl.textContent = "Move to\u2026";
+      moveItemEl.dataset.itemId = item.id;
+      const deleteItemEl = document.createElement("button");
+      deleteItemEl.type = "button";
+      deleteItemEl.className = "aiw-row-menu-item aiw-row-menu-item--danger aiw-item-menu-delete";
+      deleteItemEl.textContent = "Delete";
+      deleteItemEl.dataset.itemId = item.id;
+      menuEl.append(moveItemEl, deleteItemEl);
+      rowEl.append(menuEl);
+    }
+    if (flags.menuPage === "movePicker") {
+      const menuEl = document.createElement("div");
+      menuEl.className = "aiw-row-menu aiw-row-menu--picker";
+      if (moveTargets.length === 0) {
+        const emptyEl = document.createElement("div");
+        emptyEl.className = "aiw-row-menu-empty";
+        emptyEl.textContent = "No other projects";
+        menuEl.append(emptyEl);
+      }
+      for (const project of moveTargets) {
+        const targetEl = document.createElement("button");
+        targetEl.type = "button";
+        targetEl.className = "aiw-row-menu-item aiw-item-menu-move-target";
+        targetEl.textContent = project.name;
+        targetEl.dataset.itemId = item.id;
+        targetEl.dataset.projectId = project.id;
+        menuEl.append(targetEl);
+      }
+      rowEl.append(menuEl);
+    }
     return rowEl;
   }
   var init_createItemRow = __esm({
@@ -1812,6 +1851,32 @@
     }
   });
 
+  // src/ui/features/items/itemsMenuState.ts
+  function getOpenItemMenu() {
+    if (openMenu === null) return null;
+    return { ...openMenu };
+  }
+  function openItemMenu(itemId) {
+    openMenu = { itemId, page: "root" };
+  }
+  function showItemMenuMovePicker() {
+    if (openMenu === null) return;
+    openMenu = { itemId: openMenu.itemId, page: "movePicker" };
+  }
+  function closeItemMenu() {
+    openMenu = null;
+  }
+  function resetItemsMenuState() {
+    openMenu = null;
+  }
+  var openMenu;
+  var init_itemsMenuState = __esm({
+    "src/ui/features/items/itemsMenuState.ts"() {
+      "use strict";
+      openMenu = null;
+    }
+  });
+
   // src/ui/features/items/renderItemsPanel.ts
   function renderItemsPanel(containerEl, projectName, projects) {
     const selectedProjectId = getSelectedProjectId();
@@ -1820,6 +1885,7 @@
     const loadingIndicatorVisible = isItemsLoadingIndicatorVisible();
     const error = getItemsError();
     const items = getItems();
+    const openItemMenu2 = getOpenItemMenu();
     const isEmpty = items.length === 0;
     let muted = false;
     let label = projectName;
@@ -1873,9 +1939,21 @@
     } else {
       const listEl = document.createElement("div");
       listEl.className = "aiw-items-list";
+      const moveTargets = projects.filter(
+        (project) => project.id !== selectedProjectId
+      );
       for (const item of items) {
         const selectedItem = item.id === selectedItemId;
-        const rowEl = createItemRow(item, selectedItem, isItemSelected(item.id));
+        const menuPage = openItemMenu2 !== null && openItemMenu2.itemId === item.id ? openItemMenu2.page : null;
+        const rowEl = createItemRow(
+          item,
+          {
+            selected: selectedItem,
+            checkboxChecked: isItemSelected(item.id),
+            menuPage
+          },
+          moveTargets
+        );
         listEl.append(rowEl);
       }
       listScrollEl.append(listEl);
@@ -1925,6 +2003,7 @@
       init_itemsState();
       init_itemsDraftState();
       init_itemSelectionState();
+      init_itemsMenuState();
       init_sessionState();
     }
   });
@@ -2320,6 +2399,7 @@
     async function load(projectId) {
       setItemsLoading(true);
       setItemsListScrollTop(0);
+      resetItemsMenuState();
       onStateChange();
       const indicatorTimer = window.setTimeout(() => {
         setItemsLoadingIndicatorVisible(true);
@@ -2446,6 +2526,7 @@
       "use strict";
       init_itemsState();
       init_loadItems();
+      init_itemsMenuState();
       init_storage();
       init_sessionState();
       init_toErrorMessage();
@@ -2465,7 +2546,8 @@
         return;
       }
       if (target.closest(ITEM_SELECT_SELECTOR)) return;
-      if (target.closest(ITEM_DELETE_SELECTOR)) return;
+      if (target.closest(ROW_MENU_TRIGGER_SELECTOR2)) return;
+      if (target.closest(ROW_MENU_SELECTOR2)) return;
       const row = target.closest(ITEM_ROW_SELECTOR);
       if (!(row instanceof HTMLElement)) {
         return;
@@ -2578,6 +2660,78 @@
         targetProjectName
       );
     }
+    function handleItemMenuToggle(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const trigger = target.closest(ROW_MENU_TRIGGER_SELECTOR2);
+      if (!(trigger instanceof HTMLButtonElement)) {
+        return;
+      }
+      const itemId = trigger.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      if (deps.hasActiveInlineEdit()) {
+        return;
+      }
+      if (getOpenItemMenu()?.itemId === itemId) {
+        closeItemMenu();
+      } else {
+        openItemMenu(itemId);
+      }
+      deps.requestRender();
+    }
+    function handleItemMenuDismiss(event) {
+      if (getOpenItemMenu() === null) {
+        return;
+      }
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      if (target.closest(ROW_MENU_TRIGGER_SELECTOR2)) return;
+      if (target.closest(ROW_MENU_SELECTOR2)) return;
+      closeItemMenu();
+      deps.requestRender();
+    }
+    function handleItemMenuShowMovePicker(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const moveButton = target.closest(ITEM_MENU_MOVE_SELECTOR);
+      if (!(moveButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      showItemMenuMovePicker();
+      deps.requestRender();
+    }
+    async function handleItemMenuMoveTarget(event) {
+      const target = event.target;
+      if (!(target instanceof Element)) {
+        return;
+      }
+      const targetButton = target.closest(ITEM_MENU_MOVE_TARGET_SELECTOR);
+      if (!(targetButton instanceof HTMLButtonElement)) {
+        return;
+      }
+      const itemId = targetButton.dataset[ITEM_ID_DATASET_KEY];
+      if (!itemId) {
+        return;
+      }
+      const targetProjectId = targetButton.dataset[PROJECT_ID_DATASET_KEY2];
+      if (!targetProjectId) {
+        return;
+      }
+      closeItemMenu();
+      await deps.itemsController.moveItem(
+        itemId,
+        targetProjectId,
+        deps.resolveProjectName(targetProjectId)
+      );
+    }
     async function handleBuildContext(event) {
       const target = event.target;
       if (!(target instanceof Element)) {
@@ -2603,14 +2757,16 @@
       if (!(target instanceof Element)) {
         return;
       }
-      const deleteButton = target.closest(ITEM_DELETE_SELECTOR);
-      if (!(deleteButton instanceof HTMLElement)) {
+      const deleteMenuItem = target.closest(ITEM_MENU_DELETE_SELECTOR);
+      if (!(deleteMenuItem instanceof HTMLElement)) {
         return;
       }
-      const itemId = deleteButton.dataset[ITEM_ID_DATASET_KEY];
+      const itemId = deleteMenuItem.dataset[ITEM_ID_DATASET_KEY];
       if (!itemId) {
         return;
       }
+      closeItemMenu();
+      deps.requestRender();
       if (!window.confirm("Delete this item?")) return;
       await deps.itemsController.deleteItem(itemId, selectedProjectId);
     }
@@ -2657,6 +2813,10 @@
     const eventBindings = [
       [deps.panelsEl, "click", asListener(handleSelectItem)],
       [deps.panelsEl, "click", asListener(handleToggleItemSelection)],
+      [deps.panelsEl, "click", asListener(handleItemMenuToggle)],
+      [deps.panelsEl, "click", asListener(handleItemMenuDismiss)],
+      [deps.panelsEl, "click", asListener(handleItemMenuShowMovePicker)],
+      [deps.panelsEl, "click", asListener(handleItemMenuMoveTarget)],
       [deps.panelsEl, "click", asListener(handleCreateItem)],
       [deps.panelsEl, "click", asListener(handleUpdateItem)],
       [deps.panelsEl, "click", asListener(handleBuildContext)],
@@ -2673,7 +2833,7 @@
     ];
     return eventBindings;
   }
-  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_DELETE_SELECTOR, ITEM_ID_DATASET_KEY, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, ITEMS_LIST_SCROLL_SELECTOR;
+  var ITEM_ROW_SELECTOR, ITEM_SELECT_SELECTOR, ITEM_ID_DATASET_KEY, PROJECT_ID_DATASET_KEY2, ROW_MENU_TRIGGER_SELECTOR2, ROW_MENU_SELECTOR2, ITEM_MENU_MOVE_SELECTOR, ITEM_MENU_MOVE_TARGET_SELECTOR, ITEM_MENU_DELETE_SELECTOR, ITEM_CREATE_BUTTON_SELECTOR, ITEM_CREATE_TITLE_SELECTOR, ITEM_CREATE_CONTENT_SELECTOR, ITEM_DETAIL_SAVE_SELECTOR, ITEM_DETAIL_TITLE_SELECTOR, ITEM_DETAIL_CONTENT_SELECTOR, ITEM_DETAIL_PROJECT_SELECT_SELECTOR, ITEM_BUILD_CONTEXT_SELECTOR, ITEMS_LIST_SCROLL_SELECTOR;
   var init_itemsHandlers = __esm({
     "src/ui/features/items/itemsHandlers.ts"() {
       "use strict";
@@ -2681,10 +2841,16 @@
       init_sessionState();
       init_itemsDraftState();
       init_itemsState();
+      init_itemsMenuState();
       ITEM_ROW_SELECTOR = ".aiw-item-row";
       ITEM_SELECT_SELECTOR = ".aiw-item-select";
-      ITEM_DELETE_SELECTOR = ".aiw-item-delete";
       ITEM_ID_DATASET_KEY = "itemId";
+      PROJECT_ID_DATASET_KEY2 = "projectId";
+      ROW_MENU_TRIGGER_SELECTOR2 = ".aiw-row-menu-trigger";
+      ROW_MENU_SELECTOR2 = ".aiw-row-menu";
+      ITEM_MENU_MOVE_SELECTOR = ".aiw-item-menu-move";
+      ITEM_MENU_MOVE_TARGET_SELECTOR = ".aiw-item-menu-move-target";
+      ITEM_MENU_DELETE_SELECTOR = ".aiw-item-menu-delete";
       ITEM_CREATE_BUTTON_SELECTOR = ".aiw-create-item-submit";
       ITEM_CREATE_TITLE_SELECTOR = ".aiw-create-item-title";
       ITEM_CREATE_CONTENT_SELECTOR = ".aiw-create-item-content";
@@ -3072,7 +3238,9 @@
       panelsEl: dom.orbPanelsEl,
       itemsController,
       notify: showToast,
-      resolveProjectName
+      resolveProjectName,
+      requestRender: renderUi,
+      hasActiveInlineEdit
     });
     const backupBindings = createBackupHandlers({
       panelsEl: dom.orbPanelsEl,
@@ -3135,10 +3303,11 @@
       return getEditingProjectId() !== null;
     }
     function hasOpenRowMenu() {
-      return getOpenProjectMenuId() !== null;
+      return getOpenProjectMenuId() !== null || getOpenItemMenu() !== null;
     }
     function closeAllRowMenus() {
       closeProjectMenu();
+      closeItemMenu();
     }
     function resolveProjectName(projectId) {
       const project = getProjects().find(
@@ -3159,6 +3328,7 @@
     async function reloadAfterImport() {
       itemsController.clearSelection();
       resetItemsDraftState();
+      resetItemsMenuState();
       resetProjectsDraftState();
       resetProjectsRenameState();
       resetProjectsMenuState();
@@ -3207,6 +3377,7 @@
       init_itemsController();
       init_itemsHandlers();
       init_itemsDraftState();
+      init_itemsMenuState();
       init_backupController();
       init_backupHandlers();
       init_searchController();

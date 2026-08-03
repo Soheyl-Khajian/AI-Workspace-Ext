@@ -1,7 +1,7 @@
 /* src/ui/styles/panels/rows.css */
 /*
   Shared lists + list rows, grouped by ROLE (projects, items,
-  search results): rows, row text, delete strips.
+  search results): rows, row text.
 
   DEDUPE RULE (applies across all panels/ files): identical-by-
   role components share ONE grouped rule. Class names are
@@ -97,42 +97,4 @@
 .aiw-search-result-text--untitled {
   color: var(--aiw-text-faint);
   font-style: italic;
-}
-
-/* ------------------------------------------------------------
-   SHARED: ROW DELETE STRIPS (destructive)
------------------------------------------------------------- */
-/*
-  No own border-radius: the parent row clips via overflow: hidden,
-  so the strip always matches the row's corners exactly.
-*/
-
-.aiw-item-delete {
-  /* Full height of the row */
-  align-self: stretch;
-
-  /* Fixed width strip */
-  width: 40px;
-  flex-shrink: 0;
-
-  background: var(--aiw-danger-soft);
-  border: none;
-  border-left: 1px solid var(--aiw-separator);
-
-  color: var(--aiw-danger-text);
-  font-size: 16px;
-  line-height: 1;
-  cursor: pointer;
-
-  transition:
-    background-color var(--aiw-dur-fast) var(--aiw-ease),
-    color var(--aiw-dur-fast) var(--aiw-ease);
-}
-
-.aiw-item-delete:hover {
-  background: var(--aiw-danger-soft-hover);
-}
-
-.aiw-item-delete:active {
-  background: var(--aiw-danger-soft-active);
 }

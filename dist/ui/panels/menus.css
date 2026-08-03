@@ -21,7 +21,8 @@
   whole row so its menu paints above later sibling rows.
 */
 
-.aiw-project-row--menu-open {
+.aiw-project-row--menu-open,
+.aiw-item-row--menu-open {
   position: relative;
   overflow: visible;
   z-index: 1;
@@ -139,4 +140,33 @@
 
 .aiw-row-menu-item--danger:active {
   background: var(--aiw-danger-soft-active);
+}
+
+/* ------------------------------------------------------------
+   MOVE PICKER PAGE (items menu)
+------------------------------------------------------------ */
+/*
+  The same menu surface morphed in place: one button per move
+  target. Capped + scrollable so a long project list cannot grow
+  the menu without bound; long names ellipsize like row text.
+*/
+
+.aiw-row-menu--picker {
+  max-height: 200px;
+  overflow-y: auto;
+}
+
+.aiw-row-menu--picker .aiw-row-menu-item {
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Non-interactive placeholder when there is no valid move target
+   (the renderer excludes the current project). */
+.aiw-row-menu-empty {
+  padding: var(--aiw-space-sm) var(--aiw-space-md);
+  color: var(--aiw-text-faint);
+  font-size: var(--aiw-fs-sm);
 }

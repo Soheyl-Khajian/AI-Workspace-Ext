@@ -1,7 +1,8 @@
 /* src/ui/styles/panels/projects.css */
 /*
-  Projects panel one-offs: deselect strips, inline
-  rename input.
+  Projects panel one-offs: deselect strip, inline rename input.
+  (The rename/delete strips moved into the shared row menu — see
+  panels/menus.css.)
 
   DEDUPE RULE (applies across all panels/ files): identical-by-
   role components share ONE grouped rule. Class names are
@@ -11,8 +12,14 @@
 */
 
 /* ------------------------------------------------------------
-   PROJECT DESELECT BUTTON + RENAME INLINE INPUT
+   PROJECT DESELECT STRIP (selected row only)
 ------------------------------------------------------------ */
+/*
+  Same strip anatomy as the menu trigger (see panels/menus.css).
+  Accent-tinted feedback because it acts on SELECTION, not on the
+  project itself — it removes the inset accent bar, so its hover
+  tint matches what it takes away.
+*/
 
 .aiw-project-deselect {
   align-self: stretch;
@@ -33,6 +40,19 @@
     color var(--aiw-dur-fast) var(--aiw-ease);
 }
 
+.aiw-project-deselect:hover {
+  background: var(--aiw-accent-soft);
+  color: var(--aiw-text);
+}
+
+.aiw-project-deselect:active {
+  background: var(--aiw-accent-soft-hover);
+}
+
+/* ------------------------------------------------------------
+   PROJECT RENAME INPUT (inline edit)
+------------------------------------------------------------ */
+
 .aiw-project-rename-input {
   flex: 1;
   background: transparent;
@@ -48,23 +68,4 @@
 
   padding: var(--aiw-space-md) var(--aiw-space-lg);
   min-width: 0;
-}
-
-/* ------------------------------------------------------------
-   PROJECT DESELECT STRIP (selected row only)
------------------------------------------------------------- */
-/*
-  Same strip anatomy as rename (shared base rule above). Accent-
-  tinted feedback because it acts on SELECTION, not on the project
-  itself — it removes the inset accent bar, so its hover tint
-  matches what it takes away.
-*/
-
-.aiw-project-deselect:hover {
-  background: var(--aiw-accent-soft);
-  color: var(--aiw-text);
-}
-
-.aiw-project-deselect:active {
-  background: var(--aiw-accent-soft-hover);
 }

@@ -41,6 +41,7 @@ import {
   setItemsListScrollTop,
 } from "./itemsState";
 import { loadItems } from "./loadItems";
+import { resetItemsMenuState } from "./itemsMenuState";
 import {
   createItem,
   deleteItem as storageDeleteItem,
@@ -134,6 +135,13 @@ export function createItemsController(
       delete) call loadItems() directly and keep the position.
     */
     setItemsListScrollTop(0);
+
+    /*
+    Same rule as the scroll position: an open row menu belongs
+    to the previous project's list, so it must not survive into
+    the new one.
+    */
+    resetItemsMenuState();
 
     onStateChange();
 

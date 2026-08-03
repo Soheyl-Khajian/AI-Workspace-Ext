@@ -64,11 +64,19 @@ import {
   getOpenProjectMenuId,
   resetProjectsMenuState,
 } from "../features/projects/projectsMenuState";
+
 import { createItemsController } from "../features/items/itemsController";
 import { createItemsHandlers } from "../features/items/itemsHandlers";
 import { resetItemsDraftState } from "../features/items/itemsDraftState";
+import {
+  closeItemMenu,
+  getOpenItemMenu,
+  resetItemsMenuState,
+} from "../features/items/itemsMenuState";
+
 import { createBackupController } from "../features/backup/backupController";
 import { createBackupHandlers } from "../features/backup/backupHandlers";
+
 import { createSearchController } from "../features/search/searchController";
 import { createSearchHandlers } from "../features/search/searchHandlers";
 import {
@@ -132,6 +140,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     itemsController,
     notify: showToast,
     resolveProjectName,
+    requestRender: renderUi,
+    hasActiveInlineEdit,
   });
 
   const backupBindings = createBackupHandlers({
@@ -277,14 +287,15 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   3. answer hasOpenRowMenu for the layered outside-click
      dismissal in orbHandlers (first click closes the menu,
      second collapses the orb)
-  The items row menu joins in its own commit.
+  Members: the projects and items row menus.
 */
   function hasOpenRowMenu(): boolean {
-    return getOpenProjectMenuId() !== null;
+    return getOpenProjectMenuId() !== null || getOpenItemMenu() !== null;
   }
 
   function closeAllRowMenus(): void {
     closeProjectMenu();
+    closeItemMenu();
   }
 
   // Injected into itemsHandlers as deps.resolveProjectName so the
@@ -335,6 +346,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   async function reloadAfterImport(): Promise<void> {
     itemsController.clearSelection();
     resetItemsDraftState();
+    resetItemsMenuState();
     resetProjectsDraftState();
     resetProjectsRenameState();
     resetProjectsMenuState();

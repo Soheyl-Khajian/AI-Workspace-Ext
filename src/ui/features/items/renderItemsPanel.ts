@@ -41,6 +41,7 @@ import {
   getCreateItemContentDraft,
 } from "./itemsDraftState";
 import { isItemSelected, getSelectedItemsCount } from "./itemSelectionState";
+import { getOpenItemMenu } from "./itemsMenuState";
 
 import {
   getSelectedProjectId,
@@ -63,6 +64,7 @@ export function renderItemsPanel(
   const loadingIndicatorVisible = isItemsLoadingIndicatorVisible();
   const error = getItemsError();
   const items = getItems();
+  const openItemMenu = getOpenItemMenu();
 
   const isEmpty = items.length === 0;
 
@@ -165,9 +167,27 @@ export function renderItemsPanel(
 
     listEl.className = "aiw-items-list";
 
+    // Move targets for the menu's picker page: every project
+    // except the one the listed items already live in.
+    const moveTargets = projects.filter(
+      (project) => project.id !== selectedProjectId,
+    );
+
     for (const item of items) {
       const selectedItem = item.id === selectedItemId;
-      const rowEl = createItemRow(item, selectedItem, isItemSelected(item.id));
+      const menuPage =
+        openItemMenu !== null && openItemMenu.itemId === item.id
+          ? openItemMenu.page
+          : null;
+      const rowEl = createItemRow(
+        item,
+        {
+          selected: selectedItem,
+          checkboxChecked: isItemSelected(item.id),
+          menuPage,
+        },
+        moveTargets,
+      );
 
       listEl.append(rowEl);
     }
