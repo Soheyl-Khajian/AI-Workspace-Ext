@@ -8,6 +8,30 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.5.0] - 2026-08-03
+
+### Added
+
+- **Row "…" menus**: project rows get Rename / Delete and item rows get
+  Move to… / Delete, replacing the always-visible rename (✎) and
+  delete (×) strips. Menus are projected from state, so background
+  re-renders can't close them; at most one menu is open across the
+  whole UI; menus close on every panel switch and orb collapse; and
+  outside clicks dismiss in layers (the first closes the menu, the
+  second collapses the orb).
+- **In-place move picker**: "Move to…" morphs the open menu into a
+  capped, scrollable list of target projects (the current project is
+  excluded, with a "No other projects" placeholder) and delegates to
+  the existing move workflow and toast.
+
+### Changed
+
+- **The item detail column now owns only content** (title, content,
+  save): the Project select is removed and moving an item belongs
+  solely to the row menu's move picker. The content textarea absorbs
+  the freed height.
+- Row menus cannot open while an inline rename is active.
+
 ## [0.4.0] - 2026-08-03
 
 ### Added
@@ -138,7 +162,8 @@ Initial MVP release.
   automatically re-mounting the UI, guards against duplicate content-script
   injection, and makes Inbox creation atomic to prevent duplicate projects.
 
-[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.5.0...HEAD
+[0.5.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.1.0...v0.2.0
