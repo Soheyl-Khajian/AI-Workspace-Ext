@@ -4,7 +4,7 @@
 > of ChatGPT — organize captured information into projects and items without
 > leaving the chat.
 
-**Status:** MVP · `v0.3.0` · source-available (all rights reserved — see [License](#license))
+**Status:** `v0.4.0` · source-available (all rights reserved — see [License](#license))
 
 AI Workspace injects a lightweight floating UI onto `chatgpt.com` where you can
 keep project notes and snippets right next to your conversations. Everything is
@@ -26,7 +26,7 @@ machine.
   one-click deselect control. Selection is session-only by design: a fresh
   page starts with a clean slate.
 - **Items** — typed items (notes and more) with a title and content. Create them,
-  open a detail view to edit and save, select them, and delete them.
+  select them, and delete them. inside detail region, edit and save them.
 - **Capture from the page** — select text on `chatgpt.com`, right-click, and save
   it as an item. It goes into your selected project, or into an auto-created
   **Inbox** project if none is selected.
@@ -175,7 +175,6 @@ manifest.json   MV3 manifest
 
 - Keyboard basics (Enter submits forms, Escape closes panels)
 - Richer item types and content editing
-- UI/UX polish and theming
 - Pro features
 - Chrome Web Store release
 

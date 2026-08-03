@@ -8,6 +8,41 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.4.0] - 2026-08-03
+
+### Added
+
+- **Master-detail items panel**: item details render in a second column
+  beside the items list, so the list stays visible and scrollable while
+  editing. Selecting an item swaps the detail column's subject in place,
+  and the separate item-detail panel is retired.
+- **Fixed panel geometry**: panels use a fixed size (1050×680, clamped to
+  the viewport) instead of content-driven bounds, so the layout stays
+  stable across panels and states.
+
+### Changed
+
+- **`panels.css` split into role and feature files** under
+  `src/ui/styles/panels/` (base, rows, projects, forms, items, buttons,
+  context, search, backup, toast) with a byte-identical rule stream; the
+  manifest exposes the folder via a wildcard.
+- Item rows are fixed-height (40px), single-line with ellipsis; the list
+  column is fixed at 320px.
+
+### Fixed
+
+- The items list keeps its scroll position across re-renders (checkbox
+  toggles, saves, deletes) instead of jumping back to the selected row;
+  the position resets only when switching projects.
+- Action pill hover uses an opaque surface, so it no longer turns white
+  over light host pages.
+- All scrollables inside panels (body, list column, textareas) share one
+  scrollbar treatment; textareas previously rendered unstyled browser
+  scrollbars, and scrollbar tracks no longer show the text I-beam cursor.
+- Panel entrance animation no longer gets cancelled when a panel's
+  opening triggers an immediate data load (search panel appeared
+  with no animation at all).
+
 ## [0.3.0] - 2026-08-01
 
 ### Added
@@ -103,7 +138,8 @@ Initial MVP release.
   automatically re-mounting the UI, guards against duplicate content-script
   injection, and makes Inbox creation atomic to prevent duplicate projects.
 
-[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.3.0...HEAD
+[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.4.0...HEAD
+[0.4.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/releases/tag/v0.1.0
