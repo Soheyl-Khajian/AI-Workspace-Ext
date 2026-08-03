@@ -20,6 +20,7 @@
 //   row-menu state flips, which never touch the controller)
 // - NO global DOM queries (scoped to deps.panelsEl)
 // - core session state (selectedProjectId) is imported directly;
+//   sibling-feature state (projects) is NOT — the project-name
 //   lookup is injected via deps.resolveProjectName to keep the
 //   items feature decoupled from projectsState (same rule for
 //   deps.hasActiveInlineEdit vs projectsRenameState)

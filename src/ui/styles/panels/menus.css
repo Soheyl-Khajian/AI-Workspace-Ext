@@ -1,8 +1,8 @@
 /* src/ui/styles/panels/menus.css */
 /*
   Row "…" menus: trigger strip, floating menu surface, menu items.
-  Role-named classes shared across features (project rows now,
-  item rows when the items menu ships).
+  Role-named classes shared across features (project and item
+  rows).
 
   DEDUPE RULE (applies across all panels/ files): identical-by-
   role components share ONE grouped rule. Class names are

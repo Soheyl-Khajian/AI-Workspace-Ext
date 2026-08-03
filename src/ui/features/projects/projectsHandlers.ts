@@ -5,7 +5,7 @@
 //
 // Responsibility:
 //
-/// - own the projects panel's DOM event handlers
+// - own the projects panel's DOM event handlers
 //   (select / deselect / create / row menu / rename / delete /
 //   draft capture)
 // - own the projects selector constants + dataset key
@@ -59,11 +59,12 @@ const PROJECT_DESELECT_SELECTOR = ".aiw-project-deselect";
 const PROJECT_ID_DATASET_KEY = "projectId";
 const PROJECT_CREATE_BUTTON_SELECTOR = ".aiw-create-project-submit";
 const PROJECT_CREATE_INPUT_SELECTOR = ".aiw-create-project-input";
+
 export const PROJECT_RENAME_INPUT_CLASS = "aiw-project-rename-input";
 export const PROJECT_RENAME_INPUT_SELECTOR = `.${PROJECT_RENAME_INPUT_CLASS}`;
 
-// Shared row-menu classes (role-named: item rows reuse them when
-// the items menu ships)
+// Shared row-menu classes (role-named: the item row menus reuse
+// them — see panels/menus.css)
 const ROW_MENU_TRIGGER_SELECTOR = ".aiw-row-menu-trigger";
 const ROW_MENU_SELECTOR = ".aiw-row-menu";
 const PROJECT_MENU_RENAME_SELECTOR = ".aiw-project-menu-rename";
