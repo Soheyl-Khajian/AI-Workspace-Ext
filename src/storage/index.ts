@@ -6,6 +6,9 @@
 // - Validates and normalizes input before delegating to the repo layer.
 // - Owns domain rules (required fields, trimming, immutable-field protection).
 // - Never talks to IndexedDB directly; all persistence goes through repos.
+// - Announces every successful mutation via notifyMutation() as its last
+//   act before resolving; reads, failed calls, same-target moves, and
+//   getOrCreateProjectByName never announce (see mutationEvents.ts).
 //
 // Layering: UI / controllers → storage (this file) → repo → idb
 //
@@ -29,6 +32,7 @@ import { replaceAllData as repoReplaceAllData } from "./repo/backupRepo";
 
 import type { Project } from "../models/project";
 import type { Item, ItemMeta, ItemType } from "../models/item";
+import { notifyMutation } from "./mutationEvents";
 
 /* -------------------------------------------------------
    TYPES
@@ -70,6 +74,7 @@ export async function createProject(
   }
 
   await insertProject(project);
+  notifyMutation();
   return project;
 }
 
@@ -100,6 +105,10 @@ export async function getOrCreateProjectByName(name: string): Promise<Project> {
     createdAt: Date.now(),
   };
 
+  // Deliberately NO notifyMutation() here: every capture path that
+  // resolves a project this way immediately follows with createItem,
+  // which carries the count. Announcing both would double-charge
+  // captures (see the auto-backup mutation definition).
   return getOrInsertProjectByName(trimmedName, candidate);
 }
 
@@ -116,6 +125,7 @@ export async function deleteProjectCascade(projectId: string): Promise<void> {
   // Delete children first, then the project, so no items are orphaned.
   await deleteItemsByProjectId(trimmedProjectId);
   await deleteProject(trimmedProjectId);
+  notifyMutation();
 }
 
 export async function renameProject(
@@ -153,6 +163,7 @@ export async function renameProject(
   };
 
   await insertProject(merged);
+  notifyMutation();
 
   return merged;
 }
@@ -198,6 +209,7 @@ export async function createItem(
   };
 
   await insertItem(item);
+  notifyMutation();
   return item;
 }
 
@@ -290,6 +302,7 @@ export async function updateItem(
   }
 
   await insertItem(merged);
+  notifyMutation();
 
   return merged;
 }
@@ -340,6 +353,7 @@ export async function moveItemToProject(
   };
 
   await insertItem(merged);
+  notifyMutation();
 
   return merged;
 }
@@ -355,6 +369,7 @@ export async function deleteItem(id: string): Promise<void> {
   }
 
   await deleteItemById(trimmedId);
+  notifyMutation();
 }
 
 /* -------------------------------------------------------
@@ -389,4 +404,5 @@ export async function replaceAllData(
   }
 
   await repoReplaceAllData(projects, items);
+  notifyMutation();
 }
