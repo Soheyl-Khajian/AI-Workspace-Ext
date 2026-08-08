@@ -37,6 +37,8 @@
 // - all `now` values must come from one clock (Date.now() at the
 //   call site) so comparisons stay meaningful.
 
+import type { SnapshotReason } from "../../../models/backup";
+
 // ------------------------------------------------------------
 // TYPES
 // ------------------------------------------------------------
@@ -52,7 +54,7 @@ export type PolicyDecision =
   | { snapshot: false }
   | {
       snapshot: true;
-      reason: "count-cap" | "debounce" | "pagehide" | "pre-import";
+      reason: SnapshotReason;
     };
 
 /**

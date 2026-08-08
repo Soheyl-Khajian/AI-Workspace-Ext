@@ -18,10 +18,11 @@
 //   validation error message survives
 // ------------------------------------------------------------
 
-import type { Item } from "../../../models/item";
-import { ITEM_TYPES } from "../../../models/item";
 import type { Project } from "../../../models/project";
-import { BACKUP_SCHEMA_VERSION, type BackupDocument } from "./buildBackup";
+import type { Item } from "../../../models/item";
+import type { BackupDocument } from "../../../models/backup";
+import { ITEM_TYPES } from "../../../models/item";
+import { BACKUP_SCHEMA_VERSION } from "./buildBackup";
 
 function assertValidProjects(projects: unknown[]): void {
   for (const project of projects) {

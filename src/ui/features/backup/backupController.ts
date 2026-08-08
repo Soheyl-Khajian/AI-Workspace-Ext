@@ -22,7 +22,7 @@
 
 import { exportAllData, replaceAllData } from "../../../storage";
 import { buildBackup } from "./buildBackup";
-import type { BackupDocument } from "./buildBackup";
+import type { BackupDocument } from "../../../models/backup";
 import { parseBackup } from "./parseBackup";
 import { downloadJson } from "../../shared/downloadJson";
 import { pickJsonFile } from "../../shared/pickJsonFile";
