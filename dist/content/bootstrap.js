@@ -350,6 +350,30 @@
     }
   });
 
+  // src/storage/mutationEvents.ts
+  function subscribe(listener) {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }
+  function notifyMutation() {
+    for (const listener of listeners) {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[mutationEvents] listener failed:", error);
+      }
+    }
+  }
+  var listeners;
+  var init_mutationEvents = __esm({
+    "src/storage/mutationEvents.ts"() {
+      "use strict";
+      listeners = /* @__PURE__ */ new Set();
+    }
+  });
+
   // src/storage/index.ts
   async function createProject(name, description) {
     if (name == null) {
@@ -369,6 +393,7 @@
       project.description = trimmedDescription;
     }
     await insertProject(project);
+    notifyMutation();
     return project;
   }
   async function listProjects() {
@@ -399,6 +424,7 @@
     }
     await deleteItemsByProjectId(trimmedProjectId);
     await deleteProject(trimmedProjectId);
+    notifyMutation();
   }
   async function renameProject(projectId, name) {
     if (projectId == null) {
@@ -427,6 +453,7 @@
       updatedAt: Date.now()
     };
     await insertProject(merged);
+    notifyMutation();
     return merged;
   }
   async function createItem(projectId, type, title, content, meta) {
@@ -455,6 +482,7 @@
       meta
     };
     await insertItem(item);
+    notifyMutation();
     return item;
   }
   async function listAllItems() {
@@ -499,6 +527,7 @@
       merged.content = partialUpdate.content ?? "";
     }
     await insertItem(merged);
+    notifyMutation();
     return merged;
   }
   async function moveItemToProject(itemId, targetProjectId) {
@@ -533,6 +562,7 @@
       updatedAt: Date.now()
     };
     await insertItem(merged);
+    notifyMutation();
     return merged;
   }
   async function deleteItem(id) {
@@ -544,6 +574,7 @@
       throw new Error("item id cannot be empty");
     }
     await deleteItemById(trimmedId);
+    notifyMutation();
   }
   async function exportAllData() {
     const projects = await listProjects();
@@ -555,6 +586,7 @@
       throw new Error("replaceAllData requires both projects and items arrays");
     }
     await replaceAllData(projects, items);
+    notifyMutation();
   }
   var init_storage = __esm({
     "src/storage/index.ts"() {
@@ -562,6 +594,7 @@
       init_projectsRepo();
       init_itemsRepo();
       init_backupRepo();
+      init_mutationEvents();
     }
   });
 
@@ -3005,6 +3038,13 @@
       if (!confirmed) {
         return;
       }
+      const backedUp = await dependencies.beforeImport();
+      if (!backedUp) {
+        dependencies.notify(
+          "Couldn't save a safety backup, so the import was cancelled. Please try again."
+        );
+        return;
+      }
       try {
         await replaceAllData2(backup.projects, backup.items);
       } catch (error) {
@@ -3065,6 +3105,146 @@
       init_eventBindings();
       BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
       BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
+    }
+  });
+
+  // src/ui/features/backup/autoBackupPolicy.ts
+  function createAutoBackupPolicy(config) {
+    let mutationCount = 0;
+    let lastMutationAt = null;
+    function noteMutation(now) {
+      mutationCount++;
+      lastMutationAt = now;
+      if (mutationCount >= config.maxMutations) {
+        return { snapshot: true, reason: "count-cap" };
+      }
+      return { snapshot: false };
+    }
+    function onDebounceElapsed(now) {
+      if (lastMutationAt === null) return { snapshot: false };
+      if (now - lastMutationAt >= config.debounceMs) {
+        return { snapshot: true, reason: "debounce" };
+      }
+      return { snapshot: false };
+    }
+    function onPageHide() {
+      if (lastMutationAt !== null) {
+        return { snapshot: true, reason: "pagehide" };
+      }
+      return { snapshot: false };
+    }
+    function beforeImport() {
+      return { snapshot: true, reason: "pre-import" };
+    }
+    function snapshotTaken() {
+      mutationCount = 0;
+      lastMutationAt = null;
+    }
+    return {
+      noteMutation,
+      onDebounceElapsed,
+      onPageHide,
+      beforeImport,
+      snapshotTaken
+    };
+  }
+  var init_autoBackupPolicy = __esm({
+    "src/ui/features/backup/autoBackupPolicy.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/features/backup/autoBackupController.ts
+  function createAutoBackupController(dependencies) {
+    const policy = createAutoBackupPolicy(dependencies.config);
+    let debounceTimerId = null;
+    let inFlight = false;
+    let unsubscribe = null;
+    function clearDebounceTimer() {
+      if (debounceTimerId !== null) {
+        window.clearTimeout(debounceTimerId);
+        debounceTimerId = null;
+      }
+    }
+    function handleMutation() {
+      const decision = policy.noteMutation(Date.now());
+      if (decision.snapshot) {
+        void requestSnapshot(decision.reason);
+        return;
+      }
+      clearDebounceTimer();
+      debounceTimerId = window.setTimeout(
+        handleDebounceTimerFired,
+        dependencies.config.debounceMs
+      );
+    }
+    function handleDebounceTimerFired() {
+      debounceTimerId = null;
+      const decision = policy.onDebounceElapsed(Date.now());
+      if (decision.snapshot) {
+        void requestSnapshot(decision.reason);
+      }
+    }
+    function handlePageHide() {
+      const decision = policy.onPageHide();
+      if (decision.snapshot) {
+        void requestSnapshot(decision.reason);
+      }
+    }
+    async function requestSnapshot(reason) {
+      if (inFlight) return true;
+      inFlight = true;
+      try {
+        const snapshot = await exportAllData();
+        const backup = buildBackup(snapshot, (/* @__PURE__ */ new Date()).toISOString());
+        const ack = await dependencies.sendSnapshot(reason, backup);
+        if (ack.ok) {
+          policy.snapshotTaken();
+          clearDebounceTimer();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.warn(
+          "[AIW] auto-backup snapshot failed (will retry on a later trigger):",
+          error
+        );
+        return false;
+      } finally {
+        inFlight = false;
+      }
+    }
+    function start() {
+      unsubscribe = subscribe(handleMutation);
+      window.addEventListener("pagehide", handlePageHide);
+    }
+    function stop() {
+      if (unsubscribe !== null) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+      window.removeEventListener("pagehide", handlePageHide);
+      clearDebounceTimer();
+    }
+    async function beforeImport() {
+      const decision = policy.beforeImport();
+      if (!decision.snapshot) {
+        return true;
+      }
+      return requestSnapshot(decision.reason);
+    }
+    return { start, stop, beforeImport };
+  }
+  var AUTO_BACKUP_DEBOUNCE_MS, AUTO_BACKUP_MAX_MUTATIONS;
+  var init_autoBackupController = __esm({
+    "src/ui/features/backup/autoBackupController.ts"() {
+      "use strict";
+      init_autoBackupPolicy();
+      init_buildBackup();
+      init_storage();
+      init_mutationEvents();
+      AUTO_BACKUP_DEBOUNCE_MS = 3e4;
+      AUTO_BACKUP_MAX_MUTATIONS = 20;
     }
   });
 
@@ -3174,8 +3354,24 @@
       notify: showToast,
       itemsController
     });
+    const autoBackupController = createAutoBackupController({
+      config: {
+        debounceMs: AUTO_BACKUP_DEBOUNCE_MS,
+        maxMutations: AUTO_BACKUP_MAX_MUTATIONS
+      },
+      sendSnapshot: (reason, backup) => {
+        const message = {
+          type: "AUTO_BACKUP_SNAPSHOT",
+          reason,
+          backup
+        };
+        return chrome.runtime.sendMessage(message);
+      }
+    });
+    autoBackupController.start();
     const backupController = createBackupController({
       notify: showToast,
+      beforeImport: autoBackupController.beforeImport,
       onImported: reloadAfterImport
     });
     const searchController = createSearchController({
@@ -3317,6 +3513,7 @@
       for (const [target, type, listener, options] of eventBindings) {
         target.removeEventListener(type, listener, options);
       }
+      autoBackupController.stop();
     };
   }
   var init_floatingController = __esm({
@@ -3342,6 +3539,7 @@
       init_itemsMenuState();
       init_backupController();
       init_backupHandlers();
+      init_autoBackupController();
       init_searchController();
       init_searchHandlers();
       init_renderSearchPanel();

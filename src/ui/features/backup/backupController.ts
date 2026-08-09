@@ -34,6 +34,11 @@ import { toErrorMessage } from "../../shared/toErrorMessage";
 
 type BackupControllerDependencies = {
   notify: (message: string) => void;
+  // Awaited between the destructive confirm and replaceAllData: the
+  // auto-backup feature takes an emergency snapshot and reports
+  // whether the current data is protected. false => ABORT the import
+  // (a cancelled import is recoverable; destroyed data is not).
+  beforeImport: () => Promise<boolean>;
   // Called after a successful import so the caller can reload runtime
   // state and re-render (the DB was fully replaced underneath us).
   onImported: () => Promise<void> | void;
@@ -79,7 +84,7 @@ export function createBackupController(
   // ----------------------------------------------------------
   // IMPORT BACKUP WORKFLOW
   //
-  // pick -> parse -> confirm -> replace-all -> refresh.
+  // pick -> parse -> confirm -> safety backup -> replace-all -> refresh.
   // Each stage can abort cleanly (cancel, invalid file, declined
   // confirm) without touching stored data.
   // ----------------------------------------------------------
@@ -119,7 +124,17 @@ export function createBackupController(
       return;
     }
 
-    // 4) Atomic replace-all.
+    // 4) Emergency snapshot BEFORE destruction. Abort rather than
+    //    proceed unprotected (see the beforeImport dependency).
+    const backedUp = await dependencies.beforeImport();
+    if (!backedUp) {
+      dependencies.notify(
+        "Couldn't save a safety backup, so the import was cancelled. Please try again.",
+      );
+      return;
+    }
+
+    // 5) Atomic replace-all.
     try {
       await replaceAllData(backup.projects, backup.items);
     } catch (error) {
@@ -127,7 +142,7 @@ export function createBackupController(
       return;
     }
 
-    // 5) Success — notify, then let the caller rehydrate the UI.
+    // 6) Success — notify, then let the caller rehydrate the UI.
     dependencies.notify("Backup imported");
     await dependencies.onImported();
   }
