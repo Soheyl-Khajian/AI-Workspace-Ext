@@ -9,17 +9,18 @@
   };
 
   // src/storage/idb/schema.ts
-  var DB_NAME, DB_VERSION, STORE_PROJECTS, STORE_ITEMS, KEY_PROJECTS, KEY_ITEMS, IDX_ITEMS_BY_PROJECT, IDB_SCHEMA;
+  var DB_NAME, DB_VERSION, STORE_PROJECTS, STORE_ITEMS, KEY_PROJECTS, KEY_ITEMS, IDX_ITEMS_BY_PROJECT, IDX_ITEMS_BY_TYPE, IDB_SCHEMA;
   var init_schema = __esm({
     "src/storage/idb/schema.ts"() {
       "use strict";
       DB_NAME = "aiw_db";
-      DB_VERSION = 1;
+      DB_VERSION = 2;
       STORE_PROJECTS = "projects";
       STORE_ITEMS = "items";
       KEY_PROJECTS = "id";
       KEY_ITEMS = "id";
       IDX_ITEMS_BY_PROJECT = "by_projectId";
+      IDX_ITEMS_BY_TYPE = "by_type";
       IDB_SCHEMA = {
         stores: [
           {
@@ -38,7 +39,8 @@
                 name: IDX_ITEMS_BY_PROJECT,
                 keyPath: "projectId",
                 options: { unique: false }
-              }
+              },
+              { name: IDX_ITEMS_BY_TYPE, keyPath: "type" }
             ]
           }
         ]
@@ -53,22 +55,20 @@
         "applyMigrations must run inside a versionchange transaction"
       );
     }
-    if (oldVersion < 1) {
-      const stores = IDB_SCHEMA.stores;
-      for (const storeDef of stores) {
-        const storeName = storeDef.name;
-        let store;
-        if (!db.objectStoreNames.contains(storeName)) {
-          store = db.createObjectStore(storeName, {
-            keyPath: storeDef.keyPath
-          });
-        } else {
-          store = tx.objectStore(storeName);
-        }
-        for (const indexDef of storeDef.indexes) {
-          if (!store.indexNames.contains(indexDef.name)) {
-            store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options);
-          }
+    const stores = IDB_SCHEMA.stores;
+    for (const storeDef of stores) {
+      const storeName = storeDef.name;
+      let store;
+      if (!db.objectStoreNames.contains(storeName)) {
+        store = db.createObjectStore(storeName, {
+          keyPath: storeDef.keyPath
+        });
+      } else {
+        store = tx.objectStore(storeName);
+      }
+      for (const indexDef of storeDef.indexes) {
+        if (!store.indexNames.contains(indexDef.name)) {
+          store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options);
         }
       }
     }
