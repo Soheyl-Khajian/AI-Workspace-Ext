@@ -1656,6 +1656,11 @@
     checkBoxEl.className = "aiw-item-select";
     checkBoxEl.dataset.itemId = item.id;
     rowEl.prepend(checkBoxEl);
+    const typeGlyphEl = document.createElement("span");
+    typeGlyphEl.className = `aiw-item-type aiw-item-type--${item.type}`;
+    typeGlyphEl.textContent = ITEM_TYPE_GLYPHS[item.type];
+    typeGlyphEl.title = item.type;
+    rowEl.append(typeGlyphEl);
     const itemTextEl = document.createElement("span");
     itemTextEl.className = "aiw-item-text";
     itemTextEl.textContent = hasTitle ? item.title : "Untitled";
@@ -1714,9 +1719,16 @@
     }
     return rowEl;
   }
+  var ITEM_TYPE_GLYPHS;
   var init_createItemRow = __esm({
     "src/ui/features/items/createItemRow.ts"() {
       "use strict";
+      ITEM_TYPE_GLYPHS = {
+        note: "\u270E",
+        snippet: "\u275D",
+        task: "\u2713",
+        link: "\u2197"
+      };
     }
   });
 
@@ -1790,6 +1802,35 @@
       });
       detailColEl.append(placeholderStateEl);
       return detailColEl;
+    }
+    const stripEl = document.createElement("div");
+    stripEl.className = "aiw-item-detail-source";
+    if (item.meta.sourceUrl) {
+      const sourceLineEl = document.createElement("div");
+      sourceLineEl.className = "aiw-item-detail-source-line";
+      const sourceLinkEl = document.createElement("a");
+      sourceLinkEl.className = "aiw-item-detail-source-link";
+      sourceLinkEl.href = item.meta.sourceUrl;
+      sourceLinkEl.target = "_blank";
+      sourceLinkEl.rel = "noopener noreferrer";
+      sourceLinkEl.textContent = item.meta.sourceTitle || item.meta.sourceUrl;
+      sourceLineEl.append("From ", sourceLinkEl);
+      stripEl.append(sourceLineEl);
+    }
+    if (item.type === "link" && item.content.trim()) {
+      const openLinkLineEl = document.createElement("div");
+      openLinkLineEl.className = "aiw-item-detail-source-line";
+      const openLinkEl = document.createElement("a");
+      openLinkEl.className = "aiw-item-detail-source-link";
+      openLinkEl.href = item.content.trim();
+      openLinkEl.target = "_blank";
+      openLinkEl.rel = "noopener noreferrer";
+      openLinkEl.textContent = "Open link";
+      openLinkLineEl.append(openLinkEl);
+      stripEl.append(openLinkLineEl);
+    }
+    if (stripEl.hasChildNodes()) {
+      detailColEl.append(stripEl);
     }
     const formEl = document.createElement("div");
     formEl.className = "aiw-item-detail-form";
