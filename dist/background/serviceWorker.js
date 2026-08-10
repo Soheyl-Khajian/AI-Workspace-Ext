@@ -44,25 +44,50 @@
     "src/background/serviceWorker.ts"() {
       init_autoBackupWriter();
       var CONTEXT_MENU_SAVE_TO_WORKSPACE_ID = "aiw-save-to-workspace";
+      var CONTEXT_MENU_SAVE_LINK_TO_WORKSPACE_ID = "aiw-save-link-to-workspace";
       chrome.runtime.onInstalled.addListener(() => {
-        chrome.contextMenus.create({
-          id: CONTEXT_MENU_SAVE_TO_WORKSPACE_ID,
-          title: "Save to Workspace",
-          contexts: ["selection"]
+        chrome.contextMenus.removeAll(() => {
+          chrome.contextMenus.create({
+            id: CONTEXT_MENU_SAVE_TO_WORKSPACE_ID,
+            title: "Save to Workspace",
+            contexts: ["selection"],
+            documentUrlPatterns: ["https://chatgpt.com/*"]
+          });
+          chrome.contextMenus.create({
+            id: CONTEXT_MENU_SAVE_LINK_TO_WORKSPACE_ID,
+            title: "Save link to Workspace",
+            contexts: ["link"],
+            documentUrlPatterns: ["https://chatgpt.com/*"]
+          });
         });
       });
       chrome.contextMenus.onClicked.addListener((info, tab) => {
-        if (info.menuItemId !== CONTEXT_MENU_SAVE_TO_WORKSPACE_ID) return;
         if (!tab?.id) return;
-        if (!info.selectionText) return;
-        const message = {
-          type: "CAPTURE_SELECTION",
-          selectionText: info.selectionText,
-          // info.pageUrl can be undefined if Chrome doesn't have permission to read the URL
-          sourceUrl: info.pageUrl ?? ""
-        };
-        chrome.tabs.sendMessage(tab.id, message).catch(() => {
-        });
+        if (info.menuItemId === CONTEXT_MENU_SAVE_TO_WORKSPACE_ID) {
+          if (!info.selectionText) return;
+          const message = {
+            type: "CAPTURE_SELECTION",
+            selectionText: info.selectionText,
+            // info.pageUrl can be undefined if Chrome doesn't have permission to read the URL
+            sourceUrl: info.pageUrl ?? "",
+            sourceTitle: tab.title
+          };
+          chrome.tabs.sendMessage(tab.id, message).catch(() => {
+          });
+          return;
+        }
+        if (info.menuItemId === CONTEXT_MENU_SAVE_LINK_TO_WORKSPACE_ID) {
+          if (!info.linkUrl) return;
+          if (!info.pageUrl) return;
+          const message = {
+            type: "CAPTURE_LINK",
+            linkUrl: info.linkUrl,
+            sourceUrl: info.pageUrl,
+            sourceTitle: tab.title
+          };
+          chrome.tabs.sendMessage(tab.id, message).catch(() => {
+          });
+        }
       });
       chrome.runtime.onMessage.addListener(
         (message, _sender, sendResponse) => {

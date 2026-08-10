@@ -5,7 +5,7 @@ export type ItemType = (typeof ITEM_TYPES)[number];
 export type ItemMeta = {
   sourceTitle?: string;
   sourceUrl?: string;
-  createdFrom: "manual" | "selection";
+  createdFrom: "manual" | "selection" | "link";
 };
 
 export type Item = {

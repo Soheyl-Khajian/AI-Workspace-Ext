@@ -40,7 +40,14 @@
                 keyPath: "projectId",
                 options: { unique: false }
               },
-              { name: IDX_ITEMS_BY_TYPE, keyPath: "type" }
+              {
+                // v2: type-aware queries (typed depth). IndexedDB auto-
+                // populates a new index from existing rows during the
+                // versionchange upgrade; no manual backfill needed.
+                name: IDX_ITEMS_BY_TYPE,
+                keyPath: "type",
+                options: { unique: false }
+              }
             ]
           }
         ]
@@ -49,7 +56,7 @@
   });
 
   // src/storage/idb/migrations.ts
-  function applyMigrations(db, oldVersion, _newVersion, tx) {
+  function applyMigrations(db, _oldVersion, _newVersion, tx) {
     if (!tx || tx.mode !== "versionchange") {
       throw new Error(
         "applyMigrations must run inside a versionchange transaction"
@@ -716,13 +723,13 @@
   async function findOrCreateInbox() {
     return getOrCreateProjectByName(INBOX_PROJECT_NAME);
   }
-  function buildTitle(selectionText) {
-    const trimmed = selectionText.trim();
+  function buildTitle(capturedText) {
+    const trimmed = capturedText.trim();
     if (trimmed.length <= TITLE_MAX_LENGTH) return trimmed;
     return trimmed.slice(0, TITLE_MAX_LENGTH) + "...";
   }
-  async function capture(selectionText, sourceUrl) {
-    if (!selectionText.trim()) return;
+  async function capture(kind, capturedText, sourceUrl, sourceTitle) {
+    if (!capturedText.trim()) return;
     let targetProject;
     const selectedProjectId = getSelectedProjectId();
     if (selectedProjectId !== null) {
@@ -731,18 +738,33 @@
     if (targetProject === void 0) {
       targetProject = await findOrCreateInbox();
     }
-    const title = buildTitle(selectionText);
-    await createItem(targetProject.id, "note", title, selectionText, {
-      createdFrom: "selection",
-      sourceUrl
-    });
+    const title = buildTitle(capturedText);
+    if (kind === "link") {
+      await createItem(targetProject.id, "link", title, capturedText, {
+        createdFrom: "link",
+        sourceUrl,
+        sourceTitle
+      });
+    } else {
+      await createItem(targetProject.id, "snippet", title, capturedText, {
+        createdFrom: "selection",
+        sourceUrl,
+        sourceTitle
+      });
+    }
     showToast(`Saved to ${targetProject.name}`);
     await loadProjects();
     document.dispatchEvent(new CustomEvent("aiw:projects-updated"));
   }
-  function handleCaptureSelection(selectionText, sourceUrl) {
-    capture(selectionText, sourceUrl).catch((error) => {
-      console.error("[AIW] Capture failed:", error);
+  function handleCaptureSelection(selectionText, sourceUrl, sourceTitle) {
+    capture("selection", selectionText, sourceUrl, sourceTitle).catch((error) => {
+      console.error("[AIW] Capture selection failed:", error);
+      showToast("Couldn't save to workspace");
+    });
+  }
+  function handleCaptureLink(linkUrl, sourceUrl, sourceTitle) {
+    capture("link", linkUrl, sourceUrl, sourceTitle).catch((error) => {
+      console.error("[AIW] Capture link failed:", error);
       showToast("Couldn't save to workspace");
     });
   }
@@ -3607,7 +3629,18 @@
           const message = rawMessage;
           switch (message.type) {
             case "CAPTURE_SELECTION":
-              handleCaptureSelection(message.selectionText, message.sourceUrl);
+              handleCaptureSelection(
+                message.selectionText,
+                message.sourceUrl,
+                message.sourceTitle
+              );
+              break;
+            case "CAPTURE_LINK":
+              handleCaptureLink(
+                message.linkUrl,
+                message.sourceUrl,
+                message.sourceTitle
+              );
               break;
           }
         });
@@ -3653,7 +3686,7 @@
             "https://example.com",
             {
               sourceUrl: "https://example.com",
-              createdFrom: "selection"
+              createdFrom: "link"
             }
           );
           await chrome.storage.local.set({ aiw_dev_seeded: true });

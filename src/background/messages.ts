@@ -24,6 +24,20 @@ export type CaptureSelectionMessage = {
   type: "CAPTURE_SELECTION";
   selectionText: string;
   sourceUrl: string;
+  sourceTitle?: string;
+};
+
+/**
+ * Service worker -> content script: "save this right-clicked link".
+ * linkUrl is the captured payload; sourceUrl/sourceTitle identify the
+ * page it was found on. sourceTitle is optional end to end: absent
+ * means absent, never "".
+ */
+export type CaptureLinkMessage = {
+  type: "CAPTURE_LINK";
+  linkUrl: string;
+  sourceUrl: string;
+  sourceTitle?: string;
 };
 
 /**
@@ -47,4 +61,7 @@ export type AutoBackupAck = {
   ok: boolean;
 };
 
-export type AiwMessage = CaptureSelectionMessage | AutoBackupSnapshotMessage;
+export type AiwMessage =
+  | CaptureSelectionMessage
+  | CaptureLinkMessage
+  | AutoBackupSnapshotMessage;

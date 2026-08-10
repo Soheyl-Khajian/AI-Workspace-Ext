@@ -19,7 +19,7 @@
 //
 // Data flow:
 // context menu click
-//   -> build CaptureSelectionMessage
+//   -> build CaptureSelectionMessage | CaptureLinkMessage
 //   -> chrome.tabs.sendMessage -> content script
 // content script auto-backup trigger
 //   -> AutoBackupSnapshotMessage -> chrome.runtime.onMessage (here)
@@ -30,34 +30,68 @@
 import type {
   AiwMessage,
   AutoBackupAck,
+  CaptureLinkMessage,
   CaptureSelectionMessage,
 } from "./messages";
 import { enqueueAutoBackupWrite } from "./autoBackupWriter";
 
 const CONTEXT_MENU_SAVE_TO_WORKSPACE_ID = "aiw-save-to-workspace";
+const CONTEXT_MENU_SAVE_LINK_TO_WORKSPACE_ID = "aiw-save-link-to-workspace";
 
 chrome.runtime.onInstalled.addListener(() => {
-  chrome.contextMenus.create({
-    id: CONTEXT_MENU_SAVE_TO_WORKSPACE_ID,
-    title: "Save to Workspace",
-    contexts: ["selection"],
+  // onInstalled also fires on extension UPDATES,
+  // where a bare create would collide with
+  // the ids registered by the previous version.
+  // Rebuild the whole menu set from scratch instead.
+  chrome.contextMenus.removeAll(() => {
+    chrome.contextMenus.create({
+      id: CONTEXT_MENU_SAVE_TO_WORKSPACE_ID,
+      title: "Save to Workspace",
+      contexts: ["selection"],
+      documentUrlPatterns: ["https://chatgpt.com/*"],
+    });
+
+    chrome.contextMenus.create({
+      id: CONTEXT_MENU_SAVE_LINK_TO_WORKSPACE_ID,
+      title: "Save link to Workspace",
+      contexts: ["link"],
+      documentUrlPatterns: ["https://chatgpt.com/*"],
+    });
   });
 });
 
 chrome.contextMenus.onClicked.addListener((info, tab) => {
-  if (info.menuItemId !== CONTEXT_MENU_SAVE_TO_WORKSPACE_ID) return;
   if (!tab?.id) return;
-  if (!info.selectionText) return;
 
-  const message: CaptureSelectionMessage = {
-    type: "CAPTURE_SELECTION",
-    selectionText: info.selectionText,
-    // info.pageUrl can be undefined if Chrome doesn't have permission to read the URL
-    sourceUrl: info.pageUrl ?? "",
-  };
+  if (info.menuItemId === CONTEXT_MENU_SAVE_TO_WORKSPACE_ID) {
+    if (!info.selectionText) return;
 
-  // expected behavior when the extension isn't running on the target tab
-  chrome.tabs.sendMessage(tab.id, message).catch(() => {});
+    const message: CaptureSelectionMessage = {
+      type: "CAPTURE_SELECTION",
+      selectionText: info.selectionText,
+      // info.pageUrl can be undefined if Chrome doesn't have permission to read the URL
+      sourceUrl: info.pageUrl ?? "",
+      sourceTitle: tab.title,
+    };
+
+    // expected behavior when the extension isn't running on the target tab
+    chrome.tabs.sendMessage(tab.id, message).catch(() => {});
+    return;
+  }
+
+  if (info.menuItemId === CONTEXT_MENU_SAVE_LINK_TO_WORKSPACE_ID) {
+    if (!info.linkUrl) return;
+    if (!info.pageUrl) return;
+
+    const message: CaptureLinkMessage = {
+      type: "CAPTURE_LINK",
+      linkUrl: info.linkUrl,
+      sourceUrl: info.pageUrl,
+      sourceTitle: tab.title,
+    };
+
+    chrome.tabs.sendMessage(tab.id, message).catch(() => {});
+  }
 });
 
 // Deliberately NOT an async listener: Chrome's channel-keepalive
