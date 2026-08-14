@@ -4,9 +4,11 @@
 // ------------------------------------------------------------
 //
 // Responsibility:
-// - handle incoming CAPTURE_SELECTION messages from service worker
+// - handle incoming CAPTURE_SELECTION / CAPTURE_LINK messages
+//   from the service worker
 // - determine target project (selected project or auto-created Inbox)
-// - create captured selection as an item in storage
+// - mint the captured selection as a snippet item, or the captured
+//   link as a link item, in storage
 // - confirm capture via toast
 // - sync projects runtime state after capture
 //
@@ -14,11 +16,15 @@
 // - NO DOM access
 // - NO rendering logic
 // - NO UI state mutation
+// - NO messaging vocabulary: this layer speaks CaptureKind, not
+//   message type literals. bootstrap translates messages into
+//   handler calls, and each public handler owns its own kind.
 //
 // Data flow:
-// handleCaptureSelection(selectionText, sourceUrl)
+// handleCaptureSelection(selectionText, sourceUrl, sourceTitle?)
+// handleCaptureLink(linkUrl, sourceUrl, sourceTitle?)
 //   → resolve target project
-//   → createItem
+//   → createItem (snippet | link)
 //   → showToast
 //   → loadProjects → dispatch aiw:projects-updated
 // ------------------------------------------------------------
@@ -38,6 +44,16 @@ const INBOX_PROJECT_NAME = "Inbox";
 const TITLE_MAX_LENGTH = 60;
 
 // ------------------------------------------------------------
+// CAPTURE KIND
+//
+// Internal vocabulary for the two capture workflows. Deliberately
+// NOT the message type literals: which item type to mint is this
+// module's decision, not the transport's.
+// ------------------------------------------------------------
+
+type CaptureKind = "selection" | "link";
+
+// ------------------------------------------------------------
 // INBOX RESOLUTION
 // ------------------------------------------------------------
 
@@ -49,22 +65,28 @@ async function findOrCreateInbox(): Promise<Project> {
 // TITLE BUILDER
 // ------------------------------------------------------------
 
-function buildTitle(selectionText: string): string {
-  const trimmed = selectionText.trim();
+function buildTitle(capturedText: string): string {
+  const trimmed = capturedText.trim();
   if (trimmed.length <= TITLE_MAX_LENGTH) return trimmed;
   return trimmed.slice(0, TITLE_MAX_LENGTH) + "...";
 }
 
 // ------------------------------------------------------------
 // CAPTURE WORKFLOW
+//
+// One shared workflow, two minting branches. capturedText is the
+// item payload: the selected text for snippets, the link URL for
+// links.
 // ------------------------------------------------------------
 
 async function capture(
-  selectionText: string,
+  kind: CaptureKind,
+  capturedText: string,
   sourceUrl: string,
+  sourceTitle?: string,
 ): Promise<void> {
-  // Guard: empty selection should never reach here, but be defensive.
-  if (!selectionText.trim()) return;
+  // Guard: an empty payload should never reach here, but be defensive.
+  if (!capturedText.trim()) return;
 
   // Resolve target project.
   // Priority: selected project in runtime state → Inbox (auto-created if needed).
@@ -80,12 +102,21 @@ async function capture(
     targetProject = await findOrCreateInbox();
   }
 
-  const title = buildTitle(selectionText);
+  const title = buildTitle(capturedText);
 
-  await createItem(targetProject.id, "note", title, selectionText, {
-    createdFrom: "selection",
-    sourceUrl,
-  });
+  if (kind === "link") {
+    await createItem(targetProject.id, "link", title, capturedText, {
+      createdFrom: "link",
+      sourceUrl,
+      sourceTitle,
+    });
+  } else {
+    await createItem(targetProject.id, "snippet", title, capturedText, {
+      createdFrom: "selection",
+      sourceUrl,
+      sourceTitle,
+    });
+  }
 
   // Confirm to user immediately after save.
   showToast(`Saved to ${targetProject.name}`);
@@ -99,19 +130,32 @@ async function capture(
 
 // ------------------------------------------------------------
 // PUBLIC API
+//
+// Each handler OWNS its capture kind -- callers cannot inject the
+// wrong one. Both are void functions intentionally: the message
+// listener cannot await async work, so this is fire-and-forget.
+// Errors are caught internally so they never become silent
+// unhandled rejections.
 // ------------------------------------------------------------
 
-/*
-  Exported as a void function intentionally.
-  The message listener cannot await async work — this is fire-and-forget.
-  Errors are caught internally so they never become silent unhandled rejections.
-*/
 export function handleCaptureSelection(
   selectionText: string,
   sourceUrl: string,
+  sourceTitle?: string,
 ): void {
-  capture(selectionText, sourceUrl).catch((error) => {
-    console.error("[AIW] Capture failed:", error);
+  capture("selection", selectionText, sourceUrl, sourceTitle).catch((error) => {
+    console.error("[AIW] Capture selection failed:", error);
+    showToast("Couldn't save to workspace");
+  });
+}
+
+export function handleCaptureLink(
+  linkUrl: string,
+  sourceUrl: string,
+  sourceTitle?: string,
+): void {
+  capture("link", linkUrl, sourceUrl, sourceTitle).catch((error) => {
+    console.error("[AIW] Capture link failed:", error);
     showToast("Couldn't save to workspace");
   });
 }

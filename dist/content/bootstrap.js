@@ -9,17 +9,18 @@
   };
 
   // src/storage/idb/schema.ts
-  var DB_NAME, DB_VERSION, STORE_PROJECTS, STORE_ITEMS, KEY_PROJECTS, KEY_ITEMS, IDX_ITEMS_BY_PROJECT, IDB_SCHEMA;
+  var DB_NAME, DB_VERSION, STORE_PROJECTS, STORE_ITEMS, KEY_PROJECTS, KEY_ITEMS, IDX_ITEMS_BY_PROJECT, IDX_ITEMS_BY_TYPE, IDB_SCHEMA;
   var init_schema = __esm({
     "src/storage/idb/schema.ts"() {
       "use strict";
       DB_NAME = "aiw_db";
-      DB_VERSION = 1;
+      DB_VERSION = 2;
       STORE_PROJECTS = "projects";
       STORE_ITEMS = "items";
       KEY_PROJECTS = "id";
       KEY_ITEMS = "id";
       IDX_ITEMS_BY_PROJECT = "by_projectId";
+      IDX_ITEMS_BY_TYPE = "by_type";
       IDB_SCHEMA = {
         stores: [
           {
@@ -38,6 +39,14 @@
                 name: IDX_ITEMS_BY_PROJECT,
                 keyPath: "projectId",
                 options: { unique: false }
+              },
+              {
+                // v2: type-aware queries (typed depth). IndexedDB auto-
+                // populates a new index from existing rows during the
+                // versionchange upgrade; no manual backfill needed.
+                name: IDX_ITEMS_BY_TYPE,
+                keyPath: "type",
+                options: { unique: false }
               }
             ]
           }
@@ -47,28 +56,26 @@
   });
 
   // src/storage/idb/migrations.ts
-  function applyMigrations(db, oldVersion, _newVersion, tx) {
+  function applyMigrations(db, _oldVersion, _newVersion, tx) {
     if (!tx || tx.mode !== "versionchange") {
       throw new Error(
         "applyMigrations must run inside a versionchange transaction"
       );
     }
-    if (oldVersion < 1) {
-      const stores = IDB_SCHEMA.stores;
-      for (const storeDef of stores) {
-        const storeName = storeDef.name;
-        let store;
-        if (!db.objectStoreNames.contains(storeName)) {
-          store = db.createObjectStore(storeName, {
-            keyPath: storeDef.keyPath
-          });
-        } else {
-          store = tx.objectStore(storeName);
-        }
-        for (const indexDef of storeDef.indexes) {
-          if (!store.indexNames.contains(indexDef.name)) {
-            store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options);
-          }
+    const stores = IDB_SCHEMA.stores;
+    for (const storeDef of stores) {
+      const storeName = storeDef.name;
+      let store;
+      if (!db.objectStoreNames.contains(storeName)) {
+        store = db.createObjectStore(storeName, {
+          keyPath: storeDef.keyPath
+        });
+      } else {
+        store = tx.objectStore(storeName);
+      }
+      for (const indexDef of storeDef.indexes) {
+        if (!store.indexNames.contains(indexDef.name)) {
+          store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options);
         }
       }
     }
@@ -350,6 +357,30 @@
     }
   });
 
+  // src/storage/mutationEvents.ts
+  function subscribe(listener) {
+    listeners.add(listener);
+    return () => {
+      listeners.delete(listener);
+    };
+  }
+  function notifyMutation() {
+    for (const listener of listeners) {
+      try {
+        listener();
+      } catch (error) {
+        console.error("[mutationEvents] listener failed:", error);
+      }
+    }
+  }
+  var listeners;
+  var init_mutationEvents = __esm({
+    "src/storage/mutationEvents.ts"() {
+      "use strict";
+      listeners = /* @__PURE__ */ new Set();
+    }
+  });
+
   // src/storage/index.ts
   async function createProject(name, description) {
     if (name == null) {
@@ -369,6 +400,7 @@
       project.description = trimmedDescription;
     }
     await insertProject(project);
+    notifyMutation();
     return project;
   }
   async function listProjects() {
@@ -399,6 +431,7 @@
     }
     await deleteItemsByProjectId(trimmedProjectId);
     await deleteProject(trimmedProjectId);
+    notifyMutation();
   }
   async function renameProject(projectId, name) {
     if (projectId == null) {
@@ -427,6 +460,7 @@
       updatedAt: Date.now()
     };
     await insertProject(merged);
+    notifyMutation();
     return merged;
   }
   async function createItem(projectId, type, title, content, meta) {
@@ -455,6 +489,7 @@
       meta
     };
     await insertItem(item);
+    notifyMutation();
     return item;
   }
   async function listAllItems() {
@@ -499,6 +534,7 @@
       merged.content = partialUpdate.content ?? "";
     }
     await insertItem(merged);
+    notifyMutation();
     return merged;
   }
   async function moveItemToProject(itemId, targetProjectId) {
@@ -533,6 +569,7 @@
       updatedAt: Date.now()
     };
     await insertItem(merged);
+    notifyMutation();
     return merged;
   }
   async function deleteItem(id) {
@@ -544,6 +581,7 @@
       throw new Error("item id cannot be empty");
     }
     await deleteItemById(trimmedId);
+    notifyMutation();
   }
   async function exportAllData() {
     const projects = await listProjects();
@@ -555,6 +593,7 @@
       throw new Error("replaceAllData requires both projects and items arrays");
     }
     await replaceAllData(projects, items);
+    notifyMutation();
   }
   var init_storage = __esm({
     "src/storage/index.ts"() {
@@ -562,6 +601,7 @@
       init_projectsRepo();
       init_itemsRepo();
       init_backupRepo();
+      init_mutationEvents();
     }
   });
 
@@ -683,13 +723,13 @@
   async function findOrCreateInbox() {
     return getOrCreateProjectByName(INBOX_PROJECT_NAME);
   }
-  function buildTitle(selectionText) {
-    const trimmed = selectionText.trim();
+  function buildTitle(capturedText) {
+    const trimmed = capturedText.trim();
     if (trimmed.length <= TITLE_MAX_LENGTH) return trimmed;
     return trimmed.slice(0, TITLE_MAX_LENGTH) + "...";
   }
-  async function capture(selectionText, sourceUrl) {
-    if (!selectionText.trim()) return;
+  async function capture(kind, capturedText, sourceUrl, sourceTitle) {
+    if (!capturedText.trim()) return;
     let targetProject;
     const selectedProjectId = getSelectedProjectId();
     if (selectedProjectId !== null) {
@@ -698,18 +738,33 @@
     if (targetProject === void 0) {
       targetProject = await findOrCreateInbox();
     }
-    const title = buildTitle(selectionText);
-    await createItem(targetProject.id, "note", title, selectionText, {
-      createdFrom: "selection",
-      sourceUrl
-    });
+    const title = buildTitle(capturedText);
+    if (kind === "link") {
+      await createItem(targetProject.id, "link", title, capturedText, {
+        createdFrom: "link",
+        sourceUrl,
+        sourceTitle
+      });
+    } else {
+      await createItem(targetProject.id, "snippet", title, capturedText, {
+        createdFrom: "selection",
+        sourceUrl,
+        sourceTitle
+      });
+    }
     showToast(`Saved to ${targetProject.name}`);
     await loadProjects();
     document.dispatchEvent(new CustomEvent("aiw:projects-updated"));
   }
-  function handleCaptureSelection(selectionText, sourceUrl) {
-    capture(selectionText, sourceUrl).catch((error) => {
-      console.error("[AIW] Capture failed:", error);
+  function handleCaptureSelection(selectionText, sourceUrl, sourceTitle) {
+    capture("selection", selectionText, sourceUrl, sourceTitle).catch((error) => {
+      console.error("[AIW] Capture selection failed:", error);
+      showToast("Couldn't save to workspace");
+    });
+  }
+  function handleCaptureLink(linkUrl, sourceUrl, sourceTitle) {
+    capture("link", linkUrl, sourceUrl, sourceTitle).catch((error) => {
+      console.error("[AIW] Capture link failed:", error);
       showToast("Couldn't save to workspace");
     });
   }
@@ -1601,6 +1656,11 @@
     checkBoxEl.className = "aiw-item-select";
     checkBoxEl.dataset.itemId = item.id;
     rowEl.prepend(checkBoxEl);
+    const typeGlyphEl = document.createElement("span");
+    typeGlyphEl.className = `aiw-item-type aiw-item-type--${item.type}`;
+    typeGlyphEl.textContent = ITEM_TYPE_GLYPHS[item.type];
+    typeGlyphEl.title = item.type;
+    rowEl.append(typeGlyphEl);
     const itemTextEl = document.createElement("span");
     itemTextEl.className = "aiw-item-text";
     itemTextEl.textContent = hasTitle ? item.title : "Untitled";
@@ -1659,9 +1719,16 @@
     }
     return rowEl;
   }
+  var ITEM_TYPE_GLYPHS;
   var init_createItemRow = __esm({
     "src/ui/features/items/createItemRow.ts"() {
       "use strict";
+      ITEM_TYPE_GLYPHS = {
+        note: "\u270E",
+        snippet: "\u275D",
+        task: "\u2713",
+        link: "\u2197"
+      };
     }
   });
 
@@ -1735,6 +1802,35 @@
       });
       detailColEl.append(placeholderStateEl);
       return detailColEl;
+    }
+    const stripEl = document.createElement("div");
+    stripEl.className = "aiw-item-detail-source";
+    if (item.meta.sourceUrl) {
+      const sourceLineEl = document.createElement("div");
+      sourceLineEl.className = "aiw-item-detail-source-line";
+      const sourceLinkEl = document.createElement("a");
+      sourceLinkEl.className = "aiw-item-detail-source-link";
+      sourceLinkEl.href = item.meta.sourceUrl;
+      sourceLinkEl.target = "_blank";
+      sourceLinkEl.rel = "noopener noreferrer";
+      sourceLinkEl.textContent = item.meta.sourceTitle || item.meta.sourceUrl;
+      sourceLineEl.append("From ", sourceLinkEl);
+      stripEl.append(sourceLineEl);
+    }
+    if (item.type === "link" && item.content.trim()) {
+      const openLinkLineEl = document.createElement("div");
+      openLinkLineEl.className = "aiw-item-detail-source-line";
+      const openLinkEl = document.createElement("a");
+      openLinkEl.className = "aiw-item-detail-source-link";
+      openLinkEl.href = item.content.trim();
+      openLinkEl.target = "_blank";
+      openLinkEl.rel = "noopener noreferrer";
+      openLinkEl.textContent = "Open link";
+      openLinkLineEl.append(openLinkEl);
+      stripEl.append(openLinkLineEl);
+    }
+    if (stripEl.hasChildNodes()) {
+      detailColEl.append(stripEl);
     }
     const formEl = document.createElement("div");
     formEl.className = "aiw-item-detail-form";
@@ -3005,6 +3101,13 @@
       if (!confirmed) {
         return;
       }
+      const backedUp = await dependencies.beforeImport();
+      if (!backedUp) {
+        dependencies.notify(
+          "Couldn't save a safety backup, so the import was cancelled. Please try again."
+        );
+        return;
+      }
       try {
         await replaceAllData2(backup.projects, backup.items);
       } catch (error) {
@@ -3065,6 +3168,146 @@
       init_eventBindings();
       BACKUP_EXPORT_SELECTOR = ".aiw-backup-export";
       BACKUP_IMPORT_SELECTOR = ".aiw-backup-import";
+    }
+  });
+
+  // src/ui/features/backup/autoBackupPolicy.ts
+  function createAutoBackupPolicy(config) {
+    let mutationCount = 0;
+    let lastMutationAt = null;
+    function noteMutation(now) {
+      mutationCount++;
+      lastMutationAt = now;
+      if (mutationCount >= config.maxMutations) {
+        return { snapshot: true, reason: "count-cap" };
+      }
+      return { snapshot: false };
+    }
+    function onDebounceElapsed(now) {
+      if (lastMutationAt === null) return { snapshot: false };
+      if (now - lastMutationAt >= config.debounceMs) {
+        return { snapshot: true, reason: "debounce" };
+      }
+      return { snapshot: false };
+    }
+    function onPageHide() {
+      if (lastMutationAt !== null) {
+        return { snapshot: true, reason: "pagehide" };
+      }
+      return { snapshot: false };
+    }
+    function beforeImport() {
+      return { snapshot: true, reason: "pre-import" };
+    }
+    function snapshotTaken() {
+      mutationCount = 0;
+      lastMutationAt = null;
+    }
+    return {
+      noteMutation,
+      onDebounceElapsed,
+      onPageHide,
+      beforeImport,
+      snapshotTaken
+    };
+  }
+  var init_autoBackupPolicy = __esm({
+    "src/ui/features/backup/autoBackupPolicy.ts"() {
+      "use strict";
+    }
+  });
+
+  // src/ui/features/backup/autoBackupController.ts
+  function createAutoBackupController(dependencies) {
+    const policy = createAutoBackupPolicy(dependencies.config);
+    let debounceTimerId = null;
+    let inFlight = false;
+    let unsubscribe = null;
+    function clearDebounceTimer() {
+      if (debounceTimerId !== null) {
+        window.clearTimeout(debounceTimerId);
+        debounceTimerId = null;
+      }
+    }
+    function handleMutation() {
+      const decision = policy.noteMutation(Date.now());
+      if (decision.snapshot) {
+        void requestSnapshot(decision.reason);
+        return;
+      }
+      clearDebounceTimer();
+      debounceTimerId = window.setTimeout(
+        handleDebounceTimerFired,
+        dependencies.config.debounceMs
+      );
+    }
+    function handleDebounceTimerFired() {
+      debounceTimerId = null;
+      const decision = policy.onDebounceElapsed(Date.now());
+      if (decision.snapshot) {
+        void requestSnapshot(decision.reason);
+      }
+    }
+    function handlePageHide() {
+      const decision = policy.onPageHide();
+      if (decision.snapshot) {
+        void requestSnapshot(decision.reason);
+      }
+    }
+    async function requestSnapshot(reason) {
+      if (inFlight) return true;
+      inFlight = true;
+      try {
+        const snapshot = await exportAllData();
+        const backup = buildBackup(snapshot, (/* @__PURE__ */ new Date()).toISOString());
+        const ack = await dependencies.sendSnapshot(reason, backup);
+        if (ack.ok) {
+          policy.snapshotTaken();
+          clearDebounceTimer();
+          return true;
+        }
+        return false;
+      } catch (error) {
+        console.warn(
+          "[AIW] auto-backup snapshot failed (will retry on a later trigger):",
+          error
+        );
+        return false;
+      } finally {
+        inFlight = false;
+      }
+    }
+    function start() {
+      unsubscribe = subscribe(handleMutation);
+      window.addEventListener("pagehide", handlePageHide);
+    }
+    function stop() {
+      if (unsubscribe !== null) {
+        unsubscribe();
+        unsubscribe = null;
+      }
+      window.removeEventListener("pagehide", handlePageHide);
+      clearDebounceTimer();
+    }
+    async function beforeImport() {
+      const decision = policy.beforeImport();
+      if (!decision.snapshot) {
+        return true;
+      }
+      return requestSnapshot(decision.reason);
+    }
+    return { start, stop, beforeImport };
+  }
+  var AUTO_BACKUP_DEBOUNCE_MS, AUTO_BACKUP_MAX_MUTATIONS;
+  var init_autoBackupController = __esm({
+    "src/ui/features/backup/autoBackupController.ts"() {
+      "use strict";
+      init_autoBackupPolicy();
+      init_buildBackup();
+      init_storage();
+      init_mutationEvents();
+      AUTO_BACKUP_DEBOUNCE_MS = 3e4;
+      AUTO_BACKUP_MAX_MUTATIONS = 20;
     }
   });
 
@@ -3174,8 +3417,24 @@
       notify: showToast,
       itemsController
     });
+    const autoBackupController = createAutoBackupController({
+      config: {
+        debounceMs: AUTO_BACKUP_DEBOUNCE_MS,
+        maxMutations: AUTO_BACKUP_MAX_MUTATIONS
+      },
+      sendSnapshot: (reason, backup) => {
+        const message = {
+          type: "AUTO_BACKUP_SNAPSHOT",
+          reason,
+          backup
+        };
+        return chrome.runtime.sendMessage(message);
+      }
+    });
+    autoBackupController.start();
     const backupController = createBackupController({
       notify: showToast,
+      beforeImport: autoBackupController.beforeImport,
       onImported: reloadAfterImport
     });
     const searchController = createSearchController({
@@ -3317,6 +3576,7 @@
       for (const [target, type, listener, options] of eventBindings) {
         target.removeEventListener(type, listener, options);
       }
+      autoBackupController.stop();
     };
   }
   var init_floatingController = __esm({
@@ -3342,6 +3602,7 @@
       init_itemsMenuState();
       init_backupController();
       init_backupHandlers();
+      init_autoBackupController();
       init_searchController();
       init_searchHandlers();
       init_renderSearchPanel();
@@ -3409,7 +3670,18 @@
           const message = rawMessage;
           switch (message.type) {
             case "CAPTURE_SELECTION":
-              handleCaptureSelection(message.selectionText, message.sourceUrl);
+              handleCaptureSelection(
+                message.selectionText,
+                message.sourceUrl,
+                message.sourceTitle
+              );
+              break;
+            case "CAPTURE_LINK":
+              handleCaptureLink(
+                message.linkUrl,
+                message.sourceUrl,
+                message.sourceTitle
+              );
               break;
           }
         });
@@ -3455,7 +3727,7 @@
             "https://example.com",
             {
               sourceUrl: "https://example.com",
-              createdFrom: "selection"
+              createdFrom: "link"
             }
           );
           await chrome.storage.local.set({ aiw_dev_seeded: true });

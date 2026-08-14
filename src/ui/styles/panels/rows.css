@@ -98,3 +98,30 @@
   color: var(--aiw-text-faint);
   font-style: italic;
 }
+
+/* ------------------------------------------------------------
+   ITEM TYPE INDICATOR (see createItemRow)
+------------------------------------------------------------ */
+
+.aiw-item-type {
+  flex-shrink: 0;
+  width: 16px;
+  text-align: center;
+  font-size: 20px;
+  line-height: 1;
+  margin: 0 0 0 var(--aiw-space-sm);
+  color: var(--aiw-text-faint);
+  user-select: none;
+}
+
+.aiw-item-type--snippet {
+  color: var(--aiw-accent);
+}
+
+.aiw-item-type--link {
+  color: color-mix(in srgb, var(--aiw-accent) 55%, white);
+}
+
+.aiw-item-type--task {
+  color: var(--aiw-text-muted);
+}

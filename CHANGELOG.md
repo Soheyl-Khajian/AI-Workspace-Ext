@@ -8,6 +8,36 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.6.0] - 2026-08-14
+
+### Added
+
+- **Automatic backups**: every workspace change now schedules a
+  snapshot — after a quiet period (30s), at a hard cap (every 20
+  changes), and on page hide. Snapshots land in a 5-deep ring in
+  `chrome.storage.local` (newest first, stamped with time and
+  reason), which lives in the extension origin and survives clearing
+  the site's data.
+- **Pre-import emergency snapshot**: importing a backup file first
+  snapshots the current workspace; if that snapshot cannot be saved,
+  the import aborts rather than proceed unprotected.
+- **Typed items**: items are notes, snippets, tasks, or links, and
+  capture provenance travels with them — source page URL, source
+  title, and how the item was created.
+- **"Save link to workspace"**: a second context-menu entry captures
+  a right-clicked link as a link item; selection capture now records
+  the source page and its title.
+- **Type-aware UI**: item rows show a type glyph, and the detail
+  column gains a provenance strip — "From <source page>" on captured
+  items, plus an "Open link" anchor on link items.
+
+### Changed
+
+- IndexedDB schema v1 → v2: the items store gains a `by_type` index;
+  the migration preserves existing data and back-fills the new index.
+- The test suite grows from 81 to 116 tests, covering the mutation
+  bus, the auto-backup writer and controller, and schema migrations.
+
 ## [0.5.0] - 2026-08-03
 
 ### Added
@@ -162,7 +192,8 @@ Initial MVP release.
   automatically re-mounting the UI, guards against duplicate content-script
   injection, and makes Inbox creation atomic to prevent duplicate projects.
 
-[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.6.0...HEAD
+[0.6.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.2.0...v0.3.0

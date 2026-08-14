@@ -3,8 +3,9 @@ export const ITEM_TYPES = ["note", "snippet", "task", "link"] as const;
 export type ItemType = (typeof ITEM_TYPES)[number];
 
 export type ItemMeta = {
+  sourceTitle?: string;
   sourceUrl?: string;
-  createdFrom: "manual" | "selection";
+  createdFrom: "manual" | "selection" | "link";
 };
 
 export type Item = {

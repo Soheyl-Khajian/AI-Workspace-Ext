@@ -32,6 +32,7 @@
 import type { OrbActionId, OrbPanelId } from "./types";
 import type { OrbActionContext } from "./orbActionRouter";
 import type { EventBinding } from "./eventBindings";
+import type { AutoBackupSnapshotMessage } from "../../background/messages";
 
 import { createFloatingDom } from "./floatingDom";
 import { handleOrbAction } from "./orbActionRouter";
@@ -76,6 +77,11 @@ import {
 
 import { createBackupController } from "../features/backup/backupController";
 import { createBackupHandlers } from "../features/backup/backupHandlers";
+import {
+  AUTO_BACKUP_DEBOUNCE_MS,
+  AUTO_BACKUP_MAX_MUTATIONS,
+  createAutoBackupController,
+} from "../features/backup/autoBackupController";
 
 import { createSearchController } from "../features/search/searchController";
 import { createSearchHandlers } from "../features/search/searchHandlers";
@@ -109,8 +115,29 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     itemsController,
   });
 
+  // Auto-backup wiring. Created BEFORE backupController, which
+  // receives its beforeImport door as a dependency. The sendSnapshot
+  // arrow is the feature's ENTIRE chrome-facing surface; the
+  // controller itself never touches chrome.* APIs.
+  const autoBackupController = createAutoBackupController({
+    config: {
+      debounceMs: AUTO_BACKUP_DEBOUNCE_MS,
+      maxMutations: AUTO_BACKUP_MAX_MUTATIONS,
+    },
+    sendSnapshot: (reason, backup) => {
+      const message: AutoBackupSnapshotMessage = {
+        type: "AUTO_BACKUP_SNAPSHOT",
+        reason,
+        backup,
+      };
+      return chrome.runtime.sendMessage(message);
+    },
+  });
+  autoBackupController.start();
+
   const backupController = createBackupController({
     notify: showToast,
+    beforeImport: autoBackupController.beforeImport,
     onImported: reloadAfterImport,
   });
 
@@ -394,5 +421,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     for (const [target, type, listener, options] of eventBindings) {
       target.removeEventListener(type, listener, options);
     }
+
+    // The auto-backup controller's bus subscription and pagehide
+    // listener never entered the bindings table (they are not DOM
+    // bindings); stop() is their teardown.
+    autoBackupController.stop();
   };
 }

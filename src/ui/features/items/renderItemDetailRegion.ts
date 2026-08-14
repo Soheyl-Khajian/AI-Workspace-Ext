@@ -7,6 +7,8 @@
 //
 // - render the detail column of the master-detail items panel
 // - display the selected item's fields in an editable form
+// - surface capture provenance (source page, link target) above
+//   the form
 // - render the column empty state when nothing is selected
 //
 // IMPORTANT:
@@ -51,6 +53,56 @@ export function renderItemDetailRegion(item: Item | undefined): HTMLElement {
     detailColEl.append(placeholderStateEl);
 
     return detailColEl;
+  }
+
+  // ------------------------------------------------------------
+  // PROVENANCE STRIP
+  //
+  // Built only from STORED facts, never drafts: an unsaved edit
+  // must not change where these anchors go. Truthiness guards
+  // (not undefined-checks) because legacy captures hold "" in
+  // sourceUrl. The strip is appended only when non-empty so plain
+  // notes never render an empty padded block.
+  // ------------------------------------------------------------
+  const stripEl = document.createElement("div");
+  stripEl.className = "aiw-item-detail-source";
+
+  if (item.meta.sourceUrl) {
+    const sourceLineEl = document.createElement("div");
+    sourceLineEl.className = "aiw-item-detail-source-line";
+
+    const sourceLinkEl = document.createElement("a");
+    sourceLinkEl.className = "aiw-item-detail-source-link";
+    sourceLinkEl.href = item.meta.sourceUrl;
+    sourceLinkEl.target = "_blank";
+
+    // noopener: sever window.opener so the opened page can never navigate this tab (reverse tabnabbing).
+    sourceLinkEl.rel = "noopener noreferrer";
+
+    // || not ??: an empty-string title must fall back to the URL.
+    sourceLinkEl.textContent = item.meta.sourceTitle || item.meta.sourceUrl;
+
+    sourceLineEl.append("From ", sourceLinkEl);
+    stripEl.append(sourceLineEl);
+  }
+
+  if (item.type === "link" && item.content.trim()) {
+    const openLinkLineEl = document.createElement("div");
+    openLinkLineEl.className = "aiw-item-detail-source-line";
+
+    const openLinkEl = document.createElement("a");
+    openLinkEl.className = "aiw-item-detail-source-link";
+    openLinkEl.href = item.content.trim();
+    openLinkEl.target = "_blank";
+    openLinkEl.rel = "noopener noreferrer";
+    openLinkEl.textContent = "Open link";
+
+    openLinkLineEl.append(openLinkEl);
+    stripEl.append(openLinkLineEl);
+  }
+
+  if (stripEl.hasChildNodes()) {
+    detailColEl.append(stripEl);
   }
 
   // ------------------------------------------------------------

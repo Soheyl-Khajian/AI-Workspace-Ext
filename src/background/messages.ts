@@ -5,6 +5,7 @@
 //
 // Responsibility:
 // - define all messages passed between extension contexts
+// - define the response (ack) shapes those messages answer with
 // - provide a shared type contract for senders and listeners
 //
 // IMPORTANT:
@@ -17,10 +18,50 @@
 // 2. add it to the AiwMessage union
 // ------------------------------------------------------------
 
+import type { BackupDocument, SnapshotReason } from "../models/backup";
+
 export type CaptureSelectionMessage = {
   type: "CAPTURE_SELECTION";
   selectionText: string;
   sourceUrl: string;
+  sourceTitle?: string;
 };
 
-export type AiwMessage = CaptureSelectionMessage;
+/**
+ * Service worker -> content script: "save this right-clicked link".
+ * linkUrl is the captured payload; sourceUrl/sourceTitle identify the
+ * page it was found on. sourceTitle is optional end to end: absent
+ * means absent, never "".
+ */
+export type CaptureLinkMessage = {
+  type: "CAPTURE_LINK";
+  linkUrl: string;
+  sourceUrl: string;
+  sourceTitle?: string;
+};
+
+/**
+ * Content script -> service worker: "persist this finished backup".
+ * Carries the raw document plus the trigger that demanded it. The
+ * message carries no clock: the writer stamps savedAt at
+ * persistence time.
+ */
+export type AutoBackupSnapshotMessage = {
+  type: "AUTO_BACKUP_SNAPSHOT";
+  reason: SnapshotReason;
+  backup: BackupDocument;
+};
+
+/**
+ * Service worker -> sender, answering AUTO_BACKUP_SNAPSHOT.
+ * `ok: true` means the ring-buffer write COMMITTED -- only then may
+ * the sender call policy.snapshotTaken().
+ */
+export type AutoBackupAck = {
+  ok: boolean;
+};
+
+export type AiwMessage =
+  | CaptureSelectionMessage
+  | CaptureLinkMessage
+  | AutoBackupSnapshotMessage;

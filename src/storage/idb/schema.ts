@@ -6,7 +6,7 @@
 // Database identity
 //
 export const DB_NAME = "aiw_db";
-export const DB_VERSION = 1;
+export const DB_VERSION = 2;
 
 //
 // Object store names
@@ -27,6 +27,7 @@ export const KEY_ITEMS = "id";
 // Index names are not field names; they are identifiers for the index itself.
 //
 export const IDX_ITEMS_BY_PROJECT = "by_projectId";
+export const IDX_ITEMS_BY_TYPE = "by_type";
 
 //
 // Schema specification types
@@ -52,7 +53,7 @@ export type SchemaSpec = {
 };
 
 //
-// IndexedDB schema contract (v1)
+// IndexedDB schema contract (v2)
 //
 // This object is consumed by migrations/openDb to create missing stores/indexes.
 // It is declarative on purpose: no functions, no side effects.
@@ -74,6 +75,14 @@ export const IDB_SCHEMA: SchemaSpec = {
           // Required query in v0: list items by projectId
           name: IDX_ITEMS_BY_PROJECT,
           keyPath: "projectId",
+          options: { unique: false },
+        },
+        {
+          // v2: type-aware queries (typed depth). IndexedDB auto-
+          // populates a new index from existing rows during the
+          // versionchange upgrade; no manual backfill needed.
+          name: IDX_ITEMS_BY_TYPE,
+          keyPath: "type",
           options: { unique: false },
         },
       ],

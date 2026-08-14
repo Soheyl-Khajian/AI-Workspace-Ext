@@ -1,5 +1,5 @@
 // src/storage/idb/migrations.ts
-// Schema migrations: apply incremental upgrades from oldVersion -> current DB_VERSION.
+// Schema migrations: bring any older database up to the current DB_VERSION contract.
 //
 // Rules:
 // - Only run during `onupgradeneeded` (versionchange transaction).
@@ -16,7 +16,7 @@ import { IDB_SCHEMA } from "./schema";
  */
 export function applyMigrations(
   db: IDBDatabase,
-  oldVersion: number,
+  _oldVersion: number,
   _newVersion: number | null,
   tx: IDBTransaction | null,
 ) {
@@ -28,32 +28,41 @@ export function applyMigrations(
     );
   }
 
-  // v1: initial install
-  // Create the object stores and required indexes.
-  if (oldVersion < 1) {
-    const stores = IDB_SCHEMA.stores;
+  // Reconcile pass (runs on EVERY upgrade, including fresh installs):
+  // create whatever stores and indexes the declarative IDB_SCHEMA
+  // contract declares and this database is missing. Both `contains`
+  // guards make the pass idempotent, and skipped versions are handled
+  // for free -- a fresh install arriving as 0 -> 2 builds everything
+  // in one pass.
 
-    for (const storeDef of stores) {
-      const storeName = storeDef.name;
+  const stores = IDB_SCHEMA.stores;
 
-      let store: IDBObjectStore;
+  for (const storeDef of stores) {
+    const storeName = storeDef.name;
 
-      // 1. Create store ONLY if missing
-      if (!db.objectStoreNames.contains(storeName)) {
-        store = db.createObjectStore(storeName, {
-          keyPath: storeDef.keyPath,
-        });
-      } else {
-        // Safe fallback: store already exists in this upgrade context
-        store = tx.objectStore(storeName);
-      }
+    let store: IDBObjectStore;
 
-      // 2. Create indexes (always safe after store exists)
-      for (const indexDef of storeDef.indexes) {
-        if (!store.indexNames.contains(indexDef.name)) {
-          store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options);
-        }
+    // 1. Create store ONLY if missing
+    if (!db.objectStoreNames.contains(storeName)) {
+      store = db.createObjectStore(storeName, {
+        keyPath: storeDef.keyPath,
+      });
+    } else {
+      // Safe fallback: store already exists in this upgrade context
+      store = tx.objectStore(storeName);
+    }
+
+    // 2. Create indexes (always safe after store exists)
+    for (const indexDef of storeDef.indexes) {
+      if (!store.indexNames.contains(indexDef.name)) {
+        store.createIndex(indexDef.name, indexDef.keyPath, indexDef.options);
       }
     }
   }
+
+  // BOUNDARY: reconciliation can only express ADDITIVE work. The day a
+  // migration must transform, rename, or remove anything, that work
+  // becomes a stepwise `if (oldVersion < N)` block BELOW this pass,
+  // run exactly once per version boundary. `_oldVersion` returns to
+  // service (and loses its underscore) on that day.
 }

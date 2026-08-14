@@ -24,7 +24,7 @@ import { describe, expect, it } from "vitest";
 
 import type { Item } from "../../../models/item";
 import type { Project } from "../../../models/project";
-import type { BackupDocument } from "./buildBackup";
+import type { BackupDocument } from "../../../models/backup";
 import { BACKUP_SCHEMA_VERSION } from "./buildBackup";
 import { parseBackup } from "./parseBackup";
 

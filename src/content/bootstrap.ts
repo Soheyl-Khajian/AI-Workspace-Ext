@@ -16,7 +16,10 @@
 
 import { createProject, createItem } from "../storage/index";
 import type { AiwMessage } from "../background/messages";
-import { handleCaptureSelection } from "../capture/captureHandler";
+import {
+  handleCaptureLink,
+  handleCaptureSelection,
+} from "../capture/captureHandler";
 import { injectFloatingAssets } from "./injectFloatingUi";
 import { startFloatingUi } from "../ui/core/mountManager";
 
@@ -38,7 +41,18 @@ function initMessageListener(): void {
     const message = rawMessage as AiwMessage;
     switch (message.type) {
       case "CAPTURE_SELECTION":
-        handleCaptureSelection(message.selectionText, message.sourceUrl);
+        handleCaptureSelection(
+          message.selectionText,
+          message.sourceUrl,
+          message.sourceTitle,
+        );
+        break;
+      case "CAPTURE_LINK":
+        handleCaptureLink(
+          message.linkUrl,
+          message.sourceUrl,
+          message.sourceTitle,
+        );
         break;
     }
   });
@@ -91,7 +105,7 @@ async function seedDevDataOnce(): Promise<void> {
       "https://example.com",
       {
         sourceUrl: "https://example.com",
-        createdFrom: "selection",
+        createdFrom: "link",
       },
     );
 

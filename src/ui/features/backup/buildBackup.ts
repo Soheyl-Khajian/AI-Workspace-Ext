@@ -7,8 +7,9 @@
 //
 // - wrap a raw storage snapshot into a versioned, self-describing
 //   backup document (schemaVersion + exportedAt + data)
-// - own the single source-of-truth type and schema version for the
-//   on-disk backup format (reused by import / parseBackup)
+// - own the schema-version stamp for the on-disk backup format
+//   (the BackupDocument type itself lives in models/backup.ts as
+//   shared vocabulary for the UI and background layers alike)
 //
 // IMPORTANT:
 //
@@ -17,17 +18,10 @@
 // - schemaVersion is independent of the IndexedDB DB_VERSION
 // ------------------------------------------------------------
 
-import type { Item } from "../../../models/item";
-import type { Project } from "../../../models/project";
+import type { BackupDocument } from "../../../models/backup";
 import type { WorkspaceSnapshot } from "../../../storage";
 
 export const BACKUP_SCHEMA_VERSION = 1;
-export type BackupDocument = {
-  schemaVersion: number;
-  exportedAt: string;
-  projects: Project[];
-  items: Item[];
-};
 
 export function buildBackup(
   snapshot: WorkspaceSnapshot,

@@ -72,6 +72,10 @@
 }
 
 .aiw-item-text {
+  /* The type glyph now supplies the left inset for ITEM rows, so
+   inline padding drops to space-md HERE (one-off override); the
+   shared rows.css rule keeps space-lg for projects and search. */
+  padding: var(--aiw-space-md) var(--aiw-space-md);
   min-width: 0;
   white-space: nowrap;
   overflow: hidden;
@@ -108,4 +112,33 @@
   resize: none;
   flex: 1;
   min-height: 0;
+}
+
+/* ------------------------------------------------------------
+   DETAIL PROVENANCE STRIP (see renderItemDetailRegion)
+------------------------------------------------------------ */
+
+.aiw-item-detail-source {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--aiw-space-sm) var(--aiw-space-lg) 0;
+  font-size: 12px;
+  color: var(--aiw-text-muted);
+}
+
+.aiw-item-detail-source-line {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aiw-item-detail-source-link {
+  color: color-mix(in srgb, var(--aiw-accent) 60%, white);
+  text-decoration: none;
+}
+
+.aiw-item-detail-source-link:hover {
+  text-decoration: underline;
 }

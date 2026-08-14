@@ -7,6 +7,7 @@
 //
 // - create one item row
 // - render the selection checkbox and the (ellipsized) title
+// - render the type indicator glyph (pure projection of item.type)
 // - reflect selected state visually
 // - render the "…" menu trigger, and PROJECT the row menu when
 //   this row's menu is open in state: the root page (Move to… /
@@ -25,7 +26,7 @@
 //   (DOM-held-state ledger)
 // ------------------------------------------------------------
 
-import type { Item } from "../../../models/item";
+import type { Item, ItemType } from "../../../models/item";
 import type { Project } from "../../../models/project";
 import type { ItemMenuPage } from "./itemsMenuState";
 
@@ -43,6 +44,20 @@ type ItemRowFlags = {
   checkboxChecked: boolean;
   // null = this row's menu is closed; otherwise the open page
   menuPage: ItemMenuPage | null;
+};
+
+// ------------------------------------------------------------
+// TYPE GLYPHS
+//
+// One glyph per item type. Record<ItemType, string> keeps this
+// map TOTAL: adding a fifth item type refuses to compile until
+// the new type gets a glyph.
+// ------------------------------------------------------------
+const ITEM_TYPE_GLYPHS: Record<ItemType, string> = {
+  note: "✎",
+  snippet: "❝",
+  task: "✓",
+  link: "↗",
 };
 
 export function createItemRow(
@@ -66,6 +81,15 @@ export function createItemRow(
   checkBoxEl.dataset.itemId = item.id;
 
   rowEl.prepend(checkBoxEl);
+
+  // Type indicator: projected from item.type alone;
+  // the title attribute doubles as a zero-listener tooltip.
+  const typeGlyphEl = document.createElement("span");
+  typeGlyphEl.className = `aiw-item-type aiw-item-type--${item.type}`;
+  typeGlyphEl.textContent = ITEM_TYPE_GLYPHS[item.type];
+  typeGlyphEl.title = item.type;
+
+  rowEl.append(typeGlyphEl);
 
   const itemTextEl = document.createElement("span");
   itemTextEl.className = "aiw-item-text";
