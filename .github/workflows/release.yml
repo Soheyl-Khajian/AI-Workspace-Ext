@@ -38,7 +38,7 @@ jobs:
       - name: Stage and zip the loadable extension
         run: |
           mkdir -p package/ai-workspace-ext
-          cp -r manifest.json dist package/ai-workspace-ext/
+          cp -r manifest.json dist icons package/ai-workspace-ext
           cd package
           zip -r "../ai-workspace-ext-${GITHUB_REF_NAME}.zip" ai-workspace-ext
 
@@ -46,3 +46,4 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: ai-workspace-ext-*.zip
+          prerelease: true
