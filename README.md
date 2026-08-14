@@ -93,8 +93,9 @@ Not on the Chrome Web Store yet. To run it:
 
 **Option A — from a release (no build needed)**
 
-1. Download the source archive from the [Releases](../../releases) page and unzip
-   it. The built `dist/` is included, so it's ready to load.
+1. Download the `ai-workspace-ext-vX.Y.Z.zip` asset from the latest
+   [release](../../releases) and unzip it. It contains the built extension,
+   ready to load.
 2. Open `chrome://extensions`.
 3. Enable **Developer mode** (top-right).
 4. Click **Load unpacked** and select the unzipped folder (the one containing

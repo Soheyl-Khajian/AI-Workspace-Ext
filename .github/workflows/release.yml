@@ -1,0 +1,48 @@
+# .github/workflows/release.yml
+#
+# Runs when a version tag (v*) is pushed: verifies the tree the tag
+# points at (typecheck + tests), builds fresh bundles, stages the
+# loadable extension (manifest + dist), and attaches the zip to the
+# GitHub Release for that tag. This zip is now the only built
+# artifact we publish -- the repo itself carries no dist/.
+
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - run: npx tsc --noEmit
+
+      - run: npx vitest run
+
+      - run: npm run build
+
+      - name: Stage and zip the loadable extension
+        run: |
+          mkdir -p package/ai-workspace-ext
+          cp -r manifest.json dist package/ai-workspace-ext/
+          cd package
+          zip -r "../ai-workspace-ext-${GITHUB_REF_NAME}.zip" ai-workspace-ext
+
+      - name: Attach zip to the GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: ai-workspace-ext-*.zip
