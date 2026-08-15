@@ -34,6 +34,9 @@ import type { OrbActionContext } from "./orbActionRouter";
 import type { EventBinding } from "./eventBindings";
 import type { AutoBackupSnapshotMessage } from "../../background/messages";
 
+import { createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { ReactPanelHost } from "./ReactPanelHost";
 import { createFloatingDom } from "./floatingDom";
 import { handleOrbAction } from "./orbActionRouter";
 import { getOrbActions } from "./orbActions";
@@ -103,6 +106,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // them here is safe.
   // ----------------------------------------------------------
   const dom = createFloatingDom(rootEl);
+  const root = createRoot(dom.reactPanelsEl);
 
   const itemsController = createItemsController({
     onStateChange: renderUi,
@@ -217,6 +221,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     } else {
       projectName = null;
     }
+
+    // React seam: same state, second renderer. Vanilla wipes its
+    // container below; React reconciles its sibling here.
+    root.render(createElement(ReactPanelHost, { activePanel: activePanelId }));
 
     dom.rootEl.dataset.orbExpanded = String(expanded);
 
@@ -421,6 +429,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     for (const [target, type, listener, options] of eventBindings) {
       target.removeEventListener(type, listener, options);
     }
+
+    root.unmount();
 
     // The auto-backup controller's bus subscription and pagehide
     // listener never entered the bindings table (they are not DOM

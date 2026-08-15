@@ -18,6 +18,7 @@ export type FloatingDom = {
   orbButtonEl: HTMLButtonElement;
   orbActionsEl: HTMLDivElement;
   orbPanelsEl: HTMLDivElement;
+  reactPanelsEl: HTMLDivElement;
 };
 
 export function createFloatingDom(rootEl: HTMLElement): FloatingDom {
@@ -26,5 +27,6 @@ export function createFloatingDom(rootEl: HTMLElement): FloatingDom {
     orbButtonEl: mustQuery(rootEl, "#aiw-orb-button"),
     orbActionsEl: mustQuery(rootEl, "#aiw-orb-actions"),
     orbPanelsEl: mustQuery(rootEl, "#aiw-orb-panels"),
+    reactPanelsEl: mustQuery(rootEl, "#aiw-react-panels"),
   };
 }

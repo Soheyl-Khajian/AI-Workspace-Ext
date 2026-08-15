@@ -10,10 +10,12 @@
     "lib": ["DOM", "ESNext"], // Make sure DOM APIs and modern JavaScript are available
     "moduleResolution": "bundler", // Use Node-style module resolution
     "resolveJsonModule": true, // Allow importing JSON files (if needed)
+    "jsx": "react-jsx",
     "types": ["chrome"]
   },
   "include": [
-    "src/**/*.ts" // Include all TypeScript files in the `src/` folder
+    "src/**/*.ts",
+    "src/**/*.tsx" // Include all TypeScript files in the `src/` folder
   ],
   "exclude": [
     "node_modules" // Exclude third-party libraries
