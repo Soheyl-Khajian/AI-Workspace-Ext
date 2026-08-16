@@ -21,8 +21,9 @@
 // IMPORTANT:
 //
 // - event handlers live in the handler modules (core/orbHandlers,
-//   features/*/…Handlers); this file only composes their
-//   EventBinding[] contributions into one add/remove table
+//   features/*/…Handlers) for vanilla panels; React-owned panels
+//   wire their own clicks in their components — this file only
+//   composes the remaining EventBinding[] contributions
 // - NO DOM creation details (floatingDom)
 // - NO rendering implementation (renderers)
 // - NO business logic (feature controllers)
@@ -79,7 +80,6 @@ import {
 } from "../features/items/itemsMenuState";
 
 import { createBackupController } from "../features/backup/backupController";
-import { createBackupHandlers } from "../features/backup/backupHandlers";
 import {
   AUTO_BACKUP_DEBOUNCE_MS,
   AUTO_BACKUP_MAX_MUTATIONS,
@@ -175,11 +175,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     hasActiveInlineEdit,
   });
 
-  const backupBindings = createBackupHandlers({
-    panelsEl: dom.orbPanelsEl,
-    backupController,
-  });
-
   const searchBindings = createSearchHandlers({
     panelsEl: dom.orbPanelsEl,
     renderResults: renderSearchResultsRegion,
@@ -224,7 +219,12 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
     // React seam: same state, second renderer. Vanilla wipes its
     // container below; React reconciles its sibling here.
-    root.render(createElement(ReactPanelHost, { activePanel: activePanelId }));
+    root.render(
+      createElement(ReactPanelHost, {
+        activePanel: activePanelId,
+        backupController,
+      }),
+    );
 
     dom.rootEl.dataset.orbExpanded = String(expanded);
 
@@ -408,7 +408,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     ...orbBindings,
     ...projectsBindings,
     ...itemsBindings,
-    ...backupBindings,
     ...searchBindings,
   ];
 

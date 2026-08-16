@@ -8,9 +8,10 @@
 // - the single React entry component: everything React renders
 //   in the floating UI lives under this component
 // - receives the active panel id from renderUi on every render
-//   pass; React reconciles instead of wipe-rebuilding
-// - renders nothing user-visible yet (v0.7 slice 1): the probe
-//   attribute proves the root survives vanilla re-renders
+//   pass and routes it: React-owned panels render here, all
+//   others render null (the vanilla coordinator's mirror image)
+// - the probe attribute proves the root survives vanilla
+//   re-renders
 //
 // IMPORTANT:
 //
@@ -21,11 +22,20 @@
 // ------------------------------------------------------------
 
 import type { OrbPanelId } from "./types";
+import type { BackupController } from "../features/backup/backupController";
+import { BackupPanel } from "../features/backup/BackupPanel";
 
 type Props = {
   activePanel: OrbPanelId | null;
+  backupController: BackupController;
 };
 
-export function ReactPanelHost({ activePanel }: Props) {
-  return <div data-aiw-react="ready"></div>;
+export function ReactPanelHost({ activePanel, backupController }: Props) {
+  return (
+    <div data-aiw-react="ready">
+      {activePanel === "backup" ? (
+        <BackupPanel backupController={backupController} />
+      ) : null}
+    </div>
+  );
 }
