@@ -33,6 +33,7 @@
 import type { OrbActionId, OrbPanelId } from "./types";
 import type { OrbActionContext } from "./orbActionRouter";
 import type { EventBinding } from "./eventBindings";
+import type { AutoBackupSnapshot } from "../../models/backup";
 import type { AutoBackupSnapshotMessage } from "../../background/messages";
 
 import { createElement } from "react";
@@ -80,6 +81,7 @@ import {
 } from "../features/items/itemsMenuState";
 
 import { createBackupController } from "../features/backup/backupController";
+import { AUTO_BACKUP_STORAGE_KEY } from "../../background/autoBackupWriter";
 import {
   AUTO_BACKUP_DEBOUNCE_MS,
   AUTO_BACKUP_MAX_MUTATIONS,
@@ -143,6 +145,19 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     notify: showToast,
     beforeImport: autoBackupController.beforeImport,
     onImported: reloadAfterImport,
+
+    // The ring's read door, mirroring sendSnapshot on the write
+    // side: this arrow is the restore feature's entire chrome-facing
+    // surface. Reads need no queue -- only read-modify-writes do,
+    // and those all live in the background writer.
+    readAutoBackups: async () => {
+      const result = await chrome.storage.local.get(AUTO_BACKUP_STORAGE_KEY);
+      return (
+        (result[AUTO_BACKUP_STORAGE_KEY] as AutoBackupSnapshot[] | undefined) ??
+        []
+      );
+    },
+    confirmDestructive: (message) => window.confirm(message),
   });
 
   const searchController = createSearchController({

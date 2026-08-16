@@ -10,6 +10,8 @@ function createBackupControllerMock() {
   return {
     exportBackup: vi.fn().mockResolvedValue(undefined),
     importBackup: vi.fn().mockResolvedValue(undefined),
+    listAutoBackups: vi.fn().mockResolvedValue([]),
+    restoreSnapshot: vi.fn().mockResolvedValue(undefined),
   } satisfies BackupController;
 }
 
