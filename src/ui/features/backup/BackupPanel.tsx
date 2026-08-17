@@ -4,7 +4,8 @@
 // ------------------------------------------------------------
 //
 // Responsibility:
-// - the Backup panel: export and import controls
+// - the Backup panel: export and import controls, plus the
+//   auto-backup ring list (AutoBackupList) composed below them
 // - buttons own their clicks and delegate straight to the
 //   injected backupController (what took a renderer plus a
 //   delegation handler module in vanilla is one component here)
@@ -15,8 +16,9 @@
 // - NO storage access, NO business logic (controller's job)
 // ------------------------------------------------------------
 
-import { FloatingPanelShell } from "../../shared/FloatingPanelShell";
 import type { BackupController } from "./backupController";
+import { FloatingPanelShell } from "../../shared/FloatingPanelShell";
+import { AutoBackupList } from "./AutoBackupList";
 
 type Props = { backupController: BackupController };
 
@@ -45,6 +47,8 @@ export function BackupPanel({ backupController }: Props) {
           </button>
         </div>
       </div>
+
+      <AutoBackupList backupController={backupController} />
     </FloatingPanelShell>
   );
 }

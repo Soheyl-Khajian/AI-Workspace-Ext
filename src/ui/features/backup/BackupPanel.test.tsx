@@ -18,8 +18,9 @@ function createBackupControllerMock() {
 describe("BackupPanel", () => {
   afterEach(cleanup);
 
-  it("renders the description and both actions", () => {
+  it("renders the description and both actions", async () => {
     render(<BackupPanel backupController={createBackupControllerMock()} />);
+    await screen.findByText(/No automatic snapshots yet/);
 
     expect(screen.getByText(/Export all projects and items/)).not.toBeNull();
     expect(
@@ -30,9 +31,10 @@ describe("BackupPanel", () => {
     ).not.toBeNull();
   });
 
-  it("delegates an export click to the controller", () => {
+  it("delegates an export click to the controller", async () => {
     const backupController = createBackupControllerMock();
     render(<BackupPanel backupController={backupController} />);
+    await screen.findByText(/No automatic snapshots yet/);
 
     fireEvent.click(screen.getByRole("button", { name: "Export backup" }));
 
@@ -40,9 +42,10 @@ describe("BackupPanel", () => {
     expect(backupController.importBackup).not.toHaveBeenCalled();
   });
 
-  it("delegates an import click to the controller", () => {
+  it("delegates an import click to the controller", async () => {
     const backupController = createBackupControllerMock();
     render(<BackupPanel backupController={backupController} />);
+    await screen.findByText(/No automatic snapshots yet/);
 
     fireEvent.click(screen.getByRole("button", { name: "Import backup" }));
 

@@ -27,8 +27,10 @@
   color: var(--aiw-text-muted);
 }
 
-/* Import is destructive (replaces ALL data): danger-tinted glass. */
-.aiw-backup-import {
+/* Destructive actions (import replaces ALL data; restore does the
+   same from a ring snapshot): one danger-tinted treatment. */
+.aiw-backup-import,
+.aiw-backup-ring__restore {
   padding: var(--aiw-space-sm) var(--aiw-space-lg);
   border-radius: var(--aiw-radius-control);
 
@@ -46,16 +48,99 @@
     transform var(--aiw-dur-fast) var(--aiw-ease);
 }
 
-.aiw-backup-import:hover {
+.aiw-backup-import:hover,
+.aiw-backup-ring__restore:hover {
   background: var(--aiw-danger-soft-hover);
   transform: translateY(-1px);
 }
 
-.aiw-backup-import:active {
+.aiw-backup-import:active,
+.aiw-backup-ring__restore:active {
   transform: scale(0.97);
 }
 
-.aiw-backup-import:focus-visible {
+.aiw-backup-import:focus-visible,
+.aiw-backup-ring__restore:focus-visible {
   outline: none;
   box-shadow: var(--aiw-danger-ring);
+}
+
+/* ------------------------------------------------------------
+   AUTO-BACKUP RING (v0.7)
+------------------------------------------------------------ */
+/*
+  First adaptive-discipline section: rows and the restore action
+  are touch-sized (44px minimum), the action is always visible
+  (no hover reveal), and the row is pure flex -- no fixed widths,
+  so it collapses gracefully at any panel width.
+*/
+
+.aiw-backup-ring {
+  display: flex;
+  flex-direction: column;
+  gap: var(--aiw-space-sm);
+  padding: var(--aiw-space-lg);
+  border-top: 1px solid var(--aiw-separator);
+}
+
+.aiw-backup-ring__title {
+  margin: 0;
+  font-size: var(--aiw-fs-md);
+  font-weight: 600;
+  color: var(--aiw-text);
+}
+
+.aiw-backup-ring__list {
+  display: flex;
+  flex-direction: column;
+}
+
+.aiw-backup-ring__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--aiw-space-lg);
+  min-height: 44px;
+  padding: var(--aiw-space-sm) 0;
+  border-bottom: 1px solid var(--aiw-separator);
+}
+
+.aiw-backup-ring__row:last-child {
+  border-bottom: none;
+}
+
+/* min-width: 0 lets long locale timestamps ellipsize inside flex
+   instead of overflowing the row. */
+.aiw-backup-ring__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.aiw-backup-ring__time {
+  font-size: var(--aiw-fs-sm);
+  color: var(--aiw-text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.aiw-backup-ring__reason {
+  font-size: var(--aiw-fs-sm);
+  color: var(--aiw-text-muted);
+}
+
+/* Touch-sized on top of the shared danger treatment; deliberately
+   taller than the v0.4-era export/import buttons above -- new UI
+   follows the adaptive law, converted UI stays pixel-identical. */
+.aiw-backup-ring__restore {
+  flex-shrink: 0;
+  min-height: 44px;
+}
+
+.aiw-backup-ring__restore:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
 }
