@@ -37,6 +37,7 @@ const ctx = await esbuild.context({
   loader: {
     ".ts": "ts", // Handle TypeScript syntax
   },
+  jsx: "automatic",
   plugins: [],
 });
 

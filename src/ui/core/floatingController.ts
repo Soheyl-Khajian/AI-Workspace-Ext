@@ -21,8 +21,9 @@
 // IMPORTANT:
 //
 // - event handlers live in the handler modules (core/orbHandlers,
-//   features/*/…Handlers); this file only composes their
-//   EventBinding[] contributions into one add/remove table
+//   features/*/…Handlers) for vanilla panels; React-owned panels
+//   wire their own clicks in their components — this file only
+//   composes the remaining EventBinding[] contributions
 // - NO DOM creation details (floatingDom)
 // - NO rendering implementation (renderers)
 // - NO business logic (feature controllers)
@@ -32,8 +33,12 @@
 import type { OrbActionId, OrbPanelId } from "./types";
 import type { OrbActionContext } from "./orbActionRouter";
 import type { EventBinding } from "./eventBindings";
+import type { AutoBackupSnapshot } from "../../models/backup";
 import type { AutoBackupSnapshotMessage } from "../../background/messages";
 
+import { createElement } from "react";
+import { createRoot } from "react-dom/client";
+import { ReactPanelHost } from "./ReactPanelHost";
 import { createFloatingDom } from "./floatingDom";
 import { handleOrbAction } from "./orbActionRouter";
 import { getOrbActions } from "./orbActions";
@@ -76,7 +81,7 @@ import {
 } from "../features/items/itemsMenuState";
 
 import { createBackupController } from "../features/backup/backupController";
-import { createBackupHandlers } from "../features/backup/backupHandlers";
+import { AUTO_BACKUP_STORAGE_KEY } from "../../background/autoBackupWriter";
 import {
   AUTO_BACKUP_DEBOUNCE_MS,
   AUTO_BACKUP_MAX_MUTATIONS,
@@ -103,6 +108,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // them here is safe.
   // ----------------------------------------------------------
   const dom = createFloatingDom(rootEl);
+  const root = createRoot(dom.reactPanelsEl);
 
   const itemsController = createItemsController({
     onStateChange: renderUi,
@@ -139,6 +145,19 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     notify: showToast,
     beforeImport: autoBackupController.beforeImport,
     onImported: reloadAfterImport,
+
+    // The ring's read door, mirroring sendSnapshot on the write
+    // side: this arrow is the restore feature's entire chrome-facing
+    // surface. Reads need no queue -- only read-modify-writes do,
+    // and those all live in the background writer.
+    readAutoBackups: async () => {
+      const result = await chrome.storage.local.get(AUTO_BACKUP_STORAGE_KEY);
+      return (
+        (result[AUTO_BACKUP_STORAGE_KEY] as AutoBackupSnapshot[] | undefined) ??
+        []
+      );
+    },
+    confirmDestructive: (message) => window.confirm(message),
   });
 
   const searchController = createSearchController({
@@ -169,11 +188,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     resolveProjectName,
     requestRender: renderUi,
     hasActiveInlineEdit,
-  });
-
-  const backupBindings = createBackupHandlers({
-    panelsEl: dom.orbPanelsEl,
-    backupController,
   });
 
   const searchBindings = createSearchHandlers({
@@ -217,6 +231,15 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     } else {
       projectName = null;
     }
+
+    // React seam: same state, second renderer. Vanilla wipes its
+    // container below; React reconciles its sibling here.
+    root.render(
+      createElement(ReactPanelHost, {
+        activePanel: activePanelId,
+        backupController,
+      }),
+    );
 
     dom.rootEl.dataset.orbExpanded = String(expanded);
 
@@ -400,7 +423,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     ...orbBindings,
     ...projectsBindings,
     ...itemsBindings,
-    ...backupBindings,
     ...searchBindings,
   ];
 
@@ -421,6 +443,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     for (const [target, type, listener, options] of eventBindings) {
       target.removeEventListener(type, listener, options);
     }
+
+    root.unmount();
 
     // The auto-backup controller's bus subscription and pagehide
     // listener never entered the bindings table (they are not DOM

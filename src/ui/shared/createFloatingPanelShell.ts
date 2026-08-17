@@ -21,7 +21,7 @@
 
 export type PanelContext = { label: string; muted?: boolean };
 
-const PANEL_SHELL_CONTEXT_CLASS = "aiw-panel-context";
+export const PANEL_SHELL_CONTEXT_CLASS = "aiw-panel-context";
 export const PANEL_SHELL_CONTEXT_SELECTOR = `.${PANEL_SHELL_CONTEXT_CLASS}`;
 
 export function createFloatingPanelShell(

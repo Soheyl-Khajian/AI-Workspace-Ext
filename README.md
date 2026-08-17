@@ -4,7 +4,7 @@
 > of ChatGPT — organize captured information into projects and items without
 > leaving the chat.
 
-**Status:** `v0.6.0` · source-available (all rights reserved — see [License](#license))
+**Status:** `v0.7.0` · source-available (all rights reserved — see [License](#license))
 
 AI Workspace injects a lightweight floating UI onto `chatgpt.com` where you can
 keep project notes and snippets right next to your conversations. Everything is
@@ -34,6 +34,10 @@ machine.
   copy it to your clipboard, ready to paste back into a prompt.
 - **Backup & restore** — export your entire workspace to a JSON file and import
   it to fully restore your data.
+- **Automatic snapshots & restore** — every change schedules a snapshot
+  into a 5-deep ring that survives clearing the site's data; the Backup
+  panel lists them and can restore any one, after saving a safety copy
+  first.
 - **Local-first** — all data lives in IndexedDB in your browser; runtime UI state
   is rebuilt from storage on every load.
 - **Resilient** — the UI survives ChatGPT's in-app navigation (auto-remounts if
@@ -68,11 +72,12 @@ Workspace
 
 **Project**
 
-| Field       | Notes     |
-| ----------- | --------- |
-| `id`        | unique    |
-| `name`      | non-empty |
-| `createdAt` | timestamp |
+| Field       | Notes                   |
+| ----------- | ----------------------- |
+| `id`        | unique                  |
+| `name`      | non-empty               |
+| `createdAt` | timestamp               |
+| `updatedAt` | timestamp (set on edit) |
 
 **Item**
 
@@ -93,8 +98,9 @@ Not on the Chrome Web Store yet. To run it:
 
 **Option A — from a release (no build needed)**
 
-1. Download the source archive from the [Releases](../../releases) page and unzip
-   it. The built `dist/` is included, so it's ready to load.
+1. Download the `ai-workspace-ext-vX.Y.Z.zip` asset from the latest
+   [release](../../releases) and unzip it. It contains the built extension,
+   ready to load.
 2. Open `chrome://extensions`.
 3. Enable **Developer mode** (top-right).
 4. Click **Load unpacked** and select the unzipped folder (the one containing
@@ -165,17 +171,23 @@ manifest.json   MV3 manifest
 ## Tech stack
 
 - **TypeScript** (strict), targeting Chrome 120+
+- **React** for the floating panel UI (migration in progress)
 - **esbuild** for bundling
 - **Chrome Extensions Manifest V3** (service worker + content script)
 - **IndexedDB** for local persistence
 
 ## Roadmap
 
-`v0.1.0` is the MVP baseline. Planned next:
+Shipped so far: projects and items with capture from the page, context
+packs, backup export/import, automatic snapshots with in-panel restore,
+and the start of the React migration.
 
-- Keyboard basics (Enter submits forms, Escape closes panels)
-- Richer item types and content editing
-- Pro features
+Planned next:
+
+- Complete the React panel migration (projects, items, search)
+- Task pipeline
+- Adaptive UI discipline across all panels
+- Pro features and a companion app (longer term)
 - Chrome Web Store release
 
 ## License

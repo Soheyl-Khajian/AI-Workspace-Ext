@@ -8,6 +8,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-08-17
+
+### Added
+
+- **Restore from automatic snapshots**: the Backup panel now lists the
+  auto-backup ring — when each snapshot was saved and why — with a
+  per-snapshot Restore. Restoring validates the snapshot, asks for
+  confirmation, saves a pre-restore safety snapshot first (and aborts
+  rather than proceed unprotected), then replaces the workspace and
+  reloads the UI.
+- **Release pipeline**: pushing a version tag now builds, tests, and
+  packages the extension, attaching a ready-to-load zip to a GitHub
+  pre-release.
+
+### Changed
+
+- **The React migration begins**: a React root now renders beside the
+  vanilla renderer, and the Backup panel is the first panel converted.
+  Remaining panels migrate in v0.8.
+- The Backup panel's export/import controls now sit at the top of the
+  panel body (previously the bottom) — a deliberate fix of a latent
+  layout quirk in the old renderer.
+- `dist/` is no longer tracked in the repository; install from a
+  release zip or build from source.
+- The test suite grows from 116 to 138 tests and gains a browser-DOM
+  lane (jsdom + Testing Library) for React components.
+
 ## [0.6.0] - 2026-08-14
 
 ### Added
@@ -192,7 +219,8 @@ Initial MVP release.
   automatically re-mounting the UI, guards against duplicate content-script
   injection, and makes Inbox creation atomic to prevent duplicate projects.
 
-[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.6.0...HEAD
+[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.4.0...v0.5.0
 [0.4.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.3.0...v0.4.0

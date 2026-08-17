@@ -2,6 +2,7 @@
 
 # Dependencies
 node_modules/
+dist/
 
 # Docs
 AI Workspace MVP Specification.pdf
