@@ -112,7 +112,7 @@ same way.
 
 ## Build from source
 
-Requirements: [Node.js](https://nodejs.org) 18+ and npm.
+Requirements: [Node.js](https://nodejs.org) 22+ and npm.
 
 ```bash
 npm install     # install dev dependencies
