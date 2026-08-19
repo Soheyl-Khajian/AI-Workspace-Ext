@@ -21,7 +21,6 @@
 // ------------------------------------------------------------
 
 import type { OrbPanelId, RenderContext } from "./types";
-import { renderProjectsPanel } from "../features/projects/renderProjectsPanel";
 import { renderItemsPanel } from "../features/items/renderItemsPanel";
 
 export function renderFloatingPanels(
@@ -36,8 +35,10 @@ export function renderFloatingPanels(
   }
 
   switch (activePanel) {
+    // React-owned since v0.8: the host renders this panel; the vanilla coordinator contributes nothing.
     case "projects":
-      return renderProjectsPanel(containerEl);
+      return null;
+
     case "items":
       return renderItemsPanel(
         containerEl,

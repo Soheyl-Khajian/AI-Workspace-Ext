@@ -1,8 +1,8 @@
 // src/ui/shared/FloatingPanelShell.test.tsx
 /** @vitest-environment jsdom */
 
-import { afterEach, describe, expect, it } from "vitest";
-import { cleanup, render, screen } from "@testing-library/react";
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { FloatingPanelShell } from "./FloatingPanelShell";
 import { PANEL_SHELL_CONTEXT_SELECTOR } from "./createFloatingPanelShell";
 
@@ -77,5 +77,36 @@ describe("FloatingPanelShell", () => {
       "pinned-probe",
       "aiw-floating-panel__body",
     ]);
+  });
+
+  it("renders footer content after the body", () => {
+    const { container } = render(
+      <FloatingPanelShell
+        title="Projects"
+        footer={<div className="footer-probe" />}
+      >
+        content
+      </FloatingPanelShell>,
+    );
+    const panelEl = container.querySelector(".aiw-floating-panel");
+    const childClasses = Array.from(panelEl?.children ?? []).map(
+      (child) => child.className,
+    );
+    expect(childClasses).toEqual([
+      "aiw-floating-panel__header",
+      "aiw-floating-panel__body",
+      "footer-probe",
+    ]);
+  });
+
+  it("forwards panel clicks to onClick", () => {
+    const onClick = vi.fn();
+    render(
+      <FloatingPanelShell title="Projects" onClick={onClick}>
+        content
+      </FloatingPanelShell>,
+    );
+    fireEvent.click(screen.getByRole("heading", { name: "Projects" }));
+    expect(onClick).toHaveBeenCalledTimes(1);
   });
 });

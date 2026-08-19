@@ -57,7 +57,6 @@ import {
 import { createOrbHandlers } from "./orbHandlers";
 
 import { createProjectsController } from "../features/projects/projectsController";
-import { createProjectsHandlers } from "../features/projects/projectsHandlers";
 import { getProjects } from "../features/projects/projectsState";
 import { resetProjectsDraftState } from "../features/projects/projectsDraftState";
 import {
@@ -162,13 +161,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     closeAllRowMenus,
   });
 
-  const projectsBindings = createProjectsHandlers({
-    panelsEl: dom.orbPanelsEl,
-    projectsController,
-    notify: showToast,
-    requestRender: renderUi,
-  });
-
   const itemsBindings = createItemsHandlers({
     panelsEl: dom.orbPanelsEl,
     itemsController,
@@ -220,7 +212,10 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       createElement(ReactPanelHost, {
         activePanel: activePanelId,
         backupController,
+        projectsController,
         openProject,
+        notify: showToast,
+        requestRender: renderUi,
       }),
     );
 
@@ -372,11 +367,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // Every binding is contributed by a handler module; this file
   // adds none of its own.
   // ----------------------------------------------------------
-  const eventBindings: EventBinding[] = [
-    ...orbBindings,
-    ...projectsBindings,
-    ...itemsBindings,
-  ];
+  const eventBindings: EventBinding[] = [...orbBindings, ...itemsBindings];
 
   for (const [target, type, listener, options] of eventBindings) {
     target.addEventListener(type, listener, options);

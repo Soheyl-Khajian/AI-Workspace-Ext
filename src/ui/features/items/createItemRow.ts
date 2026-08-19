@@ -35,7 +35,7 @@ import type { ItemMenuPage } from "./itemsMenuState";
 // ------------------------------------------------------------
 //
 // Named-flags object instead of positional booleans (same rule as
-// createProjectRow): two same-typed positional flags invite silent
+// the panel shell's PanelContext): two same-typed positional flags invite silent
 // argument swaps the compiler cannot catch.
 // ------------------------------------------------------------
 
