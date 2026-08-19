@@ -378,6 +378,11 @@ export function ProjectsPanel({
               setCreateName(event.target.value);
               setCreateProjectNameDraft(event.target.value);
             }}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                void submitCreate();
+              }
+            }}
           />
           <button
             type="button"

@@ -282,4 +282,12 @@ describe("ProjectsPanel", () => {
     expect(screen.getByText("Alpha")).not.toBeNull();
     expect(projectsController.renameProject).not.toHaveBeenCalled();
   });
+
+  it("Enter in the create input submits like the Create button", () => {
+    const { projectsController } = setup();
+    const input = screen.getByPlaceholderText("New project name");
+    fireEvent.change(input, { target: { value: "Via Enter" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(projectsController.create).toHaveBeenCalledWith("Via Enter");
+  });
 });
