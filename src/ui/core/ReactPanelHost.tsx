@@ -24,17 +24,27 @@
 import type { OrbPanelId } from "./types";
 import type { BackupController } from "../features/backup/backupController";
 import { BackupPanel } from "../features/backup/BackupPanel";
+import { SearchPanel } from "../features/search/SearchPanel";
 
 type Props = {
   activePanel: OrbPanelId | null;
   backupController: BackupController;
+  openProject: (projectId: string) => void;
 };
 
-export function ReactPanelHost({ activePanel, backupController }: Props) {
+export function ReactPanelHost({
+  activePanel,
+  backupController,
+  openProject,
+}: Props) {
   return (
     <div data-aiw-react="ready">
       {activePanel === "backup" ? (
         <BackupPanel backupController={backupController} />
+      ) : null}
+
+      {activePanel === "search" ? (
+        <SearchPanel openProject={openProject} />
       ) : null}
     </div>
   );

@@ -7,7 +7,8 @@
 // - React twin of createFloatingPanelShell: same structure,
 //   same classes, ONE source of truth for both (the vanilla
 //   module owns the shared constants and the PanelContext type)
-// - children fill the panel body
+// - children fill the panel body; pinned renders between the
+//   header and the body, OUTSIDE the scroll region (search bar)
 //
 // IMPORTANT RULES:
 // - the enter class is STATIC: React creates this node once per
@@ -26,10 +27,16 @@ import { PANEL_SHELL_CONTEXT_CLASS } from "./createFloatingPanelShell";
 type Props = {
   title: string;
   context?: PanelContext;
+  pinned?: ReactNode;
   children: ReactNode;
 };
 
-export function FloatingPanelShell({ title, context, children }: Props) {
+export function FloatingPanelShell({
+  title,
+  context,
+  pinned,
+  children,
+}: Props) {
   return (
     <section className="aiw-floating-panel aiw-floating-panel--enter">
       <header className="aiw-floating-panel__header">
@@ -50,6 +57,9 @@ export function FloatingPanelShell({ title, context, children }: Props) {
         )}
         <h2 className="aiw-floating-panel__title">{title}</h2>
       </header>
+
+      {pinned}
+
       <div className="aiw-floating-panel__body">{children}</div>
     </section>
   );

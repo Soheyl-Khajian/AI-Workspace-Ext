@@ -57,4 +57,25 @@ describe("FloatingPanelShell", () => {
     const buttonEl = screen.getByRole("button", { name: "Select a project" });
     expect(buttonEl.classList.contains("aiw-panel-context--muted")).toBe(true);
   });
+
+  it("renders pinned content between the header and the body", () => {
+    const { container } = render(
+      <FloatingPanelShell
+        title="Search"
+        pinned={<div className="pinned-probe" />}
+      >
+        content
+      </FloatingPanelShell>,
+    );
+
+    const panelEl = container.querySelector(".aiw-floating-panel");
+    const childClasses = Array.from(panelEl?.children ?? []).map(
+      (child) => child.className,
+    );
+    expect(childClasses).toEqual([
+      "aiw-floating-panel__header",
+      "pinned-probe",
+      "aiw-floating-panel__body",
+    ]);
+  });
 });

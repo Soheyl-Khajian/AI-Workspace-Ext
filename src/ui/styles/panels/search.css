@@ -49,3 +49,21 @@
 .aiw-search-section-heading:first-child {
   margin-top: 0;
 }
+
+/* ------------------------------------------------------------
+   ADAPTIVE DISCIPLINE (v0.8)
+------------------------------------------------------------- */
+/*
+  Converted with the panel, per the standing rule: the input and
+  result rows meet the 44px touch minimum. Minimums, not fixed
+  heights -- rows stay pure flex and collapse gracefully at any
+  panel width.
+*/
+
+.aiw-search-input {
+  min-height: 44px;
+}
+
+.aiw-search-result-row {
+  min-height: 44px;
+}

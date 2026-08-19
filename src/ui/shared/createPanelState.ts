@@ -15,7 +15,7 @@
 // - ONLY UI state node creation
 // ------------------------------------------------------------
 
-type PanelVariant = "loading" | "empty" | "error" | "placeholder";
+export type PanelVariant = "loading" | "empty" | "error" | "placeholder";
 
 type CreatePanelStateParams = {
   variant: PanelVariant;

@@ -6,6 +6,11 @@ import { cleanup, render } from "@testing-library/react";
 import type { BackupController } from "../features/backup/backupController";
 import { ReactPanelHost } from "./ReactPanelHost";
 
+vi.mock("../../storage", () => ({
+  listProjects: vi.fn().mockResolvedValue([]),
+  listAllItems: vi.fn().mockResolvedValue([]),
+}));
+
 function createBackupControllerMock() {
   return {
     exportBackup: vi.fn().mockResolvedValue(undefined),
@@ -26,6 +31,7 @@ describe("ReactPanelHost", () => {
       <ReactPanelHost
         activePanel={null}
         backupController={createBackupControllerMock()}
+        openProject={vi.fn()}
       />,
     );
 
@@ -37,6 +43,7 @@ describe("ReactPanelHost", () => {
       <ReactPanelHost
         activePanel="projects"
         backupController={createBackupControllerMock()}
+        openProject={vi.fn()}
       />,
     );
 
@@ -46,9 +53,32 @@ describe("ReactPanelHost", () => {
       <ReactPanelHost
         activePanel="backup"
         backupController={createBackupControllerMock()}
+        openProject={vi.fn()}
       />,
     );
 
     expect(container.querySelector(".aiw-backup-section")).not.toBeNull();
+  });
+
+  it("renders the search panel only when it is the active panel", () => {
+    const { container, rerender } = render(
+      <ReactPanelHost
+        activePanel="projects"
+        backupController={createBackupControllerMock()}
+        openProject={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector(".aiw-search-bar")).toBeNull();
+
+    rerender(
+      <ReactPanelHost
+        activePanel="search"
+        backupController={createBackupControllerMock()}
+        openProject={vi.fn()}
+      />,
+    );
+
+    expect(container.querySelector(".aiw-search-bar")).not.toBeNull();
   });
 });

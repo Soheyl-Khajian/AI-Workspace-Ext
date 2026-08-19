@@ -12,8 +12,7 @@
 // - bridge features that must not know about each other
 //   (cross-feature glue: hasActiveInlineEdit,
 //   hasOpenRowMenu / closeAllRowMenus — the row-menu coordinator,
-//   resolveProjectName, renderSearchResultsRegion, openProject,
-//   reloadAfterImport)
+//   resolveProjectName, openProject, reloadAfterImport)
 // - own listener lifecycle: register every contributed
 //   EventBinding and return a teardown that removes them
 //   symmetrically
@@ -88,13 +87,6 @@ import {
   createAutoBackupController,
 } from "../features/backup/autoBackupController";
 
-import { createSearchController } from "../features/search/searchController";
-import { createSearchHandlers } from "../features/search/searchHandlers";
-import {
-  renderSearchResults,
-  SEARCH_RESULTS_SELECTOR,
-} from "../features/search/renderSearchPanel";
-import { resetSearchState } from "../features/search/searchState";
 import { resetSearchDraftState } from "../features/search/searchDraftState";
 
 import { showToast } from "../shared/showToast";
@@ -160,10 +152,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     confirmDestructive: (message) => window.confirm(message),
   });
 
-  const searchController = createSearchController({
-    onStateChange: renderUi,
-  });
-
   const orbBindings = createOrbHandlers({
     rootEl: dom.rootEl,
     panelsEl: dom.orbPanelsEl,
@@ -188,12 +176,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     resolveProjectName,
     requestRender: renderUi,
     hasActiveInlineEdit,
-  });
-
-  const searchBindings = createSearchHandlers({
-    panelsEl: dom.orbPanelsEl,
-    renderResults: renderSearchResultsRegion,
-    openProject,
   });
 
   const actionsContext: OrbActionContext = {
@@ -238,6 +220,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       createElement(ReactPanelHost, {
         activePanel: activePanelId,
         backupController,
+        openProject,
       }),
     );
 
@@ -263,14 +246,14 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       performance.now() - panelEnteredAt < PANEL_ENTER_REPLAY_WINDOW_MS
     ) {
       /*
-        Same panel rebuilt while its entrance is still playing: a
-        wipe-rebuild render (e.g. the search snapshot load fires
-        onStateChange in the same tick as the panel switch) replaces
-        the animating element with a fresh one that has no enter
-        class, killing the animation before its first painted frame.
-        Re-apply the class inside the replay window so the fresh
-        element replays the entrance instead.
-      */
+      Same panel rebuilt while its entrance is still playing: a
+      wipe-rebuild render (e.g. the projects load fires
+      onStateChange right after the panel switch) replaces the
+      animating element with a fresh one that has no enter
+      class, killing the animation before its first painted
+      frame. Re-apply the class inside the replay window so the
+      fresh element replays the entrance instead.
+    */
       panelEl.classList.add("aiw-floating-panel--enter");
     }
 
@@ -287,17 +270,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     // Panel switch door: open row menus must not survive it
     closeAllRowMenus();
     togglePanel(panelId);
-
-    /*
-      Opening the search panel (re)loads its workspace snapshot.
-      The trigger lives HERE, on the panel-open door, not inside
-      renderUi — the render cycle must stay a pure state → DOM
-      sync with no side effects. Reopening refreshes the snapshot;
-      keystrokes while the panel is open never touch storage.
-    */
-    if (getActivePanel() === "search") {
-      void searchController.load();
-    }
 
     renderUi();
   }
@@ -359,25 +331,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   }
 
   /*
-    Injected into searchHandlers as deps.renderResults. The debounced
-    input handler must re-render ONLY the results region — a full
-    panel render would destroy the input mid-typing — but handler
-    modules do no rendering, so the composition root locates the
-    live container and invokes the scoped renderer. No-op when the
-    search panel isn't mounted (e.g. a debounce countdown that
-    fires just after the panel closed).
-  */
-  function renderSearchResultsRegion(): void {
-    const resultsEl = dom.orbPanelsEl.querySelector(SEARCH_RESULTS_SELECTOR);
-    if (!(resultsEl instanceof HTMLElement)) {
-      return;
-    }
-
-    renderSearchResults(resultsEl);
-  }
-
-  /*
-  Injected into searchHandlers as deps.openProject. Search result
+  Injected into ReactPanelHost as the search panel's openProject prop. Search result
   rows navigate to a project's Items panel — a workflow the
   projects feature already owns end to end (selectProject: set
   selection, open the items panel, clear item multi-select, load
@@ -390,7 +344,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   // Injected into backupController as deps.onImported. The database
   // was fully replaced, so all transient state is stale: reset
-  // selection, drafts, rename editing, search snapshot + query,
+  // selection, drafts, rename editing, search query,
   // and panel, then reload projects from storage
   // (projectsController.load re-renders via its onStateChange).
   async function reloadAfterImport(): Promise<void> {
@@ -400,7 +354,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     resetProjectsDraftState();
     resetProjectsRenameState();
     resetProjectsMenuState();
-    resetSearchState();
     resetSearchDraftState();
     setSelectedItemId(null);
     setSelectedProjectId(null);
@@ -423,7 +376,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     ...orbBindings,
     ...projectsBindings,
     ...itemsBindings,
-    ...searchBindings,
   ];
 
   for (const [target, type, listener, options] of eventBindings) {

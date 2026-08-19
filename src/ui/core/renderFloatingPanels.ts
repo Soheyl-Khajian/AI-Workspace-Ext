@@ -22,7 +22,6 @@
 
 import type { OrbPanelId, RenderContext } from "./types";
 import { renderProjectsPanel } from "../features/projects/renderProjectsPanel";
-import { renderSearchPanel } from "../features/search/renderSearchPanel";
 import { renderItemsPanel } from "../features/items/renderItemsPanel";
 
 export function renderFloatingPanels(
@@ -49,8 +48,11 @@ export function renderFloatingPanels(
     // React-owned since v0.7: the host renders this panel; the vanilla coordinator contributes nothing.
     case "backup":
       return null;
+
+    // React-owned since v0.8: the host renders this panel; the vanilla coordinator contributes nothing.
     case "search":
-      return renderSearchPanel(containerEl);
+      return null;
+
     default:
       return assertNever(activePanel);
   }
