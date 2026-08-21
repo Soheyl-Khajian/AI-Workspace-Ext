@@ -337,6 +337,10 @@ export function ItemsPanel({
               placeholder="Title"
               value={createTitle}
               onChange={(event) => handleCreateTitleChange(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key !== "Enter") return;
+                void handleCreateSubmit();
+              }}
             />
             <textarea
               className="aiw-create-item-content"

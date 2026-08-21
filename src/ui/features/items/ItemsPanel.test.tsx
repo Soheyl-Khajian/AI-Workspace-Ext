@@ -410,4 +410,14 @@ describe("ItemsPanel", () => {
     fireEvent.scroll(scrollEl, { target: { scrollTop: 300 } });
     expect(getItemsListScrollTop()).toBe(300);
   });
+
+  it("submits the create form with Enter in the title field", async () => {
+    setSelectedProjectId("p1");
+    const { itemsController } = setup();
+    const titleInput = screen.getByPlaceholderText<HTMLInputElement>("Title");
+    fireEvent.change(titleInput, { target: { value: "Quick add" } });
+    fireEvent.keyDown(titleInput, { key: "Enter" });
+    await act(async () => {});
+    expect(itemsController.create).toHaveBeenCalledWith("p1", "Quick add", "");
+  });
 });
