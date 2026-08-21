@@ -4,7 +4,7 @@
 > of ChatGPT — organize captured information into projects and items without
 > leaving the chat.
 
-**Status:** `v0.7.0` · source-available (all rights reserved — see [License](#license))
+**Status:** `v0.8.0` · source-available (all rights reserved — see [License](#license))
 
 AI Workspace injects a lightweight floating UI onto `chatgpt.com` where you can
 keep project notes and snippets right next to your conversations. Everything is
@@ -112,7 +112,7 @@ same way.
 
 ## Build from source
 
-Requirements: [Node.js](https://nodejs.org) 18+ and npm.
+Requirements: [Node.js](https://nodejs.org) 22+ and npm.
 
 ```bash
 npm install     # install dev dependencies

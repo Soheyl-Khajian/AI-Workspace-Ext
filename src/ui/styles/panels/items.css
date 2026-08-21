@@ -58,16 +58,18 @@
 }
 
 /* ------------------------------------------------------------
-   ITEM ROWS: FIXED HEIGHT (v0.4)
+   ITEM ROWS: SINGLE LINE (v0.4; adaptive since v0.8)
 ------------------------------------------------------------ */
+
 /*
-  Fixed-height single-line rows: predictable list density, no
-  layout dependence on content length (same law as the fixed
-  panel frame). Long titles ellipsize.
+  Single-line rows: predictable list density, no layout
+  dependence on content length. Long titles ellipsize. Row
+  height is the shared adaptive minimum in rows.css (44px) —
+  the old fixed --aiw-item-row-h token is gone; flex-shrink
+  stays so a long list can't crush rows in the scroll column.
 */
 
 .aiw-item-row {
-  height: var(--aiw-item-row-h);
   flex-shrink: 0;
 }
 
@@ -141,4 +143,20 @@
 
 .aiw-item-detail-source-link:hover {
   text-decoration: underline;
+}
+
+/* ------------------------------------------------------------
+   ADAPTIVE DISCIPLINE (v0.8)
+------------------------------------------------------------ */
+/*
+  Converted with the panel, per the standing rule: single-line
+  inputs and buttons meet the 44px touch minimum. The textareas
+  keep their own sizing (create: fixed 72px; detail: elastic).
+*/
+
+.aiw-create-item-title,
+.aiw-create-item-submit,
+.aiw-item-detail-title,
+.aiw-item-detail-save {
+  min-height: 44px;
 }

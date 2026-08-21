@@ -69,3 +69,21 @@
   padding: var(--aiw-space-md) var(--aiw-space-lg);
   min-width: 0;
 }
+
+/* ------------------------------------------------------------
+   ADAPTIVE DISCIPLINE (v0.8)
+------------------------------------------------------------- */
+/*
+  Converted with the panel, per the standing rule: rows and the
+  create form meet the 44px touch minimum. Minimums, not fixed
+  heights -- everything stays pure flex and collapses gracefully
+  at any panel width.
+*/
+
+.aiw-create-project-input {
+  min-height: 44px;
+}
+
+.aiw-create-project-submit {
+  min-height: 44px;
+}

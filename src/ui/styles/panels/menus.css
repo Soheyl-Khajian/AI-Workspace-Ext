@@ -170,3 +170,13 @@
   color: var(--aiw-text-faint);
   font-size: var(--aiw-fs-sm);
 }
+
+/* ------------------------------------------------------------
+   ADAPTIVE DISCIPLINE (v0.8)
+------------------------------------------------------------ */
+/* Landed when the ITEMS slice converted the shared row menu's
+   last vanilla consumer (row minimums live in rows.css). */
+
+.aiw-row-menu-item {
+  min-height: 44px;
+}

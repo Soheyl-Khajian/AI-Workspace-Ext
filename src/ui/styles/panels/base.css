@@ -24,7 +24,6 @@
   itself stays free for its own entrance animation.
 */
 
-#aiw-orb-panels,
 #aiw-react-panels {
   position: absolute;
   left: calc(50% + var(--aiw-panel-shift));
