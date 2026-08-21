@@ -8,6 +8,33 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-08-21
+
+### Added
+
+- **Enter to add**: the items create form now submits with Enter in
+  the title field — type, hit Enter, keep capturing.
+
+### Changed
+
+- **The React migration completes**: the Search, Projects, and Items
+  panels join Backup as React components — every panel is now
+  rendered by a single React root. Panel entrance animation is owned
+  by the shell itself, so background re-renders can no longer eat it.
+- **Adaptive discipline**: single-line inputs, buttons, and list rows
+  across all panels now meet a 44px touch minimum — minimums, not
+  fixed heights, so everything collapses gracefully at any panel
+  width.
+- The test suite grows from 138 to 193 tests; all four panels are
+  covered by browser-DOM component tests.
+
+### Removed
+
+- **The vanilla panel layer**: the panel render coordinator, the
+  vanilla shell and state-node factories, the entrance-replay hack,
+  the `#aiw-orb-panels` container, and the fixed item-row-height
+  token are gone. One renderer owns the screen.
+
 ## [0.7.0] - 2026-08-17
 
 ### Added
@@ -219,7 +246,8 @@ Initial MVP release.
   automatically re-mounting the UI, guards against duplicate content-script
   injection, and makes Inbox creation atomic to prevent duplicate projects.
 
-[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.6.0...v0.7.0
 [0.6.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.5.0...v0.6.0
 [0.5.0]: https://github.com/Soheyl-Khajian/AI-Workspace-Ext/compare/v0.4.0...v0.5.0
