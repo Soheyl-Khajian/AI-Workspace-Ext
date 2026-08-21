@@ -20,13 +20,11 @@
 // - NO event orchestration
 // ------------------------------------------------------------
 
-import type { OrbPanelId, RenderContext } from "./types";
-import { renderItemsPanel } from "../features/items/renderItemsPanel";
+import type { OrbPanelId } from "./types";
 
 export function renderFloatingPanels(
   containerEl: HTMLElement,
   activePanel: OrbPanelId | null,
-  context: RenderContext,
 ): HTMLElement | null {
   containerEl.textContent = "";
 
@@ -39,12 +37,9 @@ export function renderFloatingPanels(
     case "projects":
       return null;
 
+    // React-owned since v0.8: the host renders this panel; the vanilla coordinator contributes nothing.
     case "items":
-      return renderItemsPanel(
-        containerEl,
-        context.projectName,
-        context.projects,
-      );
+      return null;
 
     // React-owned since v0.7: the host renders this panel; the vanilla coordinator contributes nothing.
     case "backup":

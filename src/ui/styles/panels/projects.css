@@ -78,15 +78,7 @@
   create form meet the 44px touch minimum. Minimums, not fixed
   heights -- everything stays pure flex and collapses gracefully
   at any panel width.
-  .aiw-project-row is grouped with item/search rows in rows.css;
-  its minimum lands HERE because only this panel is converted.
-  Row-menu items are shared with the ITEMS feature and stay
-  untouched until the items slice converts their last consumer.
 */
-
-.aiw-project-row {
-  min-height: 44px;
-}
 
 .aiw-create-project-input {
   min-height: 44px;

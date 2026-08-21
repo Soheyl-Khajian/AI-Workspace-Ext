@@ -109,4 +109,63 @@ describe("FloatingPanelShell", () => {
     fireEvent.click(screen.getByRole("heading", { name: "Projects" }));
     expect(onClick).toHaveBeenCalledTimes(1);
   });
+
+  it("renders the back button only when onBackClick is given, and forwards clicks", () => {
+    const onBackClick = vi.fn();
+    const { container, rerender } = render(
+      <FloatingPanelShell title="Items">content</FloatingPanelShell>,
+    );
+    expect(container.querySelector(".aiw-panel-back-button")).toBeNull();
+
+    rerender(
+      <FloatingPanelShell title="Items" onBackClick={onBackClick}>
+        content
+      </FloatingPanelShell>,
+    );
+    fireEvent.click(screen.getByText("←"));
+    expect(onBackClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("forwards breadcrumb clicks to onContextClick", () => {
+    const onContextClick = vi.fn();
+    render(
+      <FloatingPanelShell
+        title="Items"
+        context={{ label: "Alpha", muted: false }}
+        onContextClick={onContextClick}
+      >
+        content
+      </FloatingPanelShell>,
+    );
+    fireEvent.click(screen.getByText("Alpha"));
+    expect(onContextClick).toHaveBeenCalledTimes(1);
+  });
+
+  it("renders headerActions inside the header", () => {
+    const { container } = render(
+      <FloatingPanelShell
+        title="Items"
+        headerActions={<div className="actions-probe" />}
+      >
+        content
+      </FloatingPanelShell>,
+    );
+    const headerEl = container.querySelector(".aiw-floating-panel__header");
+    expect(headerEl?.querySelector(".actions-probe")).not.toBeNull();
+  });
+
+  it("appends bodyClassName to the body class", () => {
+    const { container } = render(
+      <FloatingPanelShell
+        title="Items"
+        bodyClassName="aiw-floating-panel__body--split"
+      >
+        content
+      </FloatingPanelShell>,
+    );
+    const bodyEl = container.querySelector(".aiw-floating-panel__body");
+    expect(bodyEl?.classList.contains("aiw-floating-panel__body--split")).toBe(
+      true,
+    );
+  });
 });

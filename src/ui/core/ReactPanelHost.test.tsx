@@ -3,6 +3,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, render } from "@testing-library/react";
 import type { BackupController } from "../features/backup/backupController";
+import type { ItemsController } from "../features/items/itemsController";
 import type { ProjectsController } from "../features/projects/projectsController";
 import { ReactPanelHost } from "./ReactPanelHost";
 
@@ -31,13 +32,32 @@ function createProjectsControllerMock() {
   } satisfies ProjectsController;
 }
 
+function createItemsControllerMock() {
+  return {
+    load: vi.fn().mockResolvedValue(undefined),
+    selectItem: vi.fn(),
+    toggleSelection: vi.fn(),
+    clearSelection: vi.fn(),
+    create: vi.fn().mockResolvedValue(undefined),
+    updateItem: vi.fn().mockResolvedValue(undefined),
+    moveItem: vi.fn().mockResolvedValue(undefined),
+    copyContextPack: vi.fn().mockResolvedValue(undefined),
+    deleteItem: vi.fn().mockResolvedValue(undefined),
+  } satisfies ItemsController;
+}
+
 // One fresh prop bag per render: mocks must not leak across tests.
 function createHostProps() {
   return {
     backupController: createBackupControllerMock(),
     projectsController: createProjectsControllerMock(),
+    itemsController: createItemsControllerMock(),
+    projects: [],
+    projectName: null,
     openProject: vi.fn(),
     notify: vi.fn(),
+    resolveProjectName: () => "Untitled project",
+    hasActiveInlineEdit: () => false,
     requestRender: vi.fn(),
   };
 }
@@ -57,7 +77,7 @@ describe("ReactPanelHost", () => {
 
   it("renders the backup panel only when it is the active panel", () => {
     const { container, rerender } = render(
-      <ReactPanelHost activePanel="items" {...createHostProps()} />,
+      <ReactPanelHost activePanel="search" {...createHostProps()} />,
     );
     expect(container.querySelector(".aiw-backup-section")).toBeNull();
     rerender(<ReactPanelHost activePanel="backup" {...createHostProps()} />);
@@ -66,7 +86,7 @@ describe("ReactPanelHost", () => {
 
   it("renders the search panel only when it is the active panel", () => {
     const { container, rerender } = render(
-      <ReactPanelHost activePanel="items" {...createHostProps()} />,
+      <ReactPanelHost activePanel="backup" {...createHostProps()} />,
     );
     expect(container.querySelector(".aiw-search-bar")).toBeNull();
     rerender(<ReactPanelHost activePanel="search" {...createHostProps()} />);
@@ -80,5 +100,14 @@ describe("ReactPanelHost", () => {
     expect(container.querySelector(".aiw-create-project-form")).toBeNull();
     rerender(<ReactPanelHost activePanel="projects" {...createHostProps()} />);
     expect(container.querySelector(".aiw-create-project-form")).not.toBeNull();
+  });
+
+  it("renders the items panel only when it is the active panel", () => {
+    const { container, rerender } = render(
+      <ReactPanelHost activePanel="projects" {...createHostProps()} />,
+    );
+    expect(container.querySelector(".aiw-panel-back-button")).toBeNull();
+    rerender(<ReactPanelHost activePanel="items" {...createHostProps()} />);
+    expect(container.querySelector(".aiw-panel-back-button")).not.toBeNull();
   });
 });

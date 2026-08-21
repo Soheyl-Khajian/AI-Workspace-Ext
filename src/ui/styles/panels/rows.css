@@ -47,6 +47,10 @@
   color: var(--aiw-text);
   cursor: pointer;
 
+  /* Adaptive minimum (v0.8): merged here when the items slice
+   converted the last row consumer; minimum, not fixed height. */
+  min-height: 44px;
+
   transition:
     background-color var(--aiw-dur-fast) var(--aiw-ease),
     transform var(--aiw-dur-fast) var(--aiw-ease);

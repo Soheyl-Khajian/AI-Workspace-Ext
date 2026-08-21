@@ -10,6 +10,10 @@
 // - children fill the panel body; pinned renders between the
 //   header and the body, footer renders after the body — both
 //   OUTSIDE the scroll region (search bar, footer forms)
+// - header slots: onBackClick renders the back button, context
+//   renders the breadcrumb (clickable when onContextClick is
+//   given), headerActions renders after the title (build-context
+//   bar)
 //
 // IMPORTANT RULES:
 // - the enter class is STATIC: React creates this node once per
@@ -19,8 +23,8 @@
 // - onClick is forwarded to the panel element and nothing more:
 //   feature panels own panel-wide click concerns (row-menu
 //   dismissal); the shell attaches no behavior of its own
-// - the context button carries NO listener yet (no migrated
-//   panel needs one; grows an onContextClick prop in v0.8)
+// - bodyClassName appends a modifier to the shared body class
+//   (master-detail split); the base class always stays
 // - the vanilla twin dies when the last vanilla panel does
 // ------------------------------------------------------------
 import type { MouseEventHandler, ReactNode } from "react";
@@ -30,6 +34,10 @@ import { PANEL_SHELL_CONTEXT_CLASS } from "./createFloatingPanelShell";
 type Props = {
   title: string;
   context?: PanelContext;
+  onContextClick?: () => void;
+  onBackClick?: () => void;
+  headerActions?: ReactNode;
+  bodyClassName?: string;
   pinned?: ReactNode;
   footer?: ReactNode;
   onClick?: MouseEventHandler<HTMLElement>;
@@ -39,6 +47,10 @@ type Props = {
 export function FloatingPanelShell({
   title,
   context,
+  onContextClick,
+  onBackClick,
+  headerActions,
+  bodyClassName,
   pinned,
   footer,
   onClick,
@@ -50,6 +62,15 @@ export function FloatingPanelShell({
       onClick={onClick}
     >
       <header className="aiw-floating-panel__header">
+        {onBackClick && (
+          <button
+            type="button"
+            className="aiw-panel-back-button"
+            onClick={onBackClick}
+          >
+            ←
+          </button>
+        )}
         {context && (
           <>
             <button
@@ -59,6 +80,7 @@ export function FloatingPanelShell({
                   : PANEL_SHELL_CONTEXT_CLASS
               }
               type="button"
+              onClick={onContextClick}
             >
               {context.label}
             </button>
@@ -66,9 +88,18 @@ export function FloatingPanelShell({
           </>
         )}
         <h2 className="aiw-floating-panel__title">{title}</h2>
+        {headerActions}
       </header>
       {pinned}
-      <div className="aiw-floating-panel__body">{children}</div>
+      <div
+        className={
+          bodyClassName
+            ? `aiw-floating-panel__body ${bodyClassName}`
+            : "aiw-floating-panel__body"
+        }
+      >
+        {children}
+      </div>
       {footer}
     </section>
   );

@@ -70,7 +70,6 @@ import {
 } from "../features/projects/projectsMenuState";
 
 import { createItemsController } from "../features/items/itemsController";
-import { createItemsHandlers } from "../features/items/itemsHandlers";
 import { resetItemsDraftState } from "../features/items/itemsDraftState";
 import {
   closeItemMenu,
@@ -161,15 +160,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     closeAllRowMenus,
   });
 
-  const itemsBindings = createItemsHandlers({
-    panelsEl: dom.orbPanelsEl,
-    itemsController,
-    notify: showToast,
-    resolveProjectName,
-    requestRender: renderUi,
-    hasActiveInlineEdit,
-  });
-
   const actionsContext: OrbActionContext = {
     togglePanel: toggleFloatingPanel,
   };
@@ -213,8 +203,13 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
         activePanel: activePanelId,
         backupController,
         projectsController,
+        itemsController,
+        projects: getProjects(),
+        projectName,
         openProject,
         notify: showToast,
+        resolveProjectName,
+        hasActiveInlineEdit,
         requestRender: renderUi,
       }),
     );
@@ -228,10 +223,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       handleOrbActionClick,
     );
 
-    const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId, {
-      projectName,
-      projects: getProjects(),
-    });
+    const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId);
 
     if (panelChanged && panelEl !== null) {
       panelEl.classList.add("aiw-floating-panel--enter");
@@ -367,7 +359,7 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // Every binding is contributed by a handler module; this file
   // adds none of its own.
   // ----------------------------------------------------------
-  const eventBindings: EventBinding[] = [...orbBindings, ...itemsBindings];
+  const eventBindings: EventBinding[] = [...orbBindings];
 
   for (const [target, type, listener, options] of eventBindings) {
     target.addEventListener(type, listener, options);
