@@ -4,7 +4,7 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { FloatingPanelShell } from "./FloatingPanelShell";
-import { PANEL_SHELL_CONTEXT_SELECTOR } from "./createFloatingPanelShell";
+import { PANEL_SHELL_CONTEXT_SELECTOR } from "./FloatingPanelShell";
 
 describe("FloatingPanelShell", () => {
   afterEach(cleanup);

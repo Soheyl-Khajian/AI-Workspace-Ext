@@ -8,17 +8,16 @@
 // - the single React entry component: everything React renders
 //   in the floating UI lives under this component
 // - receives the active panel id from renderUi on every render
-//   pass and routes it: React-owned panels render here, all
-//   others render null (the vanilla coordinator's mirror image)
-// - the probe attribute proves the root survives vanilla
-//   re-renders
+//   pass and routes it: every panel renders here; null means no
+//   panel is open (sole router since v0.8 Slice 4)
+// - the probe attribute proves the root survives re-renders
 //
 // IMPORTANT:
 //
 // - mounted ONCE by the composition root into #aiw-react-panels,
-//   a SIBLING of the wiped #aiw-orb-panels container — vanilla
-//   clears its own subtree, React reconciles this one; neither
-//   touches the other's
+//   the only panel container (the vanilla #aiw-orb-panels sibling
+//   was buried with its coordinator); the root survives every
+//   renderUi pass — React reconciles, nothing wipes
 // - projects/projectName arrive as PROPS computed by renderUi:
 //   the items feature must never import projectsState (sibling
 //   decoupling rule)

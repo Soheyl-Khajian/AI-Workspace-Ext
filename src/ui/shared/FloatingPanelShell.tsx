@@ -4,9 +4,9 @@
 // ------------------------------------------------------------
 //
 // Responsibility:
-// - React twin of createFloatingPanelShell: same structure,
-//   same classes, ONE source of truth for both (the vanilla
-//   module owns the shared constants and the PanelContext type)
+// - THE panel shell (sole implementation since v0.8 Slice 4;
+//   its vanilla twin createFloatingPanelShell is deleted): same
+//   structure the design system was built around,
 // - children fill the panel body; pinned renders between the
 //   header and the body, footer renders after the body — both
 //   OUTSIDE the scroll region (search bar, footer forms)
@@ -28,8 +28,21 @@
 // - the vanilla twin dies when the last vanilla panel does
 // ------------------------------------------------------------
 import type { MouseEventHandler, ReactNode } from "react";
-import type { PanelContext } from "./createFloatingPanelShell";
-import { PANEL_SHELL_CONTEXT_CLASS } from "./createFloatingPanelShell";
+
+// ------------------------------------------------------------
+// CONTEXT CONTRACT (owned here since v0.8, Slice 4)
+// ------------------------------------------------------------
+//
+// Relocated from createFloatingPanelShell.ts when the vanilla
+// shell was buried: the React shell is now the sole owner of the
+// breadcrumb-context contract. The class stays an exported string
+// constant because it is a behavior hook — the test suite and
+// menus.css/base.css both address it by name.
+
+export type PanelContext = { label: string; muted?: boolean };
+
+export const PANEL_SHELL_CONTEXT_CLASS = "aiw-panel-context";
+export const PANEL_SHELL_CONTEXT_SELECTOR = `.${PANEL_SHELL_CONTEXT_CLASS}`;
 
 type Props = {
   title: string;

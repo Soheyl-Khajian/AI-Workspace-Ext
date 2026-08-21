@@ -19,17 +19,17 @@
 //
 // IMPORTANT:
 //
-// - event handlers live in the handler modules (core/orbHandlers,
-//   features/*/…Handlers) for vanilla panels; React-owned panels
-//   wire their own clicks in their components — this file only
-//   composes the remaining EventBinding[] contributions
+// - event handlers: core orb handlers contribute EventBinding[]
+//   (core/orbHandlers); React-owned panels wire their own clicks
+//   in their components — this file only composes the remaining
+//   core bindings
 // - NO DOM creation details (floatingDom)
 // - NO rendering implementation (renderers)
 // - NO business logic (feature controllers)
 // - NO persistent storage (storage facade)
 // ------------------------------------------------------------
 
-import type { OrbActionId, OrbPanelId } from "./types";
+import type { OrbActionId } from "./types";
 import type { OrbActionContext } from "./orbActionRouter";
 import type { EventBinding } from "./eventBindings";
 import type { AutoBackupSnapshot } from "../../models/backup";
@@ -42,7 +42,7 @@ import { createFloatingDom } from "./floatingDom";
 import { handleOrbAction } from "./orbActionRouter";
 import { getOrbActions } from "./orbActions";
 import { renderOrbActions } from "./renderOrbActions";
-import { renderFloatingPanels } from "./renderFloatingPanels";
+
 import {
   getActivePanel,
   isOrbExpanded,
@@ -152,7 +152,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
 
   const orbBindings = createOrbHandlers({
     rootEl: dom.rootEl,
-    panelsEl: dom.orbPanelsEl,
     orbButtonEl: dom.orbButtonEl,
     requestRender: renderUi,
     hasActiveInlineEdit,
@@ -170,23 +169,12 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
   // Single state → DOM synchronization point. Everything that
   // mutates UI state funnels back through here.
   // ----------------------------------------------------------
-  let lastRenderedPanel: OrbPanelId | null = null;
-
-  /*
-  Entrance replay window. Matches --aiw-dur-med (180ms), the
-  duration of aiw-panel-enter: any same-panel rebuild landing
-  inside this window is mid-animation and must replay the enter
-  class (see renderUi).
-*/
-  const PANEL_ENTER_REPLAY_WINDOW_MS = 180;
-  let panelEnteredAt = 0;
 
   function renderUi(): void {
     const expanded = isOrbExpanded();
     const orbActions = getOrbActions();
 
     const activePanelId = getActivePanel();
-    const panelChanged = activePanelId !== lastRenderedPanel;
 
     const selectedProjectId = getSelectedProjectId();
     let projectName: string | null;
@@ -196,8 +184,12 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       projectName = null;
     }
 
-    // React seam: same state, second renderer. Vanilla wipes its
-    // container below; React reconciles its sibling here.
+    // The ONLY panel renderer since v0.8 Slice 4: the host
+    // reconciles every panel from this same state snapshot. The
+    // vanilla coordinator and its wipe-rebuild cycle are gone —
+    // entrance animation is owned by FloatingPanelShell (the
+    // enter class is hard-coded on its root; panel switches
+    // remount it, same-panel renders reconcile it).
     root.render(
       createElement(ReactPanelHost, {
         activePanel: activePanelId,
@@ -222,29 +214,6 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
       orbActions,
       handleOrbActionClick,
     );
-
-    const panelEl = renderFloatingPanels(dom.orbPanelsEl, activePanelId);
-
-    if (panelChanged && panelEl !== null) {
-      panelEl.classList.add("aiw-floating-panel--enter");
-      panelEnteredAt = performance.now();
-    } else if (
-      panelEl !== null &&
-      performance.now() - panelEnteredAt < PANEL_ENTER_REPLAY_WINDOW_MS
-    ) {
-      /*
-      Same panel rebuilt while its entrance is still playing: a
-      wipe-rebuild render (e.g. the projects load fires
-      onStateChange right after the panel switch) replaces the
-      animating element with a fresh one that has no enter
-      class, killing the animation before its first painted
-      frame. Re-apply the class inside the replay window so the
-      fresh element replays the entrance instead.
-    */
-      panelEl.classList.add("aiw-floating-panel--enter");
-    }
-
-    lastRenderedPanel = activePanelId;
   }
 
   // ----------------------------------------------------------
@@ -307,8 +276,8 @@ export function initFloatingController(rootEl: HTMLElement): () => void {
     closeItemMenu();
   }
 
-  // Injected into itemsHandlers as deps.resolveProjectName so the
-  // items feature can label its panels without importing sibling
+  // Injected into ReactPanelHost as the resolveProjectName prop so
+  // the items feature can label its panel without importing sibling
   // projectsState. Also used by renderUi for the header context.
   function resolveProjectName(projectId: string): string {
     const project = getProjects().find(

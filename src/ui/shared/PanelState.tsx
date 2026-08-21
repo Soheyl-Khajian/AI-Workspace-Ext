@@ -4,8 +4,9 @@
 // ------------------------------------------------------------
 //
 // Responsibility:
-// - React twin of createPanelState: same classes, same variant
-//   contract, ONE visual language for panel runtime states
+// - THE panel state node (sole implementation since v0.8 Slice 4;
+//   its vanilla twin createPanelState is deleted): same classes,
+//   same variant
 //
 // IMPORTANT RULES:
 // - NO domain-specific text
@@ -16,7 +17,16 @@
 // - the vanilla twin dies when the last vanilla panel does
 // ------------------------------------------------------------
 
-import type { PanelVariant } from "./createPanelState";
+// ------------------------------------------------------------
+// VARIANT CONTRACT (owned here since v0.8, Slice 4)
+// ------------------------------------------------------------
+//
+// Relocated from createPanelState.ts when the vanilla factory
+// was buried: the React component is now the sole owner of the
+// state-node variant contract. The variant names are behavior
+// hooks — they map 1:1 onto the .aiw-panel-state--* classes.
+
+export type PanelVariant = "loading" | "empty" | "error" | "placeholder";
 
 type Props = {
   variant: PanelVariant;

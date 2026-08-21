@@ -27,13 +27,8 @@ import type { EventBinding } from "./eventBindings";
 import { asListener } from "./eventBindings";
 import { collapseOrb, expandOrb, isOrbExpanded } from "./floatingUiState";
 
-// ------------------------------------------------------------
-// CONSTANTS
-// ------------------------------------------------------------
-
 type OrbHandlersDependencies = {
   rootEl: HTMLElement;
-  panelsEl: HTMLElement;
   orbButtonEl: HTMLElement;
   requestRender: () => void;
   hasActiveInlineEdit: () => boolean;
